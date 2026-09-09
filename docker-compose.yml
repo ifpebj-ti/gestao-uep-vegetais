@@ -1,0 +1,111 @@
+# =============================================================================
+# Docker Compose — Orquestração de Serviços
+# =============================================================================
+# Serviços:
+#   - backend:  API da aplicação (build a partir de ./backend)
+#   - frontend: Interface web servida via Nginx (build a partir de ./frontend)
+#   - database: PostgreSQL com volume persistente
+#
+# Uso:
+#   docker compose up -d          # Iniciar todos os serviços
+#   docker compose down           # Parar todos os serviços
+#   docker compose logs -f        # Acompanhar logs em tempo real
+#   docker compose build --no-cache  # Rebuild sem cache
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend — API
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: gestao-uep-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-gestao_uep}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-postgres}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Interface Web (Nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: gestao-uep-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Database — PostgreSQL
+  # ---------------------------------------------------------------------------
+  database:
+    image: postgres:16-alpine
+    container_name: gestao-uep-database
+    restart: unless-stopped
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-gestao_uep}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-gestao_uep}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# =============================================================================
+# Volumes nomeados — Persistência de dados
+# =============================================================================
+volumes:
+  pgdata:
+    driver: local
+    name: gestao-uep-pgdata
+
+# =============================================================================
+# Redes
+# =============================================================================
+networks:
+  app-network:
+    driver: bridge
+    name: gestao-uep-network
