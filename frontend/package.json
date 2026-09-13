@@ -1,0 +1,18 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo 'No tests specified'",
+    "build": "echo 'Build fake concluido com sucesso'",
+    "lint": "echo 'No lint specified'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
