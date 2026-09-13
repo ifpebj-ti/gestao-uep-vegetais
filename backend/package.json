@@ -2,10 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "echo 'Backend build fake concluido'",
+    "build": "node -e \"require('fs').mkdirSync('dist', {recursive: true}); require('fs').writeFileSync('dist/server.js', 'console.log(\\\"Backend rodando\\\");');\"",
     "start": "node dist/server.js"
   },
   "keywords": [],

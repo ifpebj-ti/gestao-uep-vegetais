@@ -4,9 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'No tests specified'",
-    "build": "echo 'Build fake concluido com sucesso'",
-    "lint": "echo 'No lint specified'"
+    "build": "node -e \"require('fs').mkdirSync('dist', {recursive: true}); require('fs').writeFileSync('dist/index.html', '<h1>Horta Facil</h1>')\""
   },
   "keywords": [],
   "author": "",

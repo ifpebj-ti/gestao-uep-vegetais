@@ -5,6 +5,7 @@
 ### Modernização do Sistema de Escalonamento Agrícola
 
 [![IFPE](https://img.shields.io/badge/IFPE-Projeto_Integrador-058837?style=for-the-badge)](https://www.ifpe.edu.br/)
+[![CI/CD Pipeline](https://img.shields.io/github/actions/workflow/status/ifpebj-ti/gestao-uep-vegetais/ci.yml?branch=main&style=for-the-badge&label=CI%2FCD)](https://github.com/ifpebj-ti/gestao-uep-vegetais/actions)
 [![PWA](https://img.shields.io/badge/PWA-Offline--First-blue?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-orange?style=for-the-badge)](#)
 
@@ -116,7 +117,7 @@ gestao-uep-vegetais/
 ```
 ---
 
-## 🚀Pipeline de CI/CD (GitHub Actions)
+## 🚀 Pipeline de CI/CD (GitHub Actions)
 
 O projeto possui uma esteira automatizada de integração contínua (`.github/workflows/ci.yml`) que contempla:
 
