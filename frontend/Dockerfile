@@ -43,6 +43,9 @@ RUN npm run build
 # ---- Estágio 3: Servir com Nginx ----
 FROM nginx:1.27-alpine AS production
 
+# Atualiza os pacotes da base Alpine para mitigar vulnerabilidades críticas do OpenSSL (CVE-2026-31789)
+RUN apk update && apk upgrade --no-cache
+
 # Remova a configuração padrão do Nginx
 RUN rm /etc/nginx/conf.d/default.conf
 
