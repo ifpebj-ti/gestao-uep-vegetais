@@ -89,4 +89,37 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 
 # 📂 Estrutura do Projeto
 
-*(Atualizar conforme o repositório for definido)*
+```text
+gestao-uep-vegetais/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml                 # Pipeline automatizada de CI/CD (GitHub Actions)
+│   ├── issue_template.md          # Template padronizado para Issues
+│   └── pull_request_template.md   # Template padronizado para Pull Requests
+├── backend/
+│   ├── Dockerfile                 # Multi-stage build da API (Node.js/Alpine)
+│   ├── package.json               # Dependências e scripts do backend
+│   └── package-lock.json
+├── frontend/
+│   ├── Dockerfile                 # Multi-stage build do Frontend (Node.js + Nginx Alpine)
+│   ├── nginx.conf                 # Configuração do servidor web Nginx
+│   ├── package.json               # Dependências e scripts do frontend
+│   └── package-lock.json
+├── config/                        # Arquivos e configurações gerais do ambiente
+├── .env.example                   # Modelo de variáveis de ambiente
+├── .gitignore                     # Regras de exclusão de arquivos no Git
+├── docker-compose.yml             # Orquestração local dos contêineres e volumes
+├── LICENSE                        # Licença de uso do projeto
+└── README.md                      # Documentação principal da aplicação 
+
+```
+---
+
+## 🚀Pipeline de CI/CD (GitHub Actions)
+
+O projeto possui uma esteira automatizada de integração contínua (`.github/workflows/ci.yml`) que contempla:
+
+- Verificação estática de código (**Lint**) e testes automatizados.
+- Build multi-arquitetura para **linux/amd64** e **linux/arm64** com QEMU e Docker Buildx.
+- Análise de segurança com **Aqua Security Trivy**, bloqueando imagens com vulnerabilidades críticas (`CRITICAL`).
+- Publicação automática das imagens homologadas no **GitHub Container Registry (GHCR)**.
