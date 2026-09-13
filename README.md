@@ -56,6 +56,16 @@ Modernizar o sistema Horta Fácil, migrando sua estrutura tradicional para uma a
 | **Antonio Macédo** | DevSecOps, Infraestrutura e QA |
 
 ---
+=======
+# 📑 Documentação e Acompanhamento
+
+Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e visualizar os relatórios e entregas, acesse os links abaixo:
+
+- 📖 **Wiki do Projeto:** [Acessar GitHub Wiki](https://github.com/ifpebj-ti/gestao-uep-vegetais/wiki)
+- 🧠 **Apresentação / Sprint Report:** [Visualizar no Canva](https://canva.link/jgi9ied9fzkyfas)
+- 🎨 **Protótipo das Telas:** [Visualizar Protótipo no Canva](https://canva.link/73re71vjj12jskb)
+---
+
 
 # 🏗️ Tecnologias
 
@@ -80,4 +90,7 @@ Modernizar o sistema Horta Fácil, migrando sua estrutura tradicional para uma a
 
 # 📂 Estrutura do Projeto
 
+
 *(Atualizar conforme o repositório for definido)*
+=======
+
