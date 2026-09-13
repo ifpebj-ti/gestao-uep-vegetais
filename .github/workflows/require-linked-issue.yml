@@ -1,0 +1,79 @@
+name: Require Linked Issue
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  linked-issue:
+    name: Verify Linked Issue
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verificar Issue associada
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+
+            const regex =
+              /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s*:?\s*#(\d+)/gi;
+
+            const matches = [...body.matchAll(regex)];
+
+            if (matches.length === 0) {
+              core.setFailed(
+                'Este Pull Request precisa estar associado a uma Issue. Use, por exemplo: Closes #15'
+              );
+
+              return;
+            }
+
+            const issueNumbers = [
+              ...new Set(matches.map(match => Number(match[1])))
+            ];
+
+            let validIssue = false;
+
+            for (const issueNumber of issueNumbers) {
+              try {
+                const { data: issue } =
+                  await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber
+                  });
+
+                // No GitHub, PRs também aparecem na API de Issues.
+                // Portanto verificamos se é realmente uma Issue.
+                if (!issue.pull_request) {
+                  console.log(
+                    `Issue válida encontrada: #${issueNumber}`
+                  );
+
+                  validIssue = true;
+                  break;
+                }
+
+              } catch (error) {
+                console.log(
+                  `Issue #${issueNumber} não encontrada.`
+                );
+              }
+            }
+
+            if (!validIssue) {
+              core.setFailed(
+                'Nenhuma Issue válida foi encontrada para este Pull Request.'
+              );
+            }
