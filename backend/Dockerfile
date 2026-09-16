@@ -36,13 +36,16 @@ RUN npm ci
 # Copie o código-fonte
 COPY . .
 
-# Execute o build (descomente quando houver um script de build)
-# RUN npm run build
+# Execute o build
+RUN npm run build
 
 # ---- Estágio 3: Imagem final de produção ----
 FROM node:20-alpine AS production
 
 WORKDIR /app
+
+# Atualiza pacotes do sistema e o npm para mitigar vulnerabilidades críticas do Trivy
+RUN apk update && apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm
 
 # Crie um usuário não-root para segurança
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -63,8 +66,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-# Comando de inicialização (ajuste conforme necessário)
-CMD ["node", "src/index.js"]
+# Comando de inicialização
+CMD ["node", "dist/server.js"]
 
 # ---------------------------------------------------------------------------
 # Opção 2: Python (Flask / FastAPI / Django) — DESCOMENTE ABAIXO
