@@ -20,6 +20,8 @@
     <properties>
         <java.version>21</java.version>
         <auth0-jwt.version>4.4.0</auth0-jwt.version>
+        <tomcat.version>10.1.35</tomcat.version>
+        <spring-security.version>6.5.9</spring-security.version>
     </properties>
 
     <dependencies>
