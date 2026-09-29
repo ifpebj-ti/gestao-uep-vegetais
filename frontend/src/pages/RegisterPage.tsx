@@ -8,7 +8,14 @@ import { AuthLayout } from '../components/AuthLayout';
 import { authService } from '../services/authService';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ACADEMIC_EMAIL_REGEX = /^[^\s@]+@([a-zA-Z0-9.-]+\.)*(ifpe\.edu\.br|edu\.br|edu|[a-z0-9.-]*\.(?:edu|edu\.br|uf[a-z]{2,}\.br))$/i;
+
+const isAcademicEmail = (email: string): boolean => {
+    const parts = email.toLowerCase().trim().split('@');
+    if (parts.length !== 2) return false;
+    const domain = parts[1];
+    
+    return domain === 'ifpe.edu.br' || domain.endsWith('.ifpe.edu.br');
+};
 
 export const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
@@ -46,7 +53,7 @@ export const RegisterPage: React.FC = () => {
             return;
         }
 
-        if (!ACADEMIC_EMAIL_REGEX.test(emailTrim)) {
+        if (!isAcademicEmail(emailTrim)) {
             setErrorMessage(
                 'É necessário utilizar um e-mail acadêmico institucional (ex: nome@discente.ifpe.edu.br ou nome@ifpe.edu.br).'
             );
@@ -210,7 +217,7 @@ export const RegisterPage: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                    helperText="Utilize seu e-mail acadêmico (ex: @discente.ifpe.edu.br ou @*.edu.br)"
+                    helperText="Utilize seu e-mail institucional (ex: @discente.ifpe.edu.br ou @ifpe.edu.br)"
                 />
                 
                 <div className="space-y-2">
