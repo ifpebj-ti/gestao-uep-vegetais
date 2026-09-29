@@ -57,7 +57,7 @@ Modernizar o sistema Horta Fácil, migrando sua estrutura tradicional para uma a
 | **Antonio Macédo** | DevSecOps, Infraestrutura e QA |
 
 ---
-=======
+
 # 📑 Documentação e Acompanhamento
 
 Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e visualizar os relatórios e entregas, acesse os links abaixo:
@@ -125,7 +125,3 @@ O projeto possui uma esteira automatizada de integração contínua (`.github/wo
 - Build multi-arquitetura para **linux/amd64** e **linux/arm64** com QEMU e Docker Buildx.
 - Análise de segurança com **Aqua Security Trivy**, bloqueando imagens com vulnerabilidades críticas (`CRITICAL`).
 - Publicação automática das imagens homologadas no **GitHub Container Registry (GHCR)**.
-=======
-
-*(Atualizar conforme o repositório for definido)*
-=======
