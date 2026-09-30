@@ -4,7 +4,6 @@ import { TerrariumMap, TerrariumMapRef } from '../components/TerrariumMap';
 import { TerrariumMenu } from '../components/TerrariumMenu';
 import {
   CanteiroData,
-  CANTEIROS_DATA,
   PerfilUsuario,
 } from '../data/horticulturaData';
 import {
@@ -25,7 +24,7 @@ export const MapaPage: React.FC = () => {
   const { user } = useAuth();
   const mapRef = useRef<TerrariumMapRef>(null);
 
-// User Profile (Professor or Aluno) and Name: derived directly from authentication/login
+  // User Profile (Professor or Aluno) and Name: derived directly from authentication/login
   const perfil: PerfilUsuario = (() => {
     const role = (user?.role || '').toLowerCase();
     const email = (user?.email || '').toLowerCase();
@@ -116,11 +115,10 @@ export const MapaPage: React.FC = () => {
           {/* Planta Baixa 2D View Button (Mirrors the Figma architectural drawing) */}
           <button
             onClick={() => handleCameraPreset('topdown')}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              activePreset === 'topdown'
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${activePreset === 'topdown'
                 ? 'bg-[#27633b] text-white shadow-sm'
                 : 'text-slate-700 hover:bg-emerald-50'
-            }`}
+              }`}
             title="Visualização 2D em Planta Baixa (Figma)"
           >
             <Layers className="h-3.5 w-3.5" />
@@ -130,11 +128,10 @@ export const MapaPage: React.FC = () => {
           {/* Isométrica 3D View Button */}
           <button
             onClick={() => handleCameraPreset('isometric')}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              activePreset === 'isometric'
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${activePreset === 'isometric'
                 ? 'bg-[#27633b] text-white shadow-sm'
                 : 'text-slate-700 hover:bg-emerald-50'
-            }`}
+              }`}
             title="Visualização Isométrica Tridimensional"
           >
             <Compass className="h-3.5 w-3.5" />
@@ -144,11 +141,10 @@ export const MapaPage: React.FC = () => {
           {/* Nível do Solo Walking View Button */}
           <button
             onClick={() => handleCameraPreset('ground')}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
-              activePreset === 'ground'
+            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${activePreset === 'ground'
                 ? 'bg-[#27633b] text-white shadow-sm'
                 : 'text-slate-700 hover:bg-emerald-50'
-            }`}
+              }`}
             title="Visão no Nível do Solo"
           >
             <Eye className="h-3.5 w-3.5" />

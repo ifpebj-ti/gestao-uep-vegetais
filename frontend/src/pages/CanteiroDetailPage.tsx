@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CANTEIROS_DATA, CanteiroData } from '../data/horticulturaData';
 import {
   Calendar,
-  User,
-  Users,
   CheckCircle2,
   Sprout,
   FileText,
@@ -80,11 +78,11 @@ export const CanteiroDetailPage: React.FC = () => {
       {/* 2. CONTEÚDO PRINCIPAL                                    */}
       {/* ======================================================== */}
       <main className="mx-auto max-w-6xl px-4 pt-5 sm:px-6">
-        
+
         {/* HERO SECTION */}
         <div className="relative overflow-hidden rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/30 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            
+
             {/* Informações Básicas do Canteiro */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -159,37 +157,34 @@ export const CanteiroDetailPage: React.FC = () => {
         {/* 3. SEÇÃO PRINCIPAL (LARGURA TOTAL): ABAS E FICHA DE CAMPO*/}
         {/* ======================================================== */}
         <div className="mt-8 space-y-6">
-          
+
           {/* Navegação entre Abas (Sem "Parâmetros Agronômicos") */}
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
             <button
               onClick={() => setActiveTab('ficha')}
-              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${
-                activeTab === 'ficha'
+              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'ficha'
                   ? 'bg-[#27633b] text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <FileText className="h-3.5 w-3.5" />
               <span>Ficha de Campo (Olericultura)</span>
             </button>
             <button
               onClick={() => setActiveTab('manejo')}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${
-                activeTab === 'manejo'
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'manejo'
                   ? 'bg-[#27633b] text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               Manejo & Irrigação
             </button>
             <button
               onClick={() => setActiveTab('historico')}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${
-                activeTab === 'historico'
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'historico'
                   ? 'bg-[#27633b] text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               Histórico & Cronograma
             </button>
