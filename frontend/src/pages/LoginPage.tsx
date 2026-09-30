@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, MapPin } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/Button';
 import { GoogleButton } from '../components/GoogleButton';
 import { Input } from '../components/Input';
@@ -134,16 +134,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <p className="pt-2 text-center text-sm text-slate-500">
                     Ainda não tem uma conta? <Link to="/register" className="font-semibold text-[#27633b]">Crie aqui</Link>
                 </p>
-
-                <div className="mt-2 pt-3 border-t border-slate-100 text-center">
-                    <Link
-                        to="/mapa"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 text-xs font-bold text-[#27633b] hover:bg-emerald-100/70 transition w-full shadow-sm"
-                    >
-                        <MapPin className="h-4 w-4" />
-                        <span>Explorar Mapa 3D da Horticultura</span>
-                    </Link>
-                </div>
             </form>
         </AuthLayout>
     );
