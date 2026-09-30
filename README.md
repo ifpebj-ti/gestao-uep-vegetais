@@ -73,8 +73,7 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 
 - 📖 **Wiki do Projeto:** [Acessar GitHub Wiki](https://github.com/ifpebj-ti/gestao-uep-vegetais/wiki)
 - 🧠 **Apresentação / Sprint Report:** [Visualizar no Canva](https://canva.link/jgi9ied9fzkyfas)
-- 🎨 **Protótipo das Telas:** [Visualizar Protótipo no Canva](https://canva.link/73re71vjj12jskb)
-
+- 🎨 **Protótipo das Telas:** [Visualizar Protótipo no Canva Overview](https://canva.link/73re71vjj12jskb) e [Visualizar Protótipo no Figma](https://www.figma.com/design/zlMQSyhaPWFB7oUfQeCiCE/Desktop-sign-up-and-login-pages-by-EditorM--Community-?node-id=0-1&m=dev&t=L2Z2sFGH00jeQenz-1)
 ---
 
 # 🏗️ Tecnologias e Arquitetura
