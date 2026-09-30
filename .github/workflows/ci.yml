@@ -21,7 +21,7 @@ jobs:
     steps:
       # Clona o repositorio no runner
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Configura o ambiente Java para executar os testes do backend
       - name: Setup Java
@@ -92,7 +92,7 @@ jobs:
     steps:
       # Clona o repositorio para o job do Docker
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Padroniza o nome da imagem em letras minusculas para compatibilidade com o GHCR
       - name: Normalizar nome da imagem
