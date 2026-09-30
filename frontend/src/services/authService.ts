@@ -10,12 +10,14 @@ export interface LoginResponse {
   token: string;
   nome: string;
   email: string;
+  role?: 'ADMIN' | 'USUARIO' | 'PROFESSOR' | 'ALUNO' | string;
 }
 
 export interface UserSession {
   token: string;
   nome: string;
   email: string;
+  role?: 'ADMIN' | 'USUARIO' | 'PROFESSOR' | 'ALUNO' | string;
 }
 
 export interface RegisterData {
@@ -31,20 +33,31 @@ export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
 
-    const response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, senha }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, senha }),
+      });
+    } catch {
+      throw new Error(
+        'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.'
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 403 || response.status === 401) {
         throw new Error('E-mail ou senha incorretos.');
       }
       const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.message || errorData?.erro || 'Falha ao autenticar. Tente novamente.');
+      throw new Error(
+        errorData?.message ||
+          errorData?.erro ||
+          'Falha ao autenticar. Tente novamente.'
+      );
     }
 
     const data: LoginResponse = await response.json();
@@ -69,13 +82,10 @@ export const authService = {
         },
         body: JSON.stringify(payload),
       });
-    } catch (networkError) {
-      console.warn(
-        '[authService] Backend offline na porta 8080. Continuando em modo demonstração local para validar o fluxo de frontend.',
-        networkError
+    } catch {
+      throw new Error(
+        'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.'
       );
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      return { message: 'Conta criada com sucesso!' };
     }
 
     if (!response.ok) {
@@ -105,24 +115,13 @@ export const authService = {
           },
         }
       );
-    } catch (networkError) {
-      console.warn(
-        '[authService] Backend offline na porta 8080 ao confirmar e-mail. Simulando confirmação com sucesso.',
-        networkError
+    } catch {
+      throw new Error(
+        'Não foi possível conectar ao servidor para validar o token. Verifique sua conexão.'
       );
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      return { message: 'E-mail confirmado com sucesso!' };
     }
 
     if (!response.ok) {
-      // Se a rota ainda não existir no backend (404), trata graciosamente para não quebrar o teste visual da tela
-      if (response.status === 404) {
-        console.warn(
-          '[authService] Rota /api/auth/confirmar-email ainda não implementada no backend Java (404). Exibindo sucesso para teste visual.'
-        );
-        return { message: 'E-mail confirmado com sucesso (modo visual)!' };
-      }
-
       const errorData = await response.json().catch(() => null);
       throw new Error(
         errorData?.erro ||
@@ -148,23 +147,13 @@ export const authService = {
           body: JSON.stringify({ email: email.trim() }),
         }
       );
-    } catch (networkError) {
-      console.warn(
-        '[authService] Backend offline na porta 8080 ao reenviar confirmação. Simulando reenvio com sucesso.',
-        networkError
+    } catch {
+      throw new Error(
+        'Não foi possível conectar ao servidor para reenviar o e-mail. Verifique sua conexão.'
       );
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return { message: 'Novo e-mail de confirmação enviado com sucesso!' };
     }
 
     if (!response.ok) {
-      if (response.status === 404) {
-        console.warn(
-          '[authService] Rota /api/auth/reenviar-confirmacao ainda não implementada no backend Java (404). Exibindo sucesso para teste visual.'
-        );
-        return { message: 'Novo e-mail de confirmação enviado com sucesso!' };
-      }
-
       const errorData = await response.json().catch(() => null);
       throw new Error(
         errorData?.erro ||

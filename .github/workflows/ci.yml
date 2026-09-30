@@ -22,19 +22,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Executa a analise estatica de codigo (Lint)
-      - name: Lint Check (Frontend & Backend)
-        run: |
-          echo "[INFO] Verificando estrutura e executando Lint..."
-          # Integrar comandos reais de lint (ex: npm run lint) quando o codigo for adicionado
-          echo "[SUCCESS] Lint concluido com sucesso."
+      # Configura o ambiente Node.js para o frontend
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      # Executa a suite de testes unitarios e de integracao
-      - name: Run Main Tests
-        run: |
-          echo "[INFO] Executando testes principais..."
-          # Integrar comandos reais de testes (ex: npm test) quando o codigo for adicionado
-          echo "[SUCCESS] Suite de testes aprovada sem falhas."
+      # Instala dependências limpas do Frontend
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      # Validação estática de tipagem e integridade do código
+      - name: Frontend Lint & Type Check
+        working-directory: ./frontend
+        run: npm run lint
+
+      # Executa a suíte de testes automatizados com Vitest
+      - name: Run Frontend Tests
+        working-directory: ./frontend
+        run: npm run test:run
+
+      # Valida compilação de produção e integridade dos bundles
+      - name: Validate Frontend Build
+        working-directory: ./frontend
+        run: npm run build
 
   # ============================================================
   # 2. Build Multi-Arch (amd64/arm64), Varredura Trivy e GHCR

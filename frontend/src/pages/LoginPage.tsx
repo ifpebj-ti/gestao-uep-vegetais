@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/Button';
 import { GoogleButton } from '../components/GoogleButton';
@@ -13,6 +13,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const { login } = useAuth();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +36,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             const user = await login({ email: email.trim(), senha });
             onLoginSuccess?.(user.nome);
             setSuccessMessage(`Bem-vindo(a), ${user.nome}! Login realizado com sucesso.`);
+            setTimeout(() => {
+                navigate('/mapa');
+            }, 400);
         } catch (error: unknown) {
             setErrorMessage(
                 error instanceof Error
