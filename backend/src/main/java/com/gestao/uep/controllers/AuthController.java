@@ -2,6 +2,7 @@ package com.gestao.uep.controllers;
 
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
+import com.gestao.uep.domain.usuario.UsuarioRole;
 import com.gestao.uep.domain.usuario.dto.LoginDTO;
 import com.gestao.uep.domain.usuario.dto.LoginResponseDTO;
 import com.gestao.uep.domain.usuario.dto.RegistroDTO;
@@ -85,7 +86,8 @@ public class AuthController {
                 dados.nome(),
                 dados.email(),
                 senhaCriptografada,
-                dados.role()
+                // O cadastro público nunca pode conceder privilégios administrativos.
+                UsuarioRole.USUARIO
         );
 
         usuarioRepository.save(novoUsuario);

@@ -170,6 +170,24 @@ class AuthControllerTest {
     }
 
     @Test
+    void deveIgnorarTentativaDeCriarAdministradorNoCadastroPublico() {
+        RegistroDTO dados = new RegistroDTO(
+                "Maria",
+                "maria@ifpe.edu.br",
+                "senha-segura",
+                UsuarioRole.ADMIN
+        );
+        when(usuarioRepository.findByEmail(dados.email())).thenReturn(null);
+        when(passwordEncoder.encode(dados.senha())).thenReturn("hash-da-senha");
+
+        controller.registrar(dados);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(UsuarioRole.USUARIO);
+    }
+
+    @Test
     void deveRecusarCadastroComEmailDuplicado() {
         RegistroDTO dados = new RegistroDTO(
                 "Maria",
