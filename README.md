@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌿 Horta Fácil
+# 🌿 Terrarium
 
 ### Modernização do Sistema de Escalonamento Agrícola
 
@@ -17,7 +17,7 @@
 
 # 📌 Sobre o Projeto
 
-O **Horta Fácil** consiste na reconstrução e modernização do sistema acadêmico originalmente desenvolvido pela **UFLA/UFSJ em 2011**, transformando uma aplicação desktop legada em uma solução moderna baseada em tecnologias Web e PWA (*Progressive Web App*).
+O **Terrarium** consiste na reconstrução e modernização do sistema acadêmico originalmente desenvolvido pela **UFLA/UFSJ em 2011**, transformando uma aplicação desktop legada em uma solução moderna baseada em tecnologias Web e PWA (*Progressive Web App*).
 
 A proposta do projeto é oferecer uma ferramenta acessível para auxiliar no planejamento agrícola, permitindo que produtores e estudantes organizem ciclos de cultivo, escalonem produções e tenham maior controle sobre o processo produtivo.
 
@@ -36,7 +36,7 @@ A nova versão busca trazer:
 
 ## Objetivo Geral
 
-Modernizar o sistema Horta Fácil, migrando sua estrutura tradicional para uma aplicação Web/PWA capaz de atender às necessidades atuais de pequenos produtores e usuários acadêmicos.
+Modernizar o sistema Terrarium, migrando sua estrutura tradicional para uma aplicação Web/PWA capaz de atender às necessidades atuais de pequenos produtores e usuários acadêmicos.
 
 ## Objetivos Específicos
 
