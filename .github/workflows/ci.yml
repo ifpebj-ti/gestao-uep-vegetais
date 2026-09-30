@@ -23,6 +23,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Configura o ambiente Java para executar os testes do backend
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Executa os testes unitários do backend sem depender do PostgreSQL
+      - name: Run Backend Tests
+        working-directory: ./backend
+        run: mvn --batch-mode test
+
       # Configura o ambiente Node.js para o frontend
       - name: Setup Node.js
         uses: actions/setup-node@v4
