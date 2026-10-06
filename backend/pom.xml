@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -20,7 +20,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <auth0-jwt.version>4.4.0</auth0-jwt.version>
+        <auth0-jwt.version>4.6.1</auth0-jwt.version>
         <tomcat.version>10.1.60</tomcat.version>
         <spring-security.version>6.5.9</spring-security.version>
     </properties>
