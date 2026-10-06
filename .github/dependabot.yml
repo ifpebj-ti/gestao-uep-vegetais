@@ -14,6 +14,12 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "org.apache.tomcat.embed:*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.apache.tomcat:*"
+        update-types: ["version-update:semver-major"]
+
 
   - package-ecosystem: "github-actions"
     directory: "/"
