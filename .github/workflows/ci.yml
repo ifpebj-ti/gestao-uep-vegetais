@@ -105,7 +105,7 @@ jobs:
 
       # Configura o driver Docker Buildx
       - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Autenticacao no GitHub Container Registry (apenas se nao for Pull Request)
       - name: Login no GitHub Container Registry (GHCR)
