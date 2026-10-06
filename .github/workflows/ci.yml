@@ -110,7 +110,7 @@ jobs:
       # Autenticacao no GitHub Container Registry (apenas se nao for Pull Request)
       - name: Login no GitHub Container Registry (GHCR)
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
