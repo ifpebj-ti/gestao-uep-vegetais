@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { StrictMode } from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ConfirmEmailPage } from './ConfirmEmailPage';
 import { authService } from '../services/authService';
@@ -42,6 +43,28 @@ describe('ConfirmEmailPage', () => {
     });
 
     expect(screen.getByRole('button', { name: /ir para o login/i })).toBeInTheDocument();
+  });
+
+  it('deve enviar o token da URL apenas uma vez no StrictMode', async () => {
+    const confirmEmail = vi.spyOn(authService, 'confirmEmail').mockResolvedValue({
+      message: 'E-mail confirmado com sucesso!',
+    });
+
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/confirm-email?token=token-unico']}>
+          <Routes>
+            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('E-mail confirmado com sucesso')).toBeInTheDocument();
+    });
+
+    expect(confirmEmail).toHaveBeenCalledTimes(1);
   });
 
   it('deve exibir mensagem de erro se a validação do token falhar', async () => {

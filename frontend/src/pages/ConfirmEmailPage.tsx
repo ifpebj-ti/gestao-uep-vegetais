@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '../components/Button';
@@ -16,6 +16,7 @@ export const ConfirmEmailPage: React.FC = () => {
     const [tokenInput, setTokenInput] = useState(tokenFromUrl || '');
     const [status, setStatus] = useState<StatusType>(tokenFromUrl ? 'loading' : 'idle');
     const [message, setMessage] = useState<string>('');
+    const tokenAutomaticamenteProcessado = useRef<string | null>(null);
 
     const handleConfirmToken = useCallback(async (tokenToVerify: string) => {
         if (!tokenToVerify.trim()) {
@@ -42,7 +43,8 @@ export const ConfirmEmailPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (tokenFromUrl) {
+        if (tokenFromUrl && tokenAutomaticamenteProcessado.current !== tokenFromUrl) {
+            tokenAutomaticamenteProcessado.current = tokenFromUrl;
             handleConfirmToken(tokenFromUrl);
         }
     }, [tokenFromUrl, handleConfirmToken]);
