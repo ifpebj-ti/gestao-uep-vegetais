@@ -101,7 +101,7 @@ jobs:
 
       # Configura QEMU para permitir emulacao de arquiteturas amd64 e arm64
       - name: Configurar QEMU (suporte a amd64 e arm64)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       # Configura o driver Docker Buildx
       - name: Configurar Docker Buildx
