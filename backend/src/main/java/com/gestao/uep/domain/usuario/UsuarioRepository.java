@@ -1,8 +1,6 @@
 package com.gestao.uep.domain.usuario;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.UUID;
 
 /**
@@ -17,5 +15,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      * @param email e-mail do usuário
      * @return UserDetails correspondente ou null se não encontrado
      */
-    UserDetails findByEmail(String email);
+    Usuario findByEmail(String email);
 }

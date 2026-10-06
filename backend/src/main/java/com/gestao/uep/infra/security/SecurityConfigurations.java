@@ -40,7 +40,7 @@ public class SecurityConfigurations {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         // Rotas públicas de autenticação
-                        .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         // Actuator health check (usado pelo Docker)
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Todas as demais rotas exigem autenticação

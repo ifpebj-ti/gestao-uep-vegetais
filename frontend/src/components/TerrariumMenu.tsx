@@ -37,14 +37,7 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
   // Deriva o perfil diretamente da sessão de login
   const perfil: PerfilUsuario = (() => {
     const role = (user?.role || '').toLowerCase();
-    const email = (user?.email || '').toLowerCase();
-    if (
-      role.includes('aluno') ||
-      role.includes('estudante') ||
-      role.includes('discente') ||
-      email.includes('discente') ||
-      email.includes('aluno')
-    ) {
+    if (role === 'aluno') {
       return 'aluno';
     }
     return 'professor';
