@@ -1,0 +1,135 @@
+name: Update Release Notes
+run-name: Atualizar Release Notes com PR #${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - master
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+
+jobs:
+  update-release:
+    name: Atualizar Rascunho da Release
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Atualizar Notas de Release no GitHub
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            const prNumber = pr.number;
+            const prTitle = pr.title;
+            const prAuthor = pr.user ? pr.user.login : 'unknown';
+            const prUrl = pr.html_url;
+
+            // 1. Extrair a secao 'O que foi feito?'
+            let whatWasDone = '';
+            const whatDoneMatch = body.match(/##\s*O que foi feito\?\s*([\s\S]*?)(?=\n##\s*Issue Relacionada|\n##\s*Checklist|$)/i);
+            if (whatDoneMatch && whatDoneMatch[1]) {
+              const rawLines = whatDoneMatch[1].trim().split('\n')
+                .map(line => line.trim())
+                .filter(line => line && !line.toLowerCase().includes('explique de forma resumida'));
+              whatWasDone = rawLines.join(' ').replace(/^[-*]\s*/, '').trim();
+            }
+
+            // Fallback para o titulo do PR caso o autor nao tenha detalhado
+            if (!whatWasDone) {
+              whatWasDone = prTitle;
+            }
+
+            // 2. Extrair Issue Relacionada
+            let linkedIssues = [];
+            const issueRegex = /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s*:?\s*#(\d+)/gi;
+            let match;
+            while ((match = issueRegex.exec(body)) !== null) {
+              linkedIssues.push(`#${match[1]}`);
+            }
+            linkedIssues = [...new Set(linkedIssues)];
+            const issueSuffix = linkedIssues.length > 0 ? ` (Refs: ${linkedIssues.join(', ')})` : '';
+
+            // 3. Identificar Categoria / Tipo de Alteracao
+            let category = 'Outras Alterações';
+            if (/-\s*\[[xX]\]\s*🚀\s*Nova funcionalidade/i.test(body)) {
+              category = '🚀 Novas Funcionalidades';
+            } else if (/-\s*\[[xX]\]\s*🐛\s*Correção de bug/i.test(body)) {
+              category = '🐛 Correções de Bugs';
+            } else if (/-\s*\[[xX]\]\s*📝\s*Documentação/i.test(body)) {
+              category = '📝 Documentação';
+            } else if (/-\s*\[[xX]\]\s*♻️\s*Refatoração/i.test(body)) {
+              category = '♻️ Refatoração e Melhorias';
+            } else if (/-\s*\[[xX]\]\s*⚡\s*Performance/i.test(body)) {
+              category = '⚡ Desempenho';
+            } else if (/-\s*\[[xX]\]\s*🧪\s*Testes/i.test(body)) {
+              category = '🧪 Testes Automatizados';
+            } else if (/-\s*\[[xX]\]\s*🔧\s*Configuração/i.test(body)) {
+              category = '🔧 Manutenção e Infraestrutura';
+            }
+
+            // 4. Formatar a nova linha de release note
+            const entryLine = `- ${whatWasDone} - [PR #${prNumber}](${prUrl}) por @${prAuthor}${issueSuffix}`;
+
+            // 5. Obter ou criar o Draft de Release ativo
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const releases = await github.rest.repos.listReleases({
+              owner,
+              repo,
+              per_page: 20
+            });
+
+            let draftRelease = releases.data.find(r => r.draft === true);
+            let currentBody = '';
+
+            if (draftRelease) {
+              currentBody = draftRelease.body || '';
+            }
+
+            // 6. Inserir ou atualizar na categoria correta
+            let updatedBody = '';
+            const sectionHeader = `### ${category}`;
+
+            if (currentBody.includes(sectionHeader)) {
+              // Ja existe a secao da categoria, insere logo abaixo dela
+              const parts = currentBody.split(sectionHeader);
+              updatedBody = parts[0] + sectionHeader + '\n' + entryLine + parts[1];
+            } else if (currentBody.trim().length > 0) {
+              // Anexa a nova secao ao final
+              updatedBody = currentBody.trim() + `\n\n${sectionHeader}\n${entryLine}\n`;
+            } else {
+              // Corpo inicial da release
+              updatedBody = `## O que há de novo nesta versão\n\n${sectionHeader}\n${entryLine}\n`;
+            }
+
+            // 7. Salvar ou Criar o Draft de Release
+            if (draftRelease) {
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: draftRelease.id,
+                body: updatedBody
+              });
+              console.log(`Draft Release #${draftRelease.id} atualizada com sucesso com o PR #${prNumber}.`);
+            } else {
+              const newRelease = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: 'vNext',
+                name: 'Próxima Versão (Em Desenvolvimento)',
+                body: updatedBody,
+                draft: true,
+                prerelease: false
+              });
+              console.log(`Novo Draft de Release criado com sucesso (ID: ${newRelease.data.id}).`);
+            }
