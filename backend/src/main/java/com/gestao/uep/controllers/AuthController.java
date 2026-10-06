@@ -65,7 +65,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginDTO dados) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(
-                dados.email(), dados.senha()
+                emailInstitucionalService.normalizar(dados.email()), dados.senha()
         );
 
         var auth = authenticationManager.authenticate(usernamePassword);
@@ -106,8 +106,7 @@ public class AuthController {
             String token = verificationTokenService.emitir(novoUsuario, false);
             emailService.enviarConfirmacao(email, token);
         } catch (MailException exception) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(Map.of("erro", "Nao foi possivel enviar o e-mail de confirmacao"));
+            return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
         return ResponseEntity.status(HttpStatus.CREATED)

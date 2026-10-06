@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button } from '../components/Button';
@@ -34,7 +34,7 @@ export const RegisterPage: React.FC = () => {
     const [isResending, setIsResending] = useState(false);
     const [resendFeedback, setResendFeedback] = useState<string | null>(null);
 
-    // ValidaÃ§Ãµes dinÃ¢micas de senha para o indicador visual
+    // Validações dinâmicas de senha para o indicador visual
     const temTamanhoMinimo = senha.length >= 8;
     const temLetraENumero = /[a-zA-Z]/.test(senha) && /\d/.test(senha);
 
@@ -49,31 +49,31 @@ export const RegisterPage: React.FC = () => {
 
         const emailTrim = email.trim();
         if (!EMAIL_REGEX.test(emailTrim)) {
-            setErrorMessage('Por favor, insira um e-mail em formato vÃ¡lido.');
+            setErrorMessage('Por favor, insira um e-mail em formato válido.');
             return;
         }
 
         if (!isAcademicEmail(emailTrim)) {
             setErrorMessage(
-                'Ã‰ necessÃ¡rio utilizar um e-mail institucional de aluno ou professor (ex: nome@discente.ifpe.edu.br ou nome@belojardim.ifpe.edu.br).'
+                'É necessário utilizar um e-mail institucional de aluno ou professor (ex: nome@discente.ifpe.edu.br ou nome@belojardim.ifpe.edu.br).'
             );
             return;
         }
 
         if (senha !== confirmarSenha) {
-            setErrorMessage('As senhas nÃ£o coincidem.');
+            setErrorMessage('As senhas não coincidem.');
             return;
         }
 
         if (!temTamanhoMinimo || !temLetraENumero) {
             setErrorMessage(
-                'A senha deve ter no mÃ­nimo 8 caracteres, contendo pelo menos uma letra e um nÃºmero.'
+                'A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra e um número.'
             );
             return;
         }
 
         if (!aceitaTermos) {
-            setErrorMessage('VocÃª precisa aceitar os termos e a polÃ­tica de privacidade.');
+            setErrorMessage('Você precisa aceitar os termos e a política de privacidade.');
             return;
         }
 
@@ -104,7 +104,7 @@ export const RegisterPage: React.FC = () => {
             setResendFeedback(resp.message || 'Novo e-mail enviado com sucesso!');
         } catch (err: unknown) {
             setResendFeedback(
-                err instanceof Error ? err.message : 'Falha ao reenviar e-mail de confirmaÃ§Ã£o.'
+                err instanceof Error ? err.message : 'Falha ao reenviar e-mail de confirmação.'
             );
         } finally {
             setIsResending(false);
@@ -119,13 +119,13 @@ export const RegisterPage: React.FC = () => {
                         <Mail className="h-8 w-8" />
                     </div>
 
-                    <p className="text-sm font-semibold text-[#658342]">ConfirmaÃ§Ã£o necessÃ¡ria</p>
+                    <p className="text-sm font-semibold text-[#658342]">Confirmação necessária</p>
                     <h2 className="mt-2 text-3xl font-bold tracking-tight text-[#26352a]">
                         Verifique seu e-mail
                     </h2>
 
                     <p className="mt-4 text-sm text-slate-600 leading-relaxed">
-                        Enviamos um link de confirmaÃ§Ã£o para o seu endereÃ§o acadÃªmico:
+                        Enviamos um link de confirmação para o seu endereço acadêmico:
                     </p>
                     <p className="mt-1 font-bold text-base text-[#27633b] break-all">
                         {email}
@@ -160,7 +160,7 @@ export const RegisterPage: React.FC = () => {
                             disabled={isResending}
                             className="block w-full py-2 text-xs font-semibold text-[#27633b] hover:text-[#174b32] disabled:opacity-50"
                         >
-                            {isResending ? 'Reenviando...' : 'NÃ£o recebeu? Clique para reenviar'}
+                            {isResending ? 'Reenviando...' : 'Não recebeu? Clique para reenviar'}
                         </button>
 
                         <button
@@ -180,7 +180,7 @@ export const RegisterPage: React.FC = () => {
     return (
         <AuthLayout>
             <div className="mb-8">
-                <p className="text-sm font-semibold text-[#658342]">Junte-se a nÃ³s!</p>
+                <p className="text-sm font-semibold text-[#658342]">Junte-se a nós!</p>
                 <h2 className="mt-2 text-3xl font-bold tracking-tight text-[#26352a]">
                     Crie sua conta
                 </h2>
@@ -240,7 +240,7 @@ export const RegisterPage: React.FC = () => {
                         }
                     />
 
-                    {/* Indicador visual: Checklist dinÃ¢mico de requisitos de senha (sÃ³ aparece ao digitar) */}
+                    {/* Indicador visual: Checklist dinâmico de requisitos de senha (só aparece ao digitar) */}
                     {senha.length > 0 && (
                         <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3 text-xs transition-all">
                             <p className="mb-2 font-medium text-slate-600">Requisitos da senha:</p>
@@ -255,7 +255,7 @@ export const RegisterPage: React.FC = () => {
                                             temTamanhoMinimo ? 'text-[#27633b] scale-110' : 'text-slate-300'
                                         }`}
                                     />
-                                    <span>MÃ­nimo 8 caracteres</span>
+                                    <span>Mínimo 8 caracteres</span>
                                 </li>
                                 <li
                                     className={`flex items-center gap-2 transition-colors duration-200 ${
@@ -267,7 +267,7 @@ export const RegisterPage: React.FC = () => {
                                             temLetraENumero ? 'text-[#27633b] scale-110' : 'text-slate-300'
                                         }`}
                                     />
-                                    <span>Pelo menos uma letra e um nÃºmero</span>
+                                    <span>Pelo menos uma letra e um número</span>
                                 </li>
                             </ul>
                         </div>
@@ -308,7 +308,7 @@ export const RegisterPage: React.FC = () => {
                     <span>
                         Li e concordo com os{' '}
                         <a href="#" className="font-semibold text-[#27633b] transition-colors hover:text-[#174b32] hover:underline">
-                            termos & polÃ­tica de privacidade
+                            termos & política de privacidade
                         </a>
                     </span>
                 </label>
@@ -331,9 +331,9 @@ export const RegisterPage: React.FC = () => {
                 <GoogleButton onClick={() => console.log('Registro com Google')} />
 
                 <p className="pt-2 text-center text-sm text-slate-500">
-                    JÃ¡ tem uma conta?{' '}
+                    Já tem uma conta?{' '}
                     <Link to="/login" className="font-semibold text-[#27633b] transition-colors hover:text-[#174b32]">
-                        FaÃ§a o login
+                        Faça o login
                     </Link>
                 </p>
             </form>

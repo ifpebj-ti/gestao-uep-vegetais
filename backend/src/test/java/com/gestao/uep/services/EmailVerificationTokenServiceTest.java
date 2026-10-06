@@ -3,6 +3,7 @@ package com.gestao.uep.services;
 import com.gestao.uep.domain.usuario.EmailVerificationToken;
 import com.gestao.uep.domain.usuario.EmailVerificationTokenRepository;
 import com.gestao.uep.domain.usuario.Usuario;
+import com.gestao.uep.domain.usuario.UsuarioRepository;
 import com.gestao.uep.domain.usuario.UsuarioRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,13 +29,16 @@ class EmailVerificationTokenServiceTest {
     @Mock
     private EmailVerificationTokenRepository repository;
 
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
     @Test
     void deveEmitirTokenHashEComValidadeDe24Horas() {
         Usuario usuario = usuarioNaoVerificado();
         when(repository.findByUsuarioAndUsadoEmIsNullAndInvalidadoEmIsNull(usuario))
                 .thenReturn(List.of());
 
-        EmailVerificationTokenService service = new EmailVerificationTokenService(repository);
+        EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
         String token = service.emitir(usuario, false);
 
         assertThat(token).isNotBlank();
@@ -60,7 +64,7 @@ class EmailVerificationTokenServiceTest {
         );
         when(repository.findByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(token));
 
-        EmailVerificationTokenService service = new EmailVerificationTokenService(repository);
+        EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
         Usuario confirmado = service.confirmar(tokenBruto);
 
         assertThat(confirmado).isSameAs(usuario);
@@ -80,7 +84,7 @@ class EmailVerificationTokenServiceTest {
         );
         when(repository.findByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(token));
 
-        EmailVerificationTokenService service = new EmailVerificationTokenService(repository);
+        EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
 
         assertThatThrownBy(() -> service.confirmar(tokenBruto))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -100,7 +104,7 @@ class EmailVerificationTokenServiceTest {
         when(repository.findByUsuarioAndUsadoEmIsNullAndInvalidadoEmIsNull(usuario))
                 .thenReturn(List.of(anterior));
 
-        EmailVerificationTokenService service = new EmailVerificationTokenService(repository);
+        EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
         service.emitir(usuario, false);
 
         assertThat(anterior.getInvalidadoEm()).isNotNull();

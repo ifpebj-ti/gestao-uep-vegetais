@@ -35,3 +35,22 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_email_token_usuario
     ON email_verification_tokens (usuario_id);
+
+WITH tokens_duplicados AS (
+    SELECT id,
+           ROW_NUMBER() OVER (
+               PARTITION BY usuario_id
+               ORDER BY criado_em DESC
+           ) AS ordem
+    FROM email_verification_tokens
+    WHERE usado_em IS NULL AND invalidado_em IS NULL
+)
+UPDATE email_verification_tokens
+SET invalidado_em = CURRENT_TIMESTAMP
+WHERE id IN (
+    SELECT id FROM tokens_duplicados WHERE ordem > 1
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_email_token_ativo_usuario
+    ON email_verification_tokens (usuario_id)
+    WHERE usado_em IS NULL AND invalidado_em IS NULL;

@@ -1,6 +1,6 @@
 export type TipoSetor = 'hortalica' | 'medicinal' | 'composteira' | 'agua' | 'minhocario' | 'recepcao';
 export type StatusCultura = 'pronto_colheita' | 'em_crescimento' | 'recem_plantado' | 'preparacao' | 'adubado';
-export type PerfilUsuario = 'professor' | 'aluno';
+export type PerfilUsuario = 'professor' | 'aluno' | 'indefinido';
 
 export interface CanteiroData {
   id: string;

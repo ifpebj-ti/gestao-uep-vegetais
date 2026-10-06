@@ -3,6 +3,7 @@ package com.gestao.uep.services;
 import com.gestao.uep.domain.usuario.EmailVerificationToken;
 import com.gestao.uep.domain.usuario.EmailVerificationTokenRepository;
 import com.gestao.uep.domain.usuario.Usuario;
+import com.gestao.uep.domain.usuario.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,14 +24,23 @@ public class EmailVerificationTokenService {
     private static final long MAXIMO_REENVIOS_POR_HORA = 5;
 
     private final EmailVerificationTokenRepository repository;
+    private final UsuarioRepository usuarioRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public EmailVerificationTokenService(EmailVerificationTokenRepository repository) {
+    public EmailVerificationTokenService(
+            EmailVerificationTokenRepository repository,
+            UsuarioRepository usuarioRepository
+    ) {
         this.repository = repository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional
     public String emitir(Usuario usuario, boolean respeitarLimite) {
+        Usuario usuarioBloqueado = usuarioRepository.findByIdForUpdate(usuario.getId());
+        if (usuarioBloqueado != null) {
+            usuario = usuarioBloqueado;
+        }
         Instant agora = Instant.now();
 
         if (respeitarLimite) {
@@ -39,6 +49,7 @@ public class EmailVerificationTokenService {
 
         repository.findByUsuarioAndUsadoEmIsNullAndInvalidadoEmIsNull(usuario)
                 .forEach(token -> token.invalidar(agora));
+        repository.flush();
 
         String tokenBruto = gerarToken();
         repository.save(new EmailVerificationToken(

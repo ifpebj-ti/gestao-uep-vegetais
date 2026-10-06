@@ -167,7 +167,12 @@ export const authService = {
       );
     }
 
-    return { message: 'Novo e-mail de confirmação enviado com sucesso!' };
+    const responseData = await response.json().catch(() => null);
+    return {
+      message:
+        responseData?.message ||
+        'Se a conta puder receber confirmação, um novo e-mail será enviado.',
+    };
   },
 
 

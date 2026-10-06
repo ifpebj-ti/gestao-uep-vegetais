@@ -114,6 +114,26 @@ class AuthControllerTest {
     }
 
     @Test
+    void deveNormalizarEmailAntesDeAutenticar() {
+        Usuario usuario = usuarioComum();
+        Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
+                usuario,
+                null,
+                usuario.getAuthorities()
+        );
+        when(emailInstitucionalService.normalizar(" MARIA@DISCENTE.IFPE.EDU.BR "))
+                .thenReturn("maria@discente.ifpe.edu.br");
+        when(authenticationManager.authenticate(any())).thenReturn(authentication);
+        when(tokenService.gerarToken(usuario)).thenReturn("jwt-de-teste");
+
+        controller.login(new LoginDTO(" MARIA@DISCENTE.IFPE.EDU.BR ", "senha"));
+
+        ArgumentCaptor<Authentication> captor = ArgumentCaptor.forClass(Authentication.class);
+        verify(authenticationManager).authenticate(captor.capture());
+        assertThat(captor.getValue().getPrincipal()).isEqualTo("maria@discente.ifpe.edu.br");
+    }
+
+    @Test
     void deveRetornarRespostaJsonNoLoginHttp() throws Exception {
         Usuario usuario = usuarioComum();
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
