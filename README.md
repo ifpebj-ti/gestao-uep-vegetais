@@ -176,6 +176,14 @@ Copie o arquivo de exemplo para criar o seu `.env`:
 cp .env.example .env
 ```
 
+Para habilitar o botao **Entrar com Google**, crie um cliente OAuth do tipo
+aplicativo Web no Google Cloud e configure as origens JavaScript autorizadas
+(`http://localhost:5173` durante o desenvolvimento e a URL do frontend em
+producao). Use o mesmo Client ID nas variaveis `GOOGLE_CLIENT_ID` e
+`VITE_GOOGLE_CLIENT_ID`. O backend valida o token e aceita somente contas dos
+dominios `@discente.ifpe.edu.br` e `@belojardim.ifpe.edu.br`; contas pessoais
+`@gmail.com` sao recusadas.
+
 ### 3. Subir Toda a Aplicação com Docker Compose
 ```bash
 docker compose up -d --build

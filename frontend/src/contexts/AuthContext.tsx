@@ -6,6 +6,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<UserSession>;
+  loginWithGoogle: (credential: string) => Promise<UserSession>;
   logout: () => void;
 }
 
@@ -38,6 +39,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return session;
   };
 
+  const loginWithGoogle = async (credential: string): Promise<UserSession> => {
+    const session = await authService.loginWithGoogle(credential);
+    setUser(session);
+    return session;
+  };
+
   const logout = (): void => {
     authService.logout();
     setUser(null);
@@ -50,6 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: Boolean(user?.token),
         isLoading,
         login,
+        loginWithGoogle,
         logout,
       }}
     >

@@ -26,4 +26,16 @@ class EmailInstitucionalServiceTest {
         assertThat(service.identificarPapel("usuario@ifpe.edu.br")).isEmpty();
         assertThat(service.identificarPapel("usuario@gmail.com")).isEmpty();
     }
+
+    @Test
+    void deveConferirDominioHospedadoComDominioDoEmail() {
+        assertThat(service.dominioHospedadoCorresponde(
+                "aluno@discente.ifpe.edu.br",
+                "DISCENTE.IFPE.EDU.BR"
+        )).isTrue();
+        assertThat(service.dominioHospedadoCorresponde(
+                "aluno@discente.ifpe.edu.br",
+                "gmail.com"
+        )).isFalse();
+    }
 }

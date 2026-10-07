@@ -4,11 +4,15 @@ import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
 import com.gestao.uep.domain.usuario.dto.LoginDTO;
 import com.gestao.uep.domain.usuario.dto.LoginResponseDTO;
+import com.gestao.uep.domain.usuario.dto.GoogleLoginDTO;
 import com.gestao.uep.domain.usuario.dto.RegistroDTO;
 import com.gestao.uep.domain.usuario.dto.ReenvioConfirmacaoDTO;
 import com.gestao.uep.services.EmailInstitucionalService;
 import com.gestao.uep.services.EmailService;
 import com.gestao.uep.services.EmailVerificationTokenService;
+import com.gestao.uep.services.GoogleAuthenticationException;
+import com.gestao.uep.services.GoogleIdentity;
+import com.gestao.uep.services.GoogleIdentityService;
 import com.gestao.uep.services.TokenService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Controller REST para autenticacao e verificacao de usuarios.
@@ -43,6 +48,7 @@ public class AuthController {
     private final EmailInstitucionalService emailInstitucionalService;
     private final EmailVerificationTokenService verificationTokenService;
     private final EmailService emailService;
+    private final GoogleIdentityService googleIdentityService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
@@ -51,7 +57,8 @@ public class AuthController {
             PasswordEncoder passwordEncoder,
             EmailInstitucionalService emailInstitucionalService,
             EmailVerificationTokenService verificationTokenService,
-            EmailService emailService
+            EmailService emailService,
+            GoogleIdentityService googleIdentityService
     ) {
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
@@ -60,6 +67,7 @@ public class AuthController {
         this.emailInstitucionalService = emailInstitucionalService;
         this.verificationTokenService = verificationTokenService;
         this.emailService = emailService;
+        this.googleIdentityService = googleIdentityService;
     }
 
     @PostMapping("/login")
@@ -73,9 +81,64 @@ public class AuthController {
 
         String token = tokenService.gerarToken(usuario);
 
-        return ResponseEntity.ok(
-                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole())
-        );
+        return respostaLogin(usuario, token);
+    }
+
+    @PostMapping("/login/google")
+    public ResponseEntity<?> loginComGoogle(@RequestBody @Valid GoogleLoginDTO dados) {
+        final GoogleIdentity identidade;
+        try {
+            identidade = googleIdentityService.validar(dados.credential());
+        } catch (GoogleAuthenticationException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "codigo", "GOOGLE_TOKEN_INVALIDO",
+                            "erro", exception.getMessage()
+                    ));
+        }
+
+        String email = emailInstitucionalService.normalizar(identidade.email());
+        var papel = emailInstitucionalService.identificarPapel(email);
+        if (papel.isEmpty()
+                || !emailInstitucionalService.dominioHospedadoCorresponde(
+                        email,
+                        identidade.dominioHospedado()
+                )) {
+            return ResponseEntity.unprocessableEntity()
+                    .body(Map.of("erro", "Use uma conta Google institucional de aluno ou professor"));
+        }
+
+        Usuario usuario = usuarioRepository.findByGoogleSubject(identidade.subject());
+        if (usuario == null) {
+            usuario = usuarioRepository.findByEmail(email);
+        }
+
+        if (usuario == null) {
+            usuario = new Usuario(
+                    identidade.nome().trim(),
+                    email,
+                    passwordEncoder.encode(UUID.randomUUID().toString()),
+                    papel.get(),
+                    true
+            );
+            usuario.vincularContaGoogle(identidade.subject());
+            usuarioRepository.save(usuario);
+        } else {
+            if (usuario.getGoogleSubject() != null
+                    && !usuario.getGoogleSubject().equals(identidade.subject())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("erro", "A conta Google nao corresponde ao usuario cadastrado"));
+            }
+            if (usuario.getGoogleSubject() == null) {
+                usuario.vincularContaGoogle(identidade.subject());
+            }
+            if (!usuario.isEnabled()) {
+                usuario.confirmarEmail();
+            }
+            usuarioRepository.save(usuario);
+        }
+
+        return respostaLogin(usuario, tokenService.gerarToken(usuario));
     }
 
     @PostMapping("/registrar")
@@ -149,5 +212,11 @@ public class AuthController {
         }
 
         return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
+    }
+
+    private ResponseEntity<LoginResponseDTO> respostaLogin(Usuario usuario, String token) {
+        return ResponseEntity.ok(
+                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole())
+        );
     }
 }

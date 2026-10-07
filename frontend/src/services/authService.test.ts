@@ -178,5 +178,49 @@ describe('authService', () => {
     const result = await authService.resendConfirmation('isabela@ifpe.edu.br');
     expect(result).toEqual({ message: 'Novo e-mail enviado' });
   });
+
+  it('deve autenticar com Google e salvar a sessÃ£o', async () => {
+    const mockResponse = {
+      token: 'jwt-google',
+      nome: 'Ana Beatriz',
+      email: 'ana@discente.ifpe.edu.br',
+      role: 'ALUNO',
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      })
+    );
+
+    const response = await authService.loginWithGoogle('id-token-google');
+
+    expect(response).toEqual(mockResponse);
+    expect(authService.getSession()).toEqual(mockResponse);
+    expect(fetch).toHaveBeenCalledWith(
+      `${APP_CONFIG.apiBaseUrl}/auth/login/google`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ credential: 'id-token-google' }),
+      })
+    );
+  });
+
+  it('deve informar quando o Google rejeitar conta nao institucional', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: async () => ({ erro: 'Use uma conta Google institucional' }),
+      })
+    );
+
+    await expect(authService.loginWithGoogle('id-token-pessoal')).rejects.toThrow(
+      'Use uma conta Google institucional'
+    );
+  });
 });
 

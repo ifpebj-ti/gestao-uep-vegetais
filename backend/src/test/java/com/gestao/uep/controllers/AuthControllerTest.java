@@ -4,11 +4,15 @@ import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
 import com.gestao.uep.domain.usuario.UsuarioRole;
 import com.gestao.uep.domain.usuario.dto.LoginDTO;
+import com.gestao.uep.domain.usuario.dto.GoogleLoginDTO;
 import com.gestao.uep.domain.usuario.dto.RegistroDTO;
 import com.gestao.uep.domain.usuario.dto.ReenvioConfirmacaoDTO;
 import com.gestao.uep.services.EmailInstitucionalService;
 import com.gestao.uep.services.EmailService;
 import com.gestao.uep.services.EmailVerificationTokenService;
+import com.gestao.uep.services.GoogleAuthenticationException;
+import com.gestao.uep.services.GoogleIdentity;
+import com.gestao.uep.services.GoogleIdentityService;
 import com.gestao.uep.services.TokenService;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -62,6 +66,9 @@ class AuthControllerTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private GoogleIdentityService googleIdentityService;
+
     private AuthController controller;
     private MockMvc mockMvc;
 
@@ -74,7 +81,8 @@ class AuthControllerTest {
                 passwordEncoder,
                 emailInstitucionalService,
                 verificationTokenService,
-                emailService
+                emailService,
+                googleIdentityService
         );
 
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
@@ -160,6 +168,68 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(authenticationManager);
+    }
+
+    @Test
+    void deveCriarAutomaticamenteUsuarioInstitucionalNoLoginGoogle() {
+        String email = "ana@discente.ifpe.edu.br";
+        when(googleIdentityService.validar("credencial-valida"))
+                .thenReturn(new GoogleIdentity(
+                        "google-sub-ana",
+                        email,
+                        "Ana Beatriz",
+                        "discente.ifpe.edu.br"
+                ));
+        when(emailInstitucionalService.normalizar(email)).thenReturn(email);
+        when(emailInstitucionalService.identificarPapel(email))
+                .thenReturn(java.util.Optional.of(UsuarioRole.ALUNO));
+        when(emailInstitucionalService.dominioHospedadoCorresponde(
+                email,
+                "discente.ifpe.edu.br"
+        )).thenReturn(true);
+        when(usuarioRepository.findByGoogleSubject("google-sub-ana")).thenReturn(null);
+        when(usuarioRepository.findByEmail(email)).thenReturn(null);
+        when(passwordEncoder.encode(any())).thenReturn("senha-aleatoria-hash");
+        when(tokenService.gerarToken(any(Usuario.class))).thenReturn("jwt-google");
+
+        var response = controller.loginComGoogle(new GoogleLoginDTO("credencial-valida"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isInstanceOf(com.gestao.uep.domain.usuario.dto.LoginResponseDTO.class);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertThat(captor.getValue().getEmail()).isEqualTo(email);
+        assertThat(captor.getValue().getNome()).isEqualTo("Ana Beatriz");
+        assertThat(captor.getValue().getRole()).isEqualTo(UsuarioRole.ALUNO);
+        assertThat(captor.getValue().getGoogleSubject()).isEqualTo("google-sub-ana");
+        assertThat(captor.getValue().isEnabled()).isTrue();
+    }
+
+    @Test
+    void deveRecusarLoginGoogleComContaPessoal() {
+        String email = "ana@gmail.com";
+        when(googleIdentityService.validar("credencial-pessoal"))
+                .thenReturn(new GoogleIdentity("google-sub-pessoal", email, "Ana", "gmail.com"));
+        when(emailInstitucionalService.normalizar(email)).thenReturn(email);
+        when(emailInstitucionalService.identificarPapel(email))
+                .thenReturn(java.util.Optional.empty());
+
+        var response = controller.loginComGoogle(new GoogleLoginDTO("credencial-pessoal"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        verifyNoInteractions(usuarioRepository, passwordEncoder, tokenService);
+    }
+
+    @Test
+    void deveRetornarNaoAutorizadoQuandoTokenGoogleForInvalido() {
+        when(googleIdentityService.validar("credencial-invalida"))
+                .thenThrow(new GoogleAuthenticationException("ID token Google invalido"));
+
+        var response = controller.loginComGoogle(new GoogleLoginDTO("credencial-invalida"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verifyNoInteractions(usuarioRepository, passwordEncoder, tokenService);
     }
 
     @Test
