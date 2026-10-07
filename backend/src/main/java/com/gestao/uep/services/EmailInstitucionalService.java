@@ -35,4 +35,19 @@ public class EmailInstitucionalService {
         }
         return Optional.empty();
     }
+
+    /**
+     * Confere se o dominio hospedado informado pelo Google e o mesmo dominio
+     * do e-mail validado. Isso evita aceitar uma conta Google pessoal apenas
+     * porque o e-mail recebido no cliente foi alterado.
+     */
+    public boolean dominioHospedadoCorresponde(String email, String dominioHospedado) {
+        String emailNormalizado = normalizar(email);
+        String dominioNormalizado = normalizar(dominioHospedado);
+        int arroba = emailNormalizado.lastIndexOf('@');
+        return arroba > 0
+                && arroba < emailNormalizado.length() - 1
+                && !dominioNormalizado.isBlank()
+                && dominioNormalizado.equals(emailNormalizado.substring(arroba + 1));
+    }
 }

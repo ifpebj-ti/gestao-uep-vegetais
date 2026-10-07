@@ -39,6 +39,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String senha;
 
+    @Column(name = "google_subject", unique = true)
+    private String googleSubject;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UsuarioRole role;
@@ -63,6 +66,10 @@ public class Usuario implements UserDetails {
         this.senha = senhaCriptografada;
         this.role = role;
         this.emailVerificado = emailVerificado;
+    }
+
+    public void vincularContaGoogle(String subject) {
+        this.googleSubject = subject;
     }
 
     /**

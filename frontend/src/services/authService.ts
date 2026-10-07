@@ -67,6 +67,47 @@ export const authService = {
     return data;
   },
 
+  async loginWithGoogle(
+    credential: string,
+    rememberMe = false
+  ): Promise<LoginResponse> {
+    let response: Response;
+    try {
+      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+      });
+    } catch {
+      throw new Error(
+        'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.'
+      );
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      if (response.status === 422) {
+        throw new Error(
+          errorData?.erro || 'Use uma conta Google institucional.'
+        );
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Não foi possível validar sua conta Google.');
+      }
+      throw new Error(
+        errorData?.message ||
+          errorData?.erro ||
+          'Falha ao autenticar com Google. Tente novamente.'
+      );
+    }
+
+    const data: LoginResponse = await response.json();
+    this.saveSession(data, rememberMe);
+    return data;
+  },
+
   async register(data: RegisterData): Promise<{ message: string }> {
     const payload = {
       nome: data.nome.trim(),

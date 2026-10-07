@@ -21,6 +21,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     Usuario findByEmail(String email);
 
+    Usuario findByGoogleSubject(String googleSubject);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from Usuario u where u.id = :id")
     Usuario findByIdForUpdate(@Param("id") UUID id);

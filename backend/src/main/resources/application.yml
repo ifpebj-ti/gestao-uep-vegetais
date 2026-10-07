@@ -41,6 +41,9 @@ api:
     token:
       secret: ${JWT_SECRET:minha-chave-secreta-dev-apenas}
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+
 management:
   endpoints:
     web:

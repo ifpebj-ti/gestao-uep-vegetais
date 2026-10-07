@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/Button';
-import { GoogleButton } from '../components/GoogleButton';
+import { GoogleLoginButton } from '../components/GoogleLoginButton';
 import { Input } from '../components/Input';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthLayout } from '../components/AuthLayout';
@@ -12,7 +12,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -44,6 +44,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 error instanceof Error
                     ? error.message
                     : 'Erro ao realizar login. Verifique seus dados.',
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async (credential: string) => {
+        setErrorMessage(null);
+        setSuccessMessage(null);
+        setIsLoading(true);
+        try {
+            const user = await loginWithGoogle(credential);
+            onLoginSuccess?.(user.nome);
+            setSuccessMessage(`Bem-vindo(a), ${user.nome}! Login realizado com sucesso.`);
+            setTimeout(() => {
+                navigate('/mapa');
+            }, 400);
+        } catch (error: unknown) {
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : 'Erro ao realizar login com Google.',
             );
         } finally {
             setIsLoading(false);
@@ -129,7 +151,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <div className="h-px flex-1 bg-slate-200" />
                 </div>
                 
-                <GoogleButton onClick={() => console.log('Login com Google')} />
+                <GoogleLoginButton
+                    onSuccess={handleGoogleLogin}
+                    onError={() => setErrorMessage('Não foi possível iniciar o login com Google.')}
+                />
                 
                 <p className="pt-2 text-center text-sm text-slate-500">
                     Ainda não tem uma conta? <Link to="/register" className="font-semibold text-[#27633b]">Crie aqui</Link>
