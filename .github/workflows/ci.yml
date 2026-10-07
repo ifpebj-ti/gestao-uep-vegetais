@@ -18,6 +18,8 @@ jobs:
   code-quality:
     name: Lint & Automated Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       # Clona o repositorio no runner
       - name: Checkout repository
