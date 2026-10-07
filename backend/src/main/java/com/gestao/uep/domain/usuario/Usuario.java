@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -42,11 +43,26 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private UsuarioRole role;
 
+    @Column(name = "email_verificado", nullable = false)
+    @ColumnDefault("true")
+    private boolean emailVerificado;
+
     public Usuario(String nome, String email, String senhaCriptografada, UsuarioRole role) {
+        this(nome, email, senhaCriptografada, role, true);
+    }
+
+    public Usuario(
+            String nome,
+            String email,
+            String senhaCriptografada,
+            UsuarioRole role,
+            boolean emailVerificado
+    ) {
         this.nome = nome;
         this.email = email;
         this.senha = senhaCriptografada;
         this.role = role;
+        this.emailVerificado = emailVerificado;
     }
 
     /**
@@ -61,7 +77,7 @@ public class Usuario implements UserDetails {
                     new SimpleGrantedAuthority("ROLE_USUARIO")
             );
         }
-        return List.of(new SimpleGrantedAuthority("ROLE_USUARIO"));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
     }
 
     @Override
@@ -95,6 +111,10 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return emailVerificado;
+    }
+
+    public void confirmarEmail() {
+        this.emailVerificado = true;
     }
 }

@@ -27,17 +27,9 @@ export const MapaPage: React.FC = () => {
   // User Profile (Professor or Aluno) and Name: derived directly from authentication/login
   const perfil: PerfilUsuario = (() => {
     const role = (user?.role || '').toLowerCase();
-    const email = (user?.email || '').toLowerCase();
-    if (
-      role.includes('aluno') ||
-      role.includes('estudante') ||
-      role.includes('discente') ||
-      email.includes('discente') ||
-      email.includes('aluno')
-    ) {
-      return 'aluno';
-    }
-    return 'professor';
+    if (role === 'aluno') return 'aluno';
+    if (role === 'professor') return 'professor';
+    return 'indefinido';
   })();
 
   // Sidebar Menu State ("futuro menu que acompanhará todo o sistema")

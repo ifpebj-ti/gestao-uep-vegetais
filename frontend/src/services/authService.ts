@@ -24,7 +24,6 @@ export interface RegisterData {
   nome: string;
   email: string;
   senha: string;
-  role?: 'ADMIN' | 'USUARIO';
 }
 
 const STORAGE_KEY = APP_CONFIG.storageKeys.session;
@@ -49,10 +48,13 @@ export const authService = {
     }
 
     if (!response.ok) {
-      if (response.status === 403 || response.status === 401) {
+      const errorData = await response.json().catch(() => null);
+      if (errorData?.codigo === 'EMAIL_NAO_VERIFICADO') {
+        throw new Error('Confirme seu e-mail institucional antes de entrar.');
+      }
+      if (response.status === 401 || response.status === 403) {
         throw new Error('E-mail ou senha incorretos.');
       }
-      const errorData = await response.json().catch(() => null);
       throw new Error(
         errorData?.message ||
           errorData?.erro ||
@@ -70,7 +72,6 @@ export const authService = {
       nome: data.nome.trim(),
       email: data.email.trim(),
       senha: data.senha,
-      role: data.role || 'USUARIO',
     };
 
     let response: Response;
@@ -100,7 +101,11 @@ export const authService = {
       );
     }
 
-    return { message: 'Conta criada com sucesso!' };
+    const responseData =
+      typeof response.json === 'function'
+        ? await response.json().catch(() => null)
+        : null;
+    return { message: responseData?.message || 'Conta criada com sucesso!' };
   },
 
   async confirmEmail(token: string): Promise<{ message: string }> {
@@ -162,7 +167,12 @@ export const authService = {
       );
     }
 
-    return { message: 'Novo e-mail de confirmação enviado com sucesso!' };
+    const responseData = await response.json().catch(() => null);
+    return {
+      message:
+        responseData?.message ||
+        'Se a conta puder receber confirmação, um novo e-mail será enviado.',
+    };
   },
 
 

@@ -13,8 +13,8 @@ const isAcademicEmail = (email: string): boolean => {
     const parts = email.toLowerCase().trim().split('@');
     if (parts.length !== 2) return false;
     const domain = parts[1];
-    
-    return domain === 'ifpe.edu.br' || domain.endsWith('.ifpe.edu.br');
+
+    return domain === 'discente.ifpe.edu.br' || domain === 'belojardim.ifpe.edu.br';
 };
 
 export const RegisterPage: React.FC = () => {
@@ -24,10 +24,10 @@ export const RegisterPage: React.FC = () => {
     const [senha, setSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [aceitaTermos, setAceitaTermos] = useState(false);
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    
+
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [cadastradoComSucesso, setCadastradoComSucesso] = useState(false);
@@ -55,7 +55,7 @@ export const RegisterPage: React.FC = () => {
 
         if (!isAcademicEmail(emailTrim)) {
             setErrorMessage(
-                'É necessário utilizar um e-mail acadêmico institucional (ex: nome@discente.ifpe.edu.br ou nome@ifpe.edu.br).'
+                'É necessário utilizar um e-mail institucional de aluno ou professor (ex: nome@discente.ifpe.edu.br ou nome@belojardim.ifpe.edu.br).'
             );
             return;
         }
@@ -83,7 +83,6 @@ export const RegisterPage: React.FC = () => {
                 nome: nome.trim(),
                 email: emailTrim,
                 senha,
-                role: 'USUARIO',
             });
             setCadastradoComSucesso(true);
         } catch (error: unknown) {
@@ -208,7 +207,7 @@ export const RegisterPage: React.FC = () => {
                     disabled={isLoading}
                 />
 
-                
+
                 <Input
                     id="email"
                     type="email"
@@ -217,9 +216,9 @@ export const RegisterPage: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                    helperText="Utilize seu e-mail institucional (ex: @discente.ifpe.edu.br ou @ifpe.edu.br)"
+                    helperText="Utilize @discente.ifpe.edu.br para alunos ou @belojardim.ifpe.edu.br para professores"
                 />
-                
+
                 <div className="space-y-2">
                     <Input
                         id="senha"
@@ -328,9 +327,9 @@ export const RegisterPage: React.FC = () => {
                     <span className="text-xs font-medium uppercase tracking-wider text-slate-400">ou</span>
                     <div className="h-px flex-1 bg-slate-200" />
                 </div>
-                
+
                 <GoogleButton onClick={() => console.log('Registro com Google')} />
-                
+
                 <p className="pt-2 text-center text-sm text-slate-500">
                     Já tem uma conta?{' '}
                     <Link to="/login" className="font-semibold text-[#27633b] transition-colors hover:text-[#174b32]">
@@ -340,4 +339,4 @@ export const RegisterPage: React.FC = () => {
             </form>
         </AuthLayout>
     );
-};
+};

@@ -8,6 +8,8 @@ package com.gestao.uep.domain.usuario;
 public enum UsuarioRole {
 
     ADMIN("admin"),
+    ALUNO("aluno"),
+    PROFESSOR("professor"),
     USUARIO("usuario");
 
     private final String role;

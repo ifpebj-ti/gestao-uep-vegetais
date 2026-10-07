@@ -45,7 +45,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: '123456' },
@@ -68,7 +68,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: 'Senha1' },
@@ -93,7 +93,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: '12345678' },
@@ -118,7 +118,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: 'SenhaSegura' },
@@ -143,7 +143,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: 'SenhaValida123' },
@@ -217,7 +217,7 @@ describe('RegisterPage', () => {
 
     expect(
       await screen.findByText(
-        'É necessário utilizar um e-mail acadêmico institucional (ex: nome@discente.ifpe.edu.br ou nome@ifpe.edu.br).'
+        'É necessário utilizar um e-mail institucional de aluno ou professor (ex: nome@discente.ifpe.edu.br ou nome@belojardim.ifpe.edu.br).'
       )
     ).toBeInTheDocument();
   });
@@ -233,7 +233,7 @@ describe('RegisterPage', () => {
       target: { value: 'Isabela Santos' },
     });
     fireEvent.change(screen.getByLabelText('E-mail'), {
-      target: { value: 'isabela@ifpe.edu.br' },
+      target: { value: 'isabela@discente.ifpe.edu.br' },
     });
     fireEvent.change(screen.getByLabelText('Senha'), {
       target: { value: 'SenhaValida123' },
@@ -248,7 +248,7 @@ describe('RegisterPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^criar conta$/i }));
 
     expect(await screen.findByText('Verifique seu e-mail')).toBeInTheDocument();
-    expect(screen.getByText('isabela@ifpe.edu.br')).toBeInTheDocument();
+    expect(screen.getByText('isabela@discente.ifpe.edu.br')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /ir para o login/i })).toBeInTheDocument();
   });
 });

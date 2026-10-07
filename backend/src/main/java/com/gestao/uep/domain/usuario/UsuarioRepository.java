@@ -1,8 +1,10 @@
 package com.gestao.uep.domain.usuario;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.security.core.userdetails.UserDetails;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.UUID;
 
 /**
@@ -17,5 +19,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      * @param email e-mail do usuário
      * @return UserDetails correspondente ou null se não encontrado
      */
-    UserDetails findByEmail(String email);
+    Usuario findByEmail(String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.id = :id")
+    Usuario findByIdForUpdate(@Param("id") UUID id);
 }

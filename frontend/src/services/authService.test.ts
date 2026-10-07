@@ -176,7 +176,7 @@ describe('authService', () => {
     );
 
     const result = await authService.resendConfirmation('isabela@ifpe.edu.br');
-    expect(result).toEqual({ message: 'Novo e-mail de confirmação enviado com sucesso!' });
+    expect(result).toEqual({ message: 'Novo e-mail enviado' });
   });
 });
 
