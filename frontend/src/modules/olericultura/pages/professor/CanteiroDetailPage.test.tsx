@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from '../../../../contexts/AuthContext';
 import { CanteiroDetailPage } from './CanteiroDetailPage';
 
 describe('CanteiroDetailPage', () => {

@@ -13,8 +13,8 @@ import {
   Calendar,
   Droplets,
 } from 'lucide-react';
-import { APP_CONFIG } from '../config/constants';
-import { useAuth } from '../contexts/AuthContext';
+import { APP_CONFIG } from '../../../config/constants';
+import { useAuth } from '../../../contexts/AuthContext';
 import { PerfilUsuario } from '../data/horticulturaData';
 
 export interface TerrariumMenuProps {
@@ -60,7 +60,7 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex print:hidden">
       {/* Backdrop */}
       <div
         onClick={onClose}

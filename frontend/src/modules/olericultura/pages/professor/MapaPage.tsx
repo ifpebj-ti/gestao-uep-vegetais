@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TerrariumMap, TerrariumMapRef } from '../components/TerrariumMap';
-import { TerrariumMenu } from '../components/TerrariumMenu';
+import { TerrariumMap, TerrariumMapRef } from '../../components/TerrariumMap';
+import { TerrariumMenu } from '../../components/TerrariumMenu';
 import {
   CanteiroData,
   PerfilUsuario,
-} from '../data/horticulturaData';
+} from '../../data/horticulturaData';
 import {
   Menu,
   X,
@@ -16,8 +16,8 @@ import {
   ExternalLink,
   Sprout,
 } from 'lucide-react';
-import { APP_CONFIG } from '../config/constants';
-import { useAuth } from '../contexts/AuthContext';
+import { APP_CONFIG } from '../../../../config/constants';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 export const MapaPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,11 +43,15 @@ export const MapaPage: React.FC = () => {
 
   // Direct redirection mode: whether clicking immediately redirects or shows the preview card first
   const [redirectDirectly, setRedirectDirectly] = useState(false);
+  const redirectDirectlyRef = useRef(redirectDirectly);
+  useEffect(() => {
+    redirectDirectlyRef.current = redirectDirectly;
+  }, [redirectDirectly]);
 
   // Handle canteiro selection from 3D map
   const handleSelectCanteiro = (canteiro: CanteiroData | null) => {
     setSelectedCanteiro(canteiro);
-    if (canteiro && redirectDirectly) {
+    if (canteiro && redirectDirectlyRef.current) {
       navigate(`/canteiro/${canteiro.id}`);
     }
   };

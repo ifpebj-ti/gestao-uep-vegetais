@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TerrariumMenu } from './TerrariumMenu';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from '../../../contexts/AuthContext';
 
 describe('TerrariumMenu', () => {
   beforeEach(() => {

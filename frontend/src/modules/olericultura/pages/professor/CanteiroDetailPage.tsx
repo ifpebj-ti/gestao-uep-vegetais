@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CANTEIROS_DATA, CanteiroData } from '../data/horticulturaData';
+import { CANTEIROS_DATA, CanteiroData } from '../../data/horticulturaData';
 import {
   Calendar,
   CheckCircle2,
@@ -8,9 +8,9 @@ import {
   FileText,
   Menu,
 } from 'lucide-react';
-import { FichaCampoOlericultura } from '../components/FichaCampoOlericultura';
-import { TerrariumMenu } from '../components/TerrariumMenu';
-import { BackButton } from '../components/BackButton';
+import { FichaCampoOlericultura } from '../../components/FichaCampoOlericultura';
+import { TerrariumMenu } from '../../components/TerrariumMenu';
+import { BackButton } from '../../../../components/BackButton';
 
 export const CanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,11 +52,11 @@ export const CanteiroDetailPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f8f3] text-slate-800 pb-16 font-sans">
+    <div className="min-h-screen bg-[#f5f8f3] text-slate-800 pb-16 font-sans print:min-h-0 print:bg-white print:p-0 print:m-0">
       {/* ======================================================== */}
       {/* 1. TOP NAVIGATION: MENU E BOTÃO VOLTAR                  */}
       {/* ======================================================== */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-4 sm:px-6 print:hidden">
         <div className="flex items-center gap-3">
           {/* Botão Menu */}
           <button
@@ -77,10 +77,10 @@ export const CanteiroDetailPage: React.FC = () => {
       {/* ======================================================== */}
       {/* 2. CONTEÚDO PRINCIPAL                                    */}
       {/* ======================================================== */}
-      <main className="mx-auto max-w-6xl px-4 pt-5 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 print:max-w-none print:m-0 print:p-0">
 
         {/* HERO SECTION */}
-        <div className="relative overflow-hidden rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/30 p-6 sm:p-8 shadow-sm">
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/30 p-6 sm:p-8 shadow-sm print:hidden">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 
             {/* Informações Básicas do Canteiro */}
@@ -156,10 +156,10 @@ export const CanteiroDetailPage: React.FC = () => {
         {/* ======================================================== */}
         {/* 3. SEÇÃO PRINCIPAL (LARGURA TOTAL): ABAS E FICHA DE CAMPO*/}
         {/* ======================================================== */}
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-6 print:mt-0 print:space-y-0">
 
           {/* Navegação entre Abas (Sem "Parâmetros Agronômicos") */}
-          <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto print:hidden">
             <button
               onClick={() => setActiveTab('ficha')}
               className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'ficha'

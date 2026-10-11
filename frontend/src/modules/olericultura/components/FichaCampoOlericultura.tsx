@@ -151,7 +151,7 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 print:space-y-0 print:m-0 print:p-0">
       {/* Barra de Ações & Notificações */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 border border-emerald-900/10 shadow-sm print:hidden">
         <div className="flex items-center gap-2">
@@ -186,11 +186,14 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
       )}
 
       {/* ============================================================ */}
-      {/* DOCUMENTO DA FICHA DE CAMPO (ESPELHO FIEL DO PAPEL ENTREGUE) */}
+      {/* DOCUMENTO DA FICHA DE CAMPO  */}
       {/* ============================================================ */}
-      <div className="rounded-3xl border-2 border-slate-300/80 bg-white p-6 sm:p-9 shadow-md print:p-0 print:border-none print:shadow-none font-sans text-slate-800">
-        
-        {/* CABEÇALHO DO PAPEL */}
+      <div
+        id="printable-ficha-campo"
+        className="printable-ficha rounded-3xl border-2 border-slate-300/80 bg-white p-6 sm:p-9 shadow-md print:p-4 print:border-2 print:border-slate-800 print:shadow-none print:rounded-lg font-sans text-slate-800"
+      >
+
+        {/* CABEÇALHO  */}
         <div className="border-b-2 border-slate-800 pb-3 text-center">
           <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-slate-900 font-serif">
             OLERICULTURA – George Guimarães
@@ -221,7 +224,7 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
 
         {/* FORMULÁRIO / DADOS DE IDENTIFICAÇÃO (Linhas do Papel) */}
         <div className="mt-5 space-y-3.5 text-sm">
-          
+
           {/* Linha 1: Grupo */}
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 border-b border-dotted border-slate-400 pb-1.5">
             <span className="font-bold text-slate-900 shrink-0">Grupo:</span>
@@ -229,9 +232,9 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
           </div>
 
           {/* Linha 2: Canteiro, Cultura, Data do Plantio */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-baseline border-b border-dotted border-slate-400 pb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2.5 sm:gap-4 border-b border-dotted border-slate-400 pb-1.5">
             {/* Canteiro */}
-            <div className="sm:col-span-3 flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 shrink-0">
               <span className="font-bold text-slate-900 shrink-0">Canteiro:</span>
               <span className="font-black text-slate-900 underline decoration-slate-400 underline-offset-4">
                 {ficha.canteiroCodigo}
@@ -239,34 +242,40 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
             </div>
 
             {/* Cultura */}
-            <div className="sm:col-span-5 flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 min-w-0 flex-1 sm:px-2">
               <span className="font-bold text-slate-900 shrink-0">Cultura:</span>
-              <span className="text-slate-800 font-semibold">{ficha.cultura}</span>
+              <span className="text-slate-800 font-semibold">
+                {ficha.cultura}
+              </span>
             </div>
 
             {/* Data do Plantio/semeio/transplantio */}
-            <div className="sm:col-span-4 flex items-baseline gap-1.5">
-              <span className="font-bold text-slate-900 text-xs shrink-0">Data do Plantio/semeio/transplantio:</span>
-              <span className="font-mono font-semibold text-slate-800">{ficha.dataPlantio}</span>
+            <div className="flex items-baseline gap-1.5 shrink-0 sm:ml-auto">
+              <span className="font-bold text-slate-900 text-xs shrink-0">
+                Data do Plantio/semeio/transplantio:
+              </span>
+              <span className="font-mono font-bold text-slate-900 whitespace-nowrap">
+                {ficha.dataPlantio}
+              </span>
             </div>
           </div>
 
           {/* Linha 3: Espaçamento, Plantas/canteiro, Plantas/Ha */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-baseline border-b border-dotted border-slate-400 pb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2.5 sm:gap-4 border-b border-dotted border-slate-400 pb-1.5">
             {/* Espaçamento */}
-            <div className="sm:col-span-4 flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 shrink-0">
               <span className="font-bold text-slate-900 shrink-0">Espaçamento:</span>
               <span className="text-slate-800 font-semibold">{ficha.espacamento}</span>
             </div>
 
             {/* Plantas/canteiro */}
-            <div className="sm:col-span-4 flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 shrink-0 sm:px-2">
               <span className="font-bold text-slate-900 shrink-0">Plantas/canteiro:</span>
               <span className="text-slate-800 font-semibold">{ficha.plantasPorCanteiro}</span>
             </div>
 
             {/* Plantas/Ha */}
-            <div className="sm:col-span-4 flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 shrink-0 sm:ml-auto">
               <span className="font-bold text-slate-900 shrink-0">Plantas/Ha:</span>
               <span className="text-slate-800 font-semibold">{ficha.plantasPorHa}</span>
             </div>
@@ -275,15 +284,15 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
           {/* Linha 4: Previsão de Colheita */}
           <div className="flex items-baseline gap-2 border-b border-dotted border-slate-400 pb-1.5">
             <span className="font-bold text-slate-900 shrink-0">Previsão de Colheita:</span>
-            <span className="font-mono font-semibold text-slate-800">{ficha.previsaoColheita}</span>
+            <span className="font-mono font-bold text-slate-900">{ficha.previsaoColheita}</span>
           </div>
         </div>
 
         {/* ============================================================ */}
-        {/* OS 4 QUADROS PRINCIPAIS DE REGISTRO (CONFORME FOLHA DE PAPEL) */}
+        {/* OS 4 QUADROS PRINCIPAIS DE REGISTRO  */}
         {/* ============================================================ */}
         <div className="mt-6 border-2 border-slate-800 divide-y-2 divide-slate-800 rounded-lg overflow-hidden bg-white">
-          
+
           {/* 1. ADUBAÇÃO */}
           <div className="p-4 sm:p-5">
             <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
@@ -332,10 +341,10 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
         {/* ============================================================ */}
         {/* SEÇÃO DE AVALIAÇÃO / VISTO DO PROFESSOR GEORGE GUIMARÃES     */}
         {/* ============================================================ */}
-        <div className="mt-6 rounded-2xl border border-emerald-900/15 bg-gradient-to-br from-emerald-50/50 to-white p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-emerald-900/10 pb-3">
+        <div className="mt-6 rounded-2xl border border-emerald-900/15 bg-gradient-to-br from-emerald-50/50 to-white p-5 print:mt-4 print:border-slate-800 print:bg-white print:rounded-lg print:p-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-emerald-900/10 pb-3 print:border-slate-300">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#27633b] text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#27633b] text-white print:hidden">
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <div>
@@ -345,9 +354,13 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
               </div>
             </div>
 
-            {ficha.vistoProfessor?.assinado && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+            {ficha.vistoProfessor?.assinado ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 print:bg-white print:border print:border-slate-800 print:text-slate-900">
                 ✓ Visto Concedido em {ficha.vistoProfessor.dataVisto}
+              </span>
+            ) : (
+              <span className="hidden print:inline-block text-[11px] font-semibold text-slate-700">
+                Assinatura do Docente: ____________________________
               </span>
             )}
           </div>
@@ -355,10 +368,10 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
           <div className="mt-3 text-xs">
             {perfil === 'professor' ? (
               <div className="space-y-3">
-                <label className="block text-slate-700 font-semibold">
+                <label className="block text-slate-700 font-semibold print:hidden">
                   Parecer do Professor sobre o Manejo do Canteiro:
                 </label>
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 print:hidden">
                   <input
                     type="text"
                     value={parecerInput}
@@ -374,11 +387,18 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
                     <span>{ficha.vistoProfessor?.assinado ? 'Atualizar Visto' : 'Dar Visto na Ficha'}</span>
                   </button>
                 </div>
+                {/* Texto impresso do parecer caso o professor esteja visualizando */}
+                <div className="hidden print:block text-xs">
+                  <span className="font-bold text-slate-800">Parecer do Professor: </span>
+                  <span className="text-slate-700">
+                    {ficha.vistoProfessor?.parecer || '____________________________________________________________________'}
+                  </span>
+                </div>
               </div>
             ) : (
               <div>
                 <span className="font-semibold text-slate-600">Parecer do Docente:</span>
-                <p className="mt-1 italic text-slate-700 bg-white/70 p-2.5 rounded-xl border border-emerald-100">
+                <p className="mt-1 italic text-slate-700 bg-white/70 p-2.5 rounded-xl border border-emerald-100 print:bg-white print:border-none print:p-0">
                   {ficha.vistoProfessor?.parecer || 'Aguardando avaliação presencial do Prof. George Guimarães.'}
                 </p>
               </div>

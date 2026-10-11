@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
+
 /* Libra Serif Modern - Regular */
 @font-face {
   font-family: 'Libra Serif Modern';
@@ -66,6 +67,32 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* CURSOR POINTER PADRÃO PARA ELEMENTOS CLICÁVEIS */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+a,
+select,
+summary,
+input[type="submit"],
+input[type="reset"],
+input[type="button"],
+input[type="checkbox"],
+input[type="radio"],
+label[for],
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 
 /* Base button styles */
 .btn {
