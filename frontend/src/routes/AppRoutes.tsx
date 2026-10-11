@@ -22,6 +22,9 @@ const MapaPage = React.lazy(() =>
 const CanteiroDetailPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/CanteiroDetailPage').then((m) => ({ default: m.CanteiroDetailPage }))
 );
+const PomarPage = React.lazy(() =>
+  import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="flex min-h-screen items-center justify-center bg-[#f4f1e7]">
@@ -49,12 +52,20 @@ export default function AppRoutes() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/confirm-email" element={<ConfirmEmailPage />} />
 
-              {/* Rotas Protegidas - Olericultura (Perfil Professor) */}
+              {/* Rotas Protegidas - Perfil Professor */}
               <Route element={<ProtectedRoute allowedRoles={['PROFESSOR', 'ADMIN']} />}>
                 <Route path="/mapa" element={<MapaPage />} />
                 <Route path="/olericultura/professor/mapa" element={<MapaPage />} />
                 <Route path="/canteiro/:id" element={<CanteiroDetailPage />} />
                 <Route path="/olericultura/professor/canteiro/:id" element={<CanteiroDetailPage />} />
+                <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
+              </Route>
+
+              {/* Rotas Protegidas - Perfil Aluno */}
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO', 'ADMIN']} />}>
+                <Route path="/olericultura/aluno/mapa" element={<MapaPage />} />
+                <Route path="/olericultura/aluno/canteiro/:id" element={<CanteiroDetailPage />} />
+                <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -52,7 +52,10 @@ export const MapaPage: React.FC = () => {
   const handleSelectCanteiro = (canteiro: CanteiroData | null) => {
     setSelectedCanteiro(canteiro);
     if (canteiro && redirectDirectlyRef.current) {
-      navigate(`/canteiro/${canteiro.id}`);
+      const detailPath = perfil === 'aluno'
+        ? `/olericultura/aluno/canteiro/${canteiro.id}`
+        : `/canteiro/${canteiro.id}`;
+      navigate(detailPath);
     }
   };
 
@@ -278,7 +281,12 @@ export const MapaPage: React.FC = () => {
           {/* PRIMARY REDIRECTION BUTTON: "Ver mais" */}
           <div className="mt-4 pt-3 border-t border-slate-100">
             <button
-              onClick={() => navigate(`/canteiro/${selectedCanteiro.id}`)}
+              onClick={() => {
+                const detailPath = perfil === 'aluno'
+                  ? `/olericultura/aluno/canteiro/${selectedCanteiro.id}`
+                  : `/canteiro/${selectedCanteiro.id}`;
+                navigate(detailPath);
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#27633b] py-3 px-4 text-xs font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#1a4428] transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
               <span>Ver mais</span>

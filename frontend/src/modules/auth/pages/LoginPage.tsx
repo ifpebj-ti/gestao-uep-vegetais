@@ -64,7 +64,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         }
 
         // Olericultura
-        navigate(role === 'ALUNO' ? '/olericultura/aluno/mapa' : '/mapa', { replace: true });
+        navigate(role === 'ALUNO' ? '/olericultura/aluno/mapa' : '/olericultura/professor/mapa', { replace: true });
     };
 
     const handleSubmit = async (event: React.SyntheticEvent) => {

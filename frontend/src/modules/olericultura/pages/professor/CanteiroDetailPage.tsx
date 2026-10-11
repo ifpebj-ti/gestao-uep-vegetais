@@ -11,19 +11,23 @@ import {
 import { FichaCampoOlericultura } from '../../components/FichaCampoOlericultura';
 import { TerrariumMenu } from '../../components/TerrariumMenu';
 import { BackButton } from '../../../../components/BackButton';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 export const CanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Sidebar Menu State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Active user profile (can be toggled in view if needed, default to professor)
-  const [profile] = useState<'professor' | 'aluno'>('professor');
+  // Active user profile (derived dynamically from authenticated session)
+  const profile: 'professor' | 'aluno' = user?.role?.toLowerCase() === 'aluno' ? 'aluno' : 'professor';
   const [activeTab, setActiveTab] = useState<'ficha' | 'manejo' | 'historico'>('ficha');
 
   const canteiro: CanteiroData | undefined = CANTEIROS_DATA.find((c) => c.id === id);
+
+  const backPath = profile === 'aluno' ? '/olericultura/aluno/mapa' : '/mapa';
 
   if (!canteiro) {
     return (
@@ -37,7 +41,7 @@ export const CanteiroDetailPage: React.FC = () => {
             O identificador solicitado não corresponde a nenhum canteiro ou setor cadastrado.
           </p>
           <BackButton
-            to="/mapa"
+            to={backPath}
             variant="solid"
             className="mt-6 w-full justify-center py-3 text-sm rounded-xl"
           />
@@ -70,7 +74,7 @@ export const CanteiroDetailPage: React.FC = () => {
           </button>
 
           {/* Botão Reutilizável de Voltar */}
-          <BackButton to="/mapa" />
+          <BackButton to={backPath} />
         </div>
       </div>
 
@@ -261,7 +265,7 @@ export const CanteiroDetailPage: React.FC = () => {
       <TerrariumMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        onFocusLocation={() => navigate('/mapa')}
+        onFocusLocation={() => navigate(backPath)}
       />
     </div>
   );
