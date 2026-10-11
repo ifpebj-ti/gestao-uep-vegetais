@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Apple, ArrowLeft, RefreshCw, Sprout } from 'lucide-react';
+import { Apple, ArrowLeft, Sprout } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUep } from '../../../contexts/UepContext';
 
