@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
+import { Button } from '../../../components/Button';
+import { Input } from '../../../components/Input';
 import { AuthLayout } from '../components/AuthLayout';
-import { authService } from '../services/authService';
+import { authService } from '../../../services/authService';
 
 type StatusType = 'idle' | 'loading' | 'success' | 'error';
 

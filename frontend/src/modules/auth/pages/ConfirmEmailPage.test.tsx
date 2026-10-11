@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StrictMode } from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ConfirmEmailPage } from './ConfirmEmailPage';
-import { authService } from '../services/authService';
+import { authService } from '../../../services/authService';
 
 describe('ConfirmEmailPage', () => {
   beforeEach(() => {

@@ -1,13 +1,21 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { UserRole } from '../types/auth';
+import { identifyRoleByEmail } from '../modules/auth/utils/roleIdentifier';
+import { UnauthorizedAccess } from '../components/UnauthorizedAccess';
 
 interface ProtectedRouteProps {
+  /** Lista de papéis permitidos a acessar a rota protegida */
+  allowedRoles?: UserRole[];
   children?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  allowedRoles,
+  children,
+}) => {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -21,8 +29,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Validação RBAC por papel
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = identifyRoleByEmail(user.email, user.role);
+    const hasPermission =
+      allowedRoles.includes(userRole) || userRole === 'ADMIN';
+
+    if (!hasPermission) {
+      return <UnauthorizedAccess userRole={userRole} />;
+    }
   }
 
   return children ? <>{children}</> : <Outlet />;

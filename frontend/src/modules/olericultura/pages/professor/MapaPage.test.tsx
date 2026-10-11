@@ -2,10 +2,19 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { MapaPage } from './MapaPage';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from '../../../../contexts/AuthContext';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock TerrariumMap to avoid WebGL context requirements in jsdom
-vi.mock('../components/TerrariumMap', () => {
+vi.mock('../../components/TerrariumMap', () => {
   return {
     TerrariumMap: ({ onSelectCanteiro }: { onSelectCanteiro: (canteiro: any) => void }) => {
       return (
@@ -108,5 +117,18 @@ describe('MapaPage', () => {
     expect(
       screen.getByRole('button', { name: /ver mais/i })
     ).toBeInTheDocument();
+  });
+
+  it('deve navegar diretamente para a rota do canteiro ao clicar quando a opção "Redirecionar direto" estiver marcada', () => {
+    renderMapaPage();
+
+    const checkbox = screen.getByRole('checkbox', { name: /redirecionar direto ao clicar/i });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    const triggerSelect = screen.getByTestId('simulate-select-canteiro');
+    fireEvent.click(triggerSelect);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/canteiro/c-01');
   });
 });
