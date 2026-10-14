@@ -22,6 +22,9 @@ const MapaPage = React.lazy(() =>
 const CanteiroDetailPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/CanteiroDetailPage').then((m) => ({ default: m.CanteiroDetailPage }))
 );
+const GestaoCanteirosPage = React.lazy(() =>
+  import('../modules/olericultura/pages/professor/GestaoCanteirosPage').then((m) => ({ default: m.GestaoCanteirosPage }))
+);
 const PomarPage = React.lazy(() =>
   import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
 );
@@ -58,6 +61,10 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/mapa" element={<MapaPage />} />
                 <Route path="/canteiro/:id" element={<CanteiroDetailPage />} />
                 <Route path="/olericultura/professor/canteiro/:id" element={<CanteiroDetailPage />} />
+                <Route path="/cronograma" element={<GestaoCanteirosPage />} />
+                <Route path="/olericultura/professor/cronograma" element={<GestaoCanteirosPage />} />
+                <Route path="/gestao-canteiros" element={<GestaoCanteirosPage />} />
+                <Route path="/olericultura/professor/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
               </Route>
 
@@ -65,6 +72,8 @@ export default function AppRoutes() {
               <Route element={<ProtectedRoute allowedRoles={['ALUNO', 'ADMIN']} />}>
                 <Route path="/olericultura/aluno/mapa" element={<MapaPage />} />
                 <Route path="/olericultura/aluno/canteiro/:id" element={<CanteiroDetailPage />} />
+                <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
+                <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
               </Route>
 

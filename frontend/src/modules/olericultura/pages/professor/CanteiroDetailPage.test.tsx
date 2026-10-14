@@ -77,6 +77,34 @@ describe('CanteiroDetailPage', () => {
     expect(screen.getByRole('button', { name: /imprimir ficha/i })).toBeInTheDocument();
   });
 
+  it('deve alternar para a aba de Cronograma Semanal e exibir o cronograma de manejo da aluna', () => {
+    renderCanteiroPage('c-01');
+
+    // Botão da aba Cronograma Semanal (no lugar de Manejo & Irrigação)
+    const btnCronograma = screen.getByRole('button', { name: /cronograma semanal/i });
+    expect(btnCronograma).toBeInTheDocument();
+
+    // Clicar na aba
+    fireEvent.click(btnCronograma);
+
+    // Deve exibir diretamente a tabela de módulos e a indicação de semana atual
+    expect(screen.getByText(/Semana Atual \(HOJE\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Módulo 1')).toBeInTheDocument();
+    expect(screen.getByText('Módulo 2')).toBeInTheDocument();
+  });
+
+  it('deve exibir o cronograma específico de Daniela Gusmão para o canteiro C18 (Alface Roxa)', () => {
+    renderCanteiroPage('c-18');
+
+    const btnCronograma = screen.getByRole('button', { name: /cronograma semanal/i });
+    fireEvent.click(btnCronograma);
+
+    expect(screen.getAllByText('Alface Roxa').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Daniela Gusmão/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('Módulo 1')).toBeInTheDocument();
+    expect(screen.getByText('Módulo 2')).toBeInTheDocument();
+  });
+
   it('deve exibir mensagem de erro para canteiro inexistente', () => {
     renderCanteiroPage('inexistente');
 
