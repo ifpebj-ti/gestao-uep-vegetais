@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CANTEIROS_DATA, CanteiroData } from '../../data/horticulturaData';
 import {
@@ -13,6 +13,14 @@ import { CronogramaSemanal } from '../../components/CronogramaSemanal';
 import { TerrariumMenu } from '../../components/TerrariumMenu';
 import { BackButton } from '../../../../components/BackButton';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { FichaCampoData, normalizarEspacamento } from '../../components/FichaCampoOlericultura';
+import { ApiError } from '../../../../services/apiClient';
+import {
+  AlunoResumo,
+  FichaCampoApi,
+  ModeloCultivoApi,
+  canteiroService,
+} from '../../../../services/canteiroService';
 
 export const CanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,13 +30,160 @@ export const CanteiroDetailPage: React.FC = () => {
   // Sidebar Menu State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Active user profile (derived dynamically from authenticated session)
-  const profile: 'professor' | 'aluno' = user?.role?.toLowerCase() === 'aluno' ? 'aluno' : 'professor';
+  const profile: 'professor' | 'aluno' =
+    user?.role?.toUpperCase() === 'PROFESSOR' || user?.role?.toUpperCase() === 'ADMIN'
+      ? 'professor'
+      : 'aluno';
+  const backPath = profile === 'aluno' ? '/olericultura/aluno/mapa' : '/mapa';
+  const [fichaInicial, setFichaInicial] = useState<FichaCampoData | null>(null);
+  const [podeEditar, setPodeEditar] = useState(false);
+  const [carregandoFicha, setCarregandoFicha] = useState(false);
+  const [erroFicha, setErroFicha] = useState('');
+  const [responsaveis, setResponsaveis] = useState<AlunoResumo[]>([]);
+  const [alunos, setAlunos] = useState<AlunoResumo[]>([]);
+  const [idsResponsaveis, setIdsResponsaveis] = useState<string[]>([]);
+  const [salvandoEquipe, setSalvandoEquipe] = useState(false);
+  const [mensagemEquipe, setMensagemEquipe] = useState('');
+  const [modelosCultivo, setModelosCultivo] = useState<ModeloCultivoApi[]>([]);
+  const [modeloSelecionado, setModeloSelecionado] = useState<ModeloCultivoApi | null>(null);
   const [activeTab, setActiveTab] = useState<'ficha' | 'cronograma' | 'historico'>('ficha');
 
   const canteiro: CanteiroData | undefined = CANTEIROS_DATA.find((c) => c.id === id);
 
-  const backPath = profile === 'aluno' ? '/olericultura/aluno/mapa' : '/mapa';
+  const converterFicha = (dados: FichaCampoApi): FichaCampoData => ({
+    grupo: dados.grupo || '',
+    canteiroCodigo: dados.canteiroCodigo || '',
+    cultura: dados.cultura || '',
+    variedade: dados.variedade || '',
+    dataPlantio: dados.dataPlantio || '',
+    espacamento: normalizarEspacamento(dados.espacamento),
+    plantasPorCanteiro: dados.plantasPorCanteiro || '',
+    previsaoColheita: dados.previsaoColheita || '',
+    adubacao: dados.adubacao || '',
+    controlePragas: dados.controlePragas || '',
+    limpaCapina: dados.limpaCapina || '',
+    obs: dados.obs || '',
+    statusEntrega: (dados.statusEntrega || 'pendente') as FichaCampoData['statusEntrega'],
+    dataEntrega: dados.dataEntrega || '',
+    vistoProfessor: {
+      assinado: dados.vistoAssinado,
+      dataVisto: dados.dataVisto || undefined,
+      parecer: dados.parecer || undefined,
+    },
+    persistida: dados.persistida,
+    updatedAt: dados.updatedAt,
+    updatedBy: dados.updatedBy,
+    modeloCultivoId: dados.modeloCultivoId,
+    areaCanteiroM2: dados.areaCanteiroM2,
+    plantasPorCanteiroValor: dados.plantasPorCanteiroValor,
+    previsaoKg: dados.previsaoKg,
+  });
+
+  useEffect(() => {
+    if (!id || !user) return;
+
+    let ativo = true;
+    setCarregandoFicha(true);
+    setErroFicha('');
+    canteiroService.getFicha(id)
+      .then((dados) => {
+        if (!ativo) return;
+        setFichaInicial(converterFicha(dados));
+        setPodeEditar(true);
+      })
+      .catch((erro: unknown) => {
+        if (!ativo) return;
+        const mensagem = erro instanceof ApiError && erro.status === 403
+          ? 'Você não tem permissão para acessar a ficha deste canteiro.'
+          : erro instanceof Error ? erro.message : 'Não foi possível carregar a ficha do servidor.';
+        setErroFicha(mensagem);
+      })
+      .finally(() => {
+        if (ativo) setCarregandoFicha(false);
+      });
+
+      canteiroService.getResponsaveis(id)
+        .then((atuais) => {
+          if (!ativo) return;
+          setResponsaveis(atuais);
+          setIdsResponsaveis(atuais.map((aluno) => aluno.id));
+        })
+        .catch(() => {
+          if (ativo) setResponsaveis([]);
+        });
+    if (profile === 'professor') {
+      canteiroService.getAlunos()
+        .then((disponiveis) => {
+          if (!ativo) return;
+          setAlunos(disponiveis);
+        })
+        .catch(() => {
+          if (ativo) setMensagemEquipe('Não foi possível carregar a equipe responsável.');
+        });
+    }
+
+    return () => { ativo = false; };
+  }, [id, user, profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    canteiroService.getModelosCultivo()
+      .then(setModelosCultivo)
+      .catch(() => setModelosCultivo([]));
+  }, [user]);
+
+  const salvarFicha = async (ficha: FichaCampoData) => {
+    if (!id) return;
+    const salva = await canteiroService.saveFicha(id, {
+      canteiroId: id,
+      grupo: ficha.grupo,
+      canteiroCodigo: ficha.canteiroCodigo,
+      cultura: ficha.cultura,
+      variedade: ficha.variedade,
+      dataPlantio: ficha.dataPlantio,
+      espacamento: ficha.espacamento,
+      plantasPorCanteiro: ficha.plantasPorCanteiro,
+      previsaoColheita: ficha.previsaoColheita,
+      adubacao: ficha.adubacao,
+      controlePragas: ficha.controlePragas,
+      limpaCapina: ficha.limpaCapina,
+      obs: ficha.obs,
+      statusEntrega: ficha.statusEntrega,
+      dataEntrega: ficha.dataEntrega || null,
+      vistoAssinado: ficha.vistoProfessor?.assinado || false,
+      dataVisto: ficha.vistoProfessor?.dataVisto || null,
+      parecer: ficha.vistoProfessor?.parecer || null,
+      updatedAt: null,
+      updatedBy: null,
+      persistida: ficha.persistida || false,
+      modeloCultivoId: ficha.modeloCultivoId || null,
+      areaCanteiroM2: ficha.areaCanteiroM2 ?? canteiro?.areaM2 ?? null,
+      plantasPorCanteiroValor: ficha.plantasPorCanteiroValor || null,
+      previsaoKg: ficha.previsaoKg || null,
+    });
+    setFichaInicial(converterFicha(salva));
+  };
+
+  const salvarModelo = async (modelo: ModeloCultivoApi) => {
+    const atualizado = await canteiroService.updateModeloCultivo(modelo.id, modelo);
+    setModelosCultivo((atuais) => atuais.map((item) => item.id === atualizado.id ? atualizado : item));
+    setModeloSelecionado((atual) => atual?.id === atualizado.id ? atualizado : atual);
+  };
+
+  const salvarEquipe = async () => {
+    if (!id || idsResponsaveis.length > 3) return;
+    setSalvandoEquipe(true);
+    setMensagemEquipe('');
+    try {
+      await canteiroService.saveResponsaveis(id, idsResponsaveis);
+      setResponsaveis(alunos.filter((aluno) => idsResponsaveis.includes(aluno.id)));
+      setMensagemEquipe('Equipe responsável salva com sucesso.');
+    } catch (erro) {
+      setMensagemEquipe(erro instanceof Error ? erro.message : 'Não foi possível salvar a equipe.');
+    } finally {
+      setSalvandoEquipe(false);
+    }
+  };
 
   if (!canteiro) {
     return (
@@ -55,6 +210,16 @@ export const CanteiroDetailPage: React.FC = () => {
     100,
     Math.round((canteiro.diasPlantio / Math.max(canteiro.diasPrevistosColheita, 1)) * 100)
   );
+
+  const modeloDaFicha = modelosCultivo.find((modelo) => modelo.id === fichaInicial?.modeloCultivoId) || null;
+  const modeloExibido = modeloSelecionado || modeloDaFicha;
+  const culturaExibida = modeloExibido?.cultura?.trim() || fichaInicial?.cultura?.trim() || canteiro.cultura;
+  const nomeCientificoExibido = modeloExibido?.variedade?.trim() || fichaInicial?.variedade?.trim() || canteiro.variedade;
+  const equipeExibida: AlunoResumo[] = responsaveis.length > 0
+    ? responsaveis
+    : canteiro.estudanteLider
+      ? [{ id: `fallback-${canteiro.id}`, nome: canteiro.estudanteLider, email: '' }]
+      : [];
 
   return (
     <div className="min-h-screen bg-[#f5f8f3] text-slate-800 pb-16 font-sans print:min-h-0 print:bg-white print:p-0 print:m-0">
@@ -89,7 +254,7 @@ export const CanteiroDetailPage: React.FC = () => {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 
             {/* Informações Básicas do Canteiro */}
-            <div className="space-y-3">
+            <div className="min-w-0 flex-1 space-y-3">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#27633b] font-mono text-sm font-bold text-white shadow-sm">
                   {canteiro.codigo}
@@ -106,26 +271,35 @@ export const CanteiroDetailPage: React.FC = () => {
               </div>
 
               <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                  {canteiro.cultura}
+                <h1 className="break-words text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                  {culturaExibida}
                 </h1>
-                {canteiro.variedade && (
+                {nomeCientificoExibido && (
                   <p className="mt-1 text-sm font-medium italic text-slate-500">
-                    Variedade: {canteiro.variedade}
+                    Nome científico: {nomeCientificoExibido}
                   </p>
                 )}
               </div>
             </div>
 
             {/* Grupo Responsável e Turma (Diretamente no card maior) */}
-            <div className="flex flex-col justify-center gap-3 sm:min-w-[240px] sm:text-right shrink-0">
+            <div className="min-w-0 flex-1 space-y-3 sm:max-w-[380px] sm:min-w-[240px] sm:text-right">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
                   Grupo Responsável:
                 </span>
-                <p className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
-                  {canteiro.estudanteLider}
-                </p>
+                <div className="mt-1 flex flex-wrap justify-start gap-1.5 sm:justify-end">
+                  {equipeExibida.length > 0 ? equipeExibida.map((aluno) => (
+                    <span
+                      key={aluno.id}
+                      className="max-w-full break-words rounded-lg bg-white/75 px-2 py-1 text-sm font-bold text-slate-900 shadow-sm"
+                    >
+                      {aluno.nome}
+                    </span>
+                  )) : (
+                    <span className="text-sm font-semibold text-slate-500">Equipe não definida</span>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -161,7 +335,60 @@ export const CanteiroDetailPage: React.FC = () => {
         {/* ======================================================== */}
         {/* 3. SEÇÃO PRINCIPAL (LARGURA TOTAL): ABAS E FICHA DE CAMPO*/}
         {/* ======================================================== */}
-        <div className="mt-8 space-y-6 print:mt-0 print:space-y-0">
+        <div className="mt-8 space-y-6">
+          {user && carregandoFicha && (
+            <div className="rounded-xl border border-emerald-100 bg-white p-4 text-sm text-slate-600 shadow-sm">
+              Carregando a ficha persistida do servidor...
+            </div>
+          )}
+
+          {user && erroFicha && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">
+              {erroFicha}
+            </div>
+          )}
+
+          {user && profile === 'professor' && !erroFicha && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">Equipe responsável pelo canteiro</h2>
+                  <p className="text-xs text-slate-500">Selecione até três alunos. Todos os selecionados poderão editar a ficha.</p>
+                </div>
+                <button
+                  onClick={salvarEquipe}
+                  disabled={salvandoEquipe || idsResponsaveis.length > 3}
+                  className="rounded-xl bg-[#27633b] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#1a4428] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {salvandoEquipe ? 'Salvando...' : 'Salvar equipe'}
+                </button>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {alunos.map((aluno) => {
+                  const selecionado = idsResponsaveis.includes(aluno.id);
+                  return (
+                    <label key={aluno.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-100 p-2 text-xs hover:bg-emerald-50">
+                      <input
+                        type="checkbox"
+                        checked={selecionado}
+                        onChange={() => setIdsResponsaveis((atuais) => selecionado
+                          ? atuais.filter((idAluno) => idAluno !== aluno.id)
+                          : [...atuais, aluno.id])}
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-slate-800">{aluno.nome}</span>
+                        <span className="block truncate text-slate-500">{aluno.email}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {idsResponsaveis.length > 3 && (
+                <p className="mt-2 text-xs font-semibold text-red-700">A equipe deve possuir no máximo três alunos.</p>
+              )}
+              {mensagemEquipe && <p className="mt-2 text-xs font-semibold text-emerald-700">{mensagemEquipe}</p>}
+            </section>
+          )}
 
           {/* Navegação entre Abas (Sem "Parâmetros Agronômicos") */}
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto print:hidden">
@@ -201,6 +428,12 @@ export const CanteiroDetailPage: React.FC = () => {
             <FichaCampoOlericultura
               canteiro={canteiro}
               perfil={profile}
+              fichaInicial={fichaInicial}
+              podeEditar={user ? podeEditar : false}
+              onSalvar={user ? salvarFicha : undefined}
+              modelosCultivo={modelosCultivo}
+              onSalvarModelo={profile === 'professor' ? salvarModelo : undefined}
+              onModeloSelecionado={setModeloSelecionado}
             />
           )}
 

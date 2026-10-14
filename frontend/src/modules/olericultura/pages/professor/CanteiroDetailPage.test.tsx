@@ -64,7 +64,7 @@ describe('CanteiroDetailPage', () => {
     expect(screen.getByText(/Data do Plantio\/semeio\/transplantio:/i)).toBeInTheDocument();
     expect(screen.getByText(/^Espaçamento:$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Plantas\/canteiro:$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^Plantas\/Ha:$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Plantas\/Ha:$/i)).not.toBeInTheDocument();
     expect(screen.getByText(/^Previsão de Colheita:$/i)).toBeInTheDocument();
 
     // Os 4 quadros principais do papel

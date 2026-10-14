@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AppRoutes from './AppRoutes';
 import * as AuthContextModule from '../contexts/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // Mock Three.js / Canvas heavy components to speed up route testing
 vi.mock('../modules/olericultura/components/TerrariumMap', () => ({
@@ -15,6 +16,12 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
     sessionStorage.clear();
   });
 
+  const renderAppRoutes = () => render(
+    <GoogleOAuthProvider clientId="test-client-id">
+      <AppRoutes />
+    </GoogleOAuthProvider>
+  );
+
   it('deve direcionar usuário deslogado para a seleção de UEP na raiz (/)', async () => {
     window.history.pushState({}, '', '/');
 
@@ -27,7 +34,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
       logout: vi.fn(),
     });
 
-    render(<AppRoutes />);
+    renderAppRoutes();
 
     expect(await screen.findByText(/Selecione a Unidade de Ensino e Produção/i)).toBeInTheDocument();
     expect(screen.getByText('Olericultura')).toBeInTheDocument();
@@ -46,7 +53,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
       logout: vi.fn(),
     });
 
-    render(<AppRoutes />);
+    renderAppRoutes();
 
     expect(await screen.findByText('Acesse sua conta')).toBeInTheDocument();
   });
@@ -68,7 +75,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
       logout: vi.fn(),
     });
 
-    render(<AppRoutes />);
+    renderAppRoutes();
 
     expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
     expect(screen.getByText('ALUNO')).toBeInTheDocument();
@@ -92,7 +99,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
       logout: vi.fn(),
     });
 
-    render(<AppRoutes />);
+    renderAppRoutes();
 
     expect(await screen.findByTestId('terrarium-map-mock')).toBeInTheDocument();
     expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
@@ -115,7 +122,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
       logout: vi.fn(),
     });
 
-    render(<AppRoutes />);
+    renderAppRoutes();
 
     expect(await screen.findByTestId('terrarium-map-mock')).toBeInTheDocument();
     expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
