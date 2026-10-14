@@ -11,7 +11,14 @@ export function identifyRoleByEmail(email: string, defaultRole?: string): UserRo
     return (defaultRole as UserRole) || 'ALUNO';
   }
 
-  const parts = email.toLowerCase().trim().split('@');
+  const normalized = email.toLowerCase().trim();
+
+  // Exceção autorizada para demonstração: usuário com papel docente
+  if (normalized === 'ifl1@discente.ifpe.edu.br') {
+    return 'PROFESSOR';
+  }
+
+  const parts = normalized.split('@');
   const domain = parts[1];
 
   if (domain === ACADEMIC_DOMAINS.ALUNO) {
