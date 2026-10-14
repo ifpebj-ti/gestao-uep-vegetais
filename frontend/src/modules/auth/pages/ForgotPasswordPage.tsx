@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sprout } from 'lucide-react';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { APP_CONFIG } from '../config/constants';
+import { Button } from '../../../components/Button';
+import { Input } from '../../../components/Input';
+import { APP_CONFIG } from '../../../config/constants';
 
 export const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState('');

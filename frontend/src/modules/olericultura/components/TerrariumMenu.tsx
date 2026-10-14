@@ -10,11 +10,10 @@ import {
   FileText,
   Settings,
   LogOut,
-  Calendar,
   Droplets,
 } from 'lucide-react';
-import { APP_CONFIG } from '../config/constants';
-import { useAuth } from '../contexts/AuthContext';
+import { APP_CONFIG } from '../../../config/constants';
+import { useAuth } from '../../../contexts/AuthContext';
 import { PerfilUsuario } from '../data/horticulturaData';
 
 export interface TerrariumMenuProps {
@@ -43,7 +42,8 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
   })();
 
   const nomeUsuario = user?.nome || 'Usuário';
-  const isMapActive = location.pathname === '/mapa' || location.pathname === '/map';
+  const mapPath = perfil === 'aluno' ? '/olericultura/aluno/mapa' : '/mapa';
+  const isMapActive = location.pathname.includes('mapa') || location.pathname === '/map';
 
   const handleNavigate = (path: string) => {
     onClose();
@@ -55,12 +55,12 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
     if (onFocusLocation) {
       onFocusLocation(locationId);
     } else {
-      navigate('/mapa');
+      navigate(mapPath);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex print:hidden">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -133,7 +133,7 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
             </div>
           ) : (
             <button
-              onClick={() => handleNavigate('/mapa')}
+              onClick={() => handleNavigate(mapPath)}
               className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition"
             >
               <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
           )}
 
           <button
-            onClick={() => handleNavigate('/canteiro/c-01')}
+            onClick={() => handleNavigate('/gestao-canteiros')}
             className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition"
           >
             <div className="flex items-center gap-3">
@@ -163,17 +163,6 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
             <div className="flex items-center gap-3">
               <Leaf className="h-4 w-4 text-emerald-600" />
               <span>Modelos de Culturas</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          </button>
-
-          <button
-            onClick={() => alert('Módulo de Cronograma de Plantio em desenvolvimento')}
-            className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span>Cronograma de Manejo</span>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </button>

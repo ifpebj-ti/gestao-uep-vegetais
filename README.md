@@ -118,42 +118,56 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 gestao-uep-vegetais/
 ├── .github/
 │   ├── workflows/
-│   │   └── ci.yml                 # Pipeline automatizada de CI/CD (Lint, Test, Build, Trivy, GHCR)
-│   ├── issue_template.md          # Template padronizado para Issues
-│   └── pull_request_template.md   # Template padronizado para Pull Requests
+│   │   ├── ci.yml                     # Pipeline automatizada de CI/CD (Lint, Test, Build, Trivy, GHCR)
+│   │   ├── require-linked-issue.yml   # Validação de Issue vinculada ao Pull Request
+│   │   └── update-release-notes.yml   # Automação de notas de release a partir de PRs
+│   ├── dependabot.yml                 # Gestão automatizada de dependências (npm, Maven, Actions)
+│   ├── issue_template.md              # Template padronizado para Issues
+│   └── pull_request_template.md       # Template padronizado para Pull Requests
 ├── backend/
 │   ├── src/
 │   │   └── main/
 │   │       ├── java/com/gestao/uep/
-│   │       │   ├── controllers/   # Controllers REST (/api/auth)
-│   │       │   ├── domain/        # Entidades JPA, Enums e DTOs
-│   │       │   ├── infra/         # Segurança Spring Security e Filtro JWT
-│   │       │   ├── services/      # Regras de negócio e geração de tokens
+│   │       │   ├── controllers/       # Controllers REST (/api/auth)
+│   │       │   ├── domain/            # Entidades JPA, Enums e DTOs
+│   │       │   ├── infra/             # Segurança Spring Security e Filtro JWT
+│   │       │   ├── services/          # Regras de negócio e geração de tokens
 │   │       │   └── GestaoUepApplication.java
 │   │       └── resources/
-│   │           └── application.yml# Configuração de portas, datasource e JWT
-│   ├── Dockerfile                 # Multi-stage build (Maven 3.9 + JRE 21 Alpine non-root)
-│   └── pom.xml                    # Dependências e plugins Maven do backend
+│   │           └── application.yml    # Configuração de portas, datasource e JWT
+│   ├── Dockerfile                     # Multi-stage build (Maven 3.9 + JRE 21 Alpine non-root)
+│   └── pom.xml                        # Dependências e plugins Maven do backend
 ├── frontend/
-│   ├── public/                    # Favicons e manifestos estáticos
+│   ├── public/                        # Fontes institucionais (Libra Serif Modern) e assets estáticos
 │   ├── src/
-│   │   ├── components/            # Componentes reutilizáveis (TerrariumMap 3D, TerrariumMenu, FichaCampo, etc.)
-│   │   ├── config/                # Constantes e resolvedor de URL da API
-│   │   ├── contexts/              # Provedor global de autenticação (AuthContext)
-│   │   ├── data/                  # Modelagem de dados agronômicos e canteiros (C01 a C12)
-│   │   ├── pages/                 # Páginas da aplicação (Login, Register, Mapa, CanteiroDetail, etc.)
-│   │   ├── routes/                # Roteamento central com lazy loading e ProtectedRoute
-│   │   └── services/              # Serviços de comunicação (apiClient e authService)
-│   ├── .dockerignore              # Exclusão de segredos e node_modules no contexto Docker
-│   ├── Dockerfile                 # Multi-stage build (Node 20 Alpine + Nginx 1.27 Alpine)
-│   ├── nginx.conf                 # Configuração SPA do Nginx com cabeçalhos OWASP
-│   ├── package.json               # Dependências, scripts (lint, test, build) e tipo ESM
-│   ├── tsconfig.json              # Configurações do compilador TypeScript
-│   └── vite.config.ts             # Configuração do Vite, Vitest e divisão de chunks
-├── .env.example                   # Modelo das variáveis de ambiente necessárias
-├── docker-compose.yml             # Orquestração local dos serviços (PostgreSQL, Backend, Frontend)
-├── LICENSE                        # Licença de uso do projeto
-└── README.md                      # Documentação técnica e visão geral
+│   │   ├── components/                # Componentes do Design System (Button, Input, BackButton, UnauthorizedAccess)
+│   │   ├── config/                    # Constantes e resolvedor de URL da API
+│   │   ├── contexts/                  # Contextos globais da aplicação (AuthContext, UepContext)
+│   │   ├── modules/                   # Módulos de domínio desacoplados e escaláveis
+│   │   │   ├── auth/                  # Autenticação e jornada de entrada
+│   │   │   │   ├── components/        # Layouts e botões de login (AuthLayout, GoogleLoginButton)
+│   │   │   │   ├── pages/             # Telas de pré-login (SelectUepPage), Login, Cadastro e Recuperação
+│   │   │   │   └── utils/             # Identificação automática de perfil por e-mail institucional
+│   │   │   ├── olericultura/          # Módulo UEP 1: Olericultura (hortaliças e canteiros)
+│   │   │   │   ├── components/        # Mapa 3D interativo (TerrariumMap), Menu lateral, Ficha de Campo
+│   │   │   │   ├── data/              # Modelagem de dados agronômicos e canteiros (C01 a C12)
+│   │   │   │   └── pages/
+│   │   │   │       ├── professor/     # Visão Docente (MapaPage, CanteiroDetailPage)
+│   │   │   │       └── aluno/         # Visão Discente (atividades e submissões de campo)
+│   │   │   └── fruticultura/          # Módulo UEP 2: Fruticultura (pomares e parcelas)
+│   │   ├── routes/                    # Roteamento central com lazy loading, aliases e RBAC (ProtectedRoute)
+│   │   ├── services/                  # Serviços de comunicação HTTP (apiClient e authService)
+│   │   └── types/                     # Definições centrais de tipos TypeScript (auth.ts, uep.ts)
+│   ├── .dockerignore                  # Exclusão de segredos e node_modules no contexto Docker
+│   ├── Dockerfile                     # Multi-stage build (Node 20 Alpine + Nginx 1.27 Alpine)
+│   ├── nginx.conf                     # Configuração SPA do Nginx com cabeçalhos OWASP
+│   ├── package.json                   # Dependências, scripts (lint, test, build) e tipo ESM
+│   ├── tsconfig.json                  # Configurações do compilador TypeScript
+│   └── vite.config.ts                 # Configuração do Vite, Vitest e divisão de chunks
+├── .env.example                       # Modelo das variáveis de ambiente necessárias
+├── docker-compose.yml                 # Orquestração local dos serviços (PostgreSQL, Backend, Frontend)
+├── LICENSE                            # Licença de uso do projeto
+└── README.md                          # Documentação técnica e visão geral
 ```
 
 ---
