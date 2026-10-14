@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Repositório JPA para a entidade Usuario.
@@ -22,6 +23,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     Usuario findByEmail(String email);
 
     Usuario findByGoogleSubject(String googleSubject);
+
+    List<Usuario> findAllByRoleOrderByNome(UsuarioRole role);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from Usuario u where u.id = :id")

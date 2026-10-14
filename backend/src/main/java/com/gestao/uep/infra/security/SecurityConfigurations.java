@@ -42,7 +42,11 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                .csrf(Customizer.withDefaults())
+                // A API usa JWT no cabeçalho Authorization e não autenticação por cookie.
+                // Mantemos o filtro CSRF ativo e ignoramos somente os endpoints stateless.
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**", "/actuator/**")
+                )
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

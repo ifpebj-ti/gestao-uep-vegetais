@@ -5,6 +5,7 @@ import { LoginPage } from './LoginPage';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import { UepProvider } from '../../../contexts/UepContext';
 import { authService } from '../../../services/authService';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -18,7 +19,9 @@ describe('LoginPage', () => {
       <MemoryRouter initialEntries={[{ pathname: '/login', state: initialState }]}>
         <AuthProvider>
           <UepProvider>
-            <LoginPage />
+            <GoogleOAuthProvider clientId="test-client-id">
+              <LoginPage />
+            </GoogleOAuthProvider>
           </UepProvider>
         </AuthProvider>
       </MemoryRouter>
