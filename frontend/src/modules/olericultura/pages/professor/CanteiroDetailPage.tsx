@@ -9,6 +9,7 @@ import {
   Menu,
 } from 'lucide-react';
 import { FichaCampoOlericultura } from '../../components/FichaCampoOlericultura';
+import { CronogramaSemanal } from '../../components/CronogramaSemanal';
 import { TerrariumMenu } from '../../components/TerrariumMenu';
 import { BackButton } from '../../../../components/BackButton';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -23,7 +24,7 @@ export const CanteiroDetailPage: React.FC = () => {
 
   // Active user profile (derived dynamically from authenticated session)
   const profile: 'professor' | 'aluno' = user?.role?.toLowerCase() === 'aluno' ? 'aluno' : 'professor';
-  const [activeTab, setActiveTab] = useState<'ficha' | 'manejo' | 'historico'>('ficha');
+  const [activeTab, setActiveTab] = useState<'ficha' | 'cronograma' | 'historico'>('ficha');
 
   const canteiro: CanteiroData | undefined = CANTEIROS_DATA.find((c) => c.id === id);
 
@@ -175,13 +176,14 @@ export const CanteiroDetailPage: React.FC = () => {
               <span>Ficha de Campo (Olericultura)</span>
             </button>
             <button
-              onClick={() => setActiveTab('manejo')}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'manejo'
+              onClick={() => setActiveTab('cronograma')}
+              className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition shrink-0 ${activeTab === 'cronograma'
                   ? 'bg-[#27633b] text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
                 }`}
             >
-              Manejo & Irrigação
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Cronograma Semanal</span>
             </button>
             <button
               onClick={() => setActiveTab('historico')}
@@ -190,7 +192,7 @@ export const CanteiroDetailPage: React.FC = () => {
                   : 'text-slate-600 hover:bg-slate-100'
                 }`}
             >
-              Histórico & Cronograma
+              Histórico & Linha do Tempo
             </button>
           </div>
 
@@ -202,34 +204,13 @@ export const CanteiroDetailPage: React.FC = () => {
             />
           )}
 
-          {/* Aba 2: Manejo & Irrigação */}
-          {activeTab === 'manejo' && (
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
-              <h3 className="text-base font-bold text-slate-900">Protocolo de Manejo Agroecológico</h3>
-              <div className="space-y-3 text-xs">
-                <div className="flex items-start gap-3 rounded-xl border border-slate-100 p-3.5 bg-slate-50/50">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-slate-800">Irrigação Automatizada de Precisão</p>
-                    <p className="text-slate-500 mt-0.5">Programada para 2 pulsos diários às 06:00 e 17:00 com vazão controlada ({canteiro.irrigacao}).</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 rounded-xl border border-slate-100 p-3.5 bg-slate-50/50">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-slate-800">Controle Fitossanitário Preventivo</p>
-                    <p className="text-slate-500 mt-0.5">Aplicação quinzenal de extrato de nim e calda sulfocálcica orgânica certificada.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 rounded-xl border border-slate-100 p-3.5 bg-slate-50/50">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-slate-800">Cobertura Morta (Mulching)</p>
-                    <p className="text-slate-500 mt-0.5">Palhada seca de capim para conservação da umidade e controle de plantas espontâneas.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Aba 2: Cronograma Semanal de Manejo (Substitui 'Manejo & Irrigação') */}
+          {activeTab === 'cronograma' && (
+            <CronogramaSemanal
+              canteiroId={canteiro.id}
+              modo="individual"
+              perfil={profile}
+            />
           )}
 
           {/* Aba 3: Histórico */}

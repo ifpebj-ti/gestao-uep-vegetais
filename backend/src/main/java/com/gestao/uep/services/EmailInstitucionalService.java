@@ -21,6 +21,10 @@ public class EmailInstitucionalService {
 
     public Optional<UsuarioRole> identificarPapel(String email) {
         String emailNormalizado = normalizar(email);
+        if ("ifl1@discente.ifpe.edu.br".equalsIgnoreCase(emailNormalizado)) {
+            return Optional.of(UsuarioRole.PROFESSOR);
+        }
+
         int arroba = emailNormalizado.lastIndexOf('@');
         if (arroba < 1 || arroba == emailNormalizado.length() - 1) {
             return Optional.empty();

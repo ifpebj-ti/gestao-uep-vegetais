@@ -225,7 +225,7 @@ export const CANTEIROS_DATA: CanteiroData[] = [
     professorResponsavel: 'Prof. George Guimarães',
     estudanteLider: 'Letícia Barbosa',
     observacoes: 'Aroma característico intenso, excelente porte e folhas sem sinais de queima solar.',
-    tarefasPendentes: ['Colheita dos primeiros maços para aula prática'],
+    tarefasPendentes: ['Colheita dos primeiros 10 kg para aula prática'],
     posicao: { x: 5, z: 1.5, largura: 5.2, comprimento: 1.6 }
   },
   {

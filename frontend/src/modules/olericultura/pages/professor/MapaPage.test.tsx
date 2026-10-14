@@ -84,7 +84,7 @@ describe('MapaPage', () => {
 
     expect(screen.getByText(/Módulos do Terrarium/i)).toBeInTheDocument();
     expect(screen.getByText(/Gestão de Canteiros/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cronograma de Manejo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Modelos de Culturas/i)).toBeInTheDocument();
 
     const btnFechar = screen.getByRole('button', { name: /fechar menu/i });
     fireEvent.click(btnFechar);
