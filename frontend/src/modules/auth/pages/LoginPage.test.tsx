@@ -2,8 +2,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginPage } from './LoginPage';
-import { AuthProvider } from '../contexts/AuthContext';
-import { authService } from '../services/authService';
+import { AuthProvider } from '../../../contexts/AuthContext';
+import { UepProvider } from '../../../contexts/UepContext';
+import { authService } from '../../../services/authService';
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -12,11 +13,13 @@ describe('LoginPage', () => {
     sessionStorage.clear();
   });
 
-  const renderLoginPage = () => {
+  const renderLoginPage = (initialState?: Record<string, unknown>) => {
     return render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: initialState }]}>
         <AuthProvider>
-          <LoginPage />
+          <UepProvider>
+            <LoginPage />
+          </UepProvider>
         </AuthProvider>
       </MemoryRouter>
     );
@@ -65,6 +68,19 @@ describe('LoginPage', () => {
         senha: '123456',
       });
     });
+  });
 
+  it('deve exibir a UEP padrão como Olericultura e o link para Trocar UEP', () => {
+    renderLoginPage();
+
+    expect(screen.getByText('olericultura')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /trocar uep/i })).toHaveAttribute('href', '/selecionar-uep');
+  });
+
+  it('deve exibir a UEP Fruticultura quando informada via state de navegação', () => {
+    renderLoginPage({ selectedUep: 'fruticultura' });
+
+    expect(screen.getByText('fruticultura')).toBeInTheDocument();
   });
 });
+

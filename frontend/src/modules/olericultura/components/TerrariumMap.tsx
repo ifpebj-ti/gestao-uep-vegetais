@@ -22,6 +22,11 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
   ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery, isTeacherView }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const onSelectCanteiroRef = useRef(onSelectCanteiro);
+
+    useEffect(() => {
+      onSelectCanteiroRef.current = onSelectCanteiro;
+    }, [onSelectCanteiro]);
 
     // Three.js internal references
     const sceneRef = useRef<THREE.Scene | null>(null);
@@ -125,7 +130,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           selectedGroupRef.current = targetGroup;
         }
 
-        onSelectCanteiro(item);
+        onSelectCanteiroRef.current?.(item);
       },
 
       resetView() {
@@ -185,6 +190,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       renderer.toneMappingExposure = 1.15;
       container.innerHTML = '';
       container.appendChild(renderer.domElement);
+      renderer.domElement.style.cursor = 'grab';
       rendererRef.current = renderer;
 
       // 4. CONTROLS
@@ -272,6 +278,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
                 visible: true,
               });
               container.style.cursor = 'pointer';
+              renderer.domElement.style.cursor = 'pointer';
 
               // If hovering on a different canteiro group
               if (hoveredGroupRef.current !== rootGroup) {
@@ -304,14 +311,18 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         setHoveredCanteiro(null);
         setTooltipPos((prev) => ({ ...prev, visible: false }));
         container.style.cursor = 'grab';
+        renderer.domElement.style.cursor = 'grab';
       };
 
       const handlePointerDown = () => {
         container.style.cursor = 'grabbing';
+        renderer.domElement.style.cursor = 'grabbing';
       };
 
       const handlePointerUp = () => {
-        container.style.cursor = hoveredGroupRef.current ? 'pointer' : 'grab';
+        const nextCursor = hoveredGroupRef.current ? 'pointer' : 'grab';
+        container.style.cursor = nextCursor;
+        renderer.domElement.style.cursor = nextCursor;
       };
 
       const handleClick = (e: MouseEvent) => {
@@ -370,7 +381,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
               applyVisualState(clickedGroup, 'selected');
               selectedGroupRef.current = clickedGroup;
 
-              onSelectCanteiro(canteiro);
+              onSelectCanteiroRef.current?.(canteiro);
             }
           }
         }

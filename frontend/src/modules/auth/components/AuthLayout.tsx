@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sprout } from 'lucide-react';
-import { APP_CONFIG } from '../config/constants';
+import { APP_CONFIG } from '../../../config/constants';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
