@@ -48,6 +48,9 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: /language:${{ matrix.language }}
+          # O repositório mantém o CodeQL default setup ativo, que é o responsável
+          # por publicar os resultados. Evita conflito entre duas configurações.
+          upload: never
 
   security-gate:
     name: Block open high/critical CodeQL alerts

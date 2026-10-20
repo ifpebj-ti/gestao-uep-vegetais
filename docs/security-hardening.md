@@ -10,7 +10,7 @@
 ## CI/CD e Code Scanning
 
 - Todos os workflows têm `permissions` explícitas. O CI usa `contents: read`; publicação no GHCR é o único motivo para `packages: write`.
-- CodeQL executa em pushes e pull requests da `main`, além de uma varredura semanal, para Java/Kotlin e JavaScript/TypeScript, usando as consultas `security-and-quality`.
+- O workflow versionado executa CodeQL em pushes e pull requests da `main`, além de uma varredura semanal, para Java/Kotlin e JavaScript/TypeScript, usando as consultas `security-and-quality`. Como o repositório mantém o CodeQL default setup ativo, esse workflow não publica SARIF (`upload: never`); o default setup permanece como fonte oficial dos alertas.
 - O job CodeQL é um check obrigatório da proteção de branch da `main`. Após o processamento, o job `security-gate` consulta os alertas da `main` e falha quando há alerta aberto de severidade alta ou crítica; exceções exigem descarte formal no alerta e aprovação do responsável pela segurança.
 - Trivy permanece como gate de imagem para vulnerabilidades críticas corrigidas.
 
