@@ -23,6 +23,9 @@ FROM eclipse-temurin:21-jre-alpine AS production
 
 WORKDIR /app
 
+# Atualiza pacotes do runtime Alpine para receber correções de segurança.
+RUN apk update && apk upgrade --no-cache
+
 # Crie um usuário não-root para segurança
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
