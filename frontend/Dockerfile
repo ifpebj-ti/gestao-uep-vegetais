@@ -9,7 +9,7 @@
 # =============================================================================
 
 # ---- Estágio 1: Instalação de dependências ----
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY package*.json ./
 RUN npm ci
 
 # ---- Estágio 2: Build da aplicação ----
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
