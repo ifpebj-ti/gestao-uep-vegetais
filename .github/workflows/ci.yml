@@ -11,6 +11,9 @@ on:
 env:
   REGISTRY: ghcr.io
 
+# Cada job declara somente as permissões adicionais de que necessita.
+permissions: {}
+
 jobs:
   # ============================================================
   # 1. Lint e Testes Automatizados
@@ -89,7 +92,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write
 
     steps:
       # Clona o repositorio para o job do Docker
