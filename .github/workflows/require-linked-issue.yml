@@ -16,6 +16,7 @@ permissions:
 jobs:
   linked-issue:
     name: Verify Linked Issue
+    if: github.actor != 'dependabot[bot]'
 
     runs-on: ubuntu-latest
 
