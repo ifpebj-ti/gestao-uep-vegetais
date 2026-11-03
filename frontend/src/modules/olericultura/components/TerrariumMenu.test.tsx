@@ -32,13 +32,14 @@ describe('TerrariumMenu', () => {
     expect(screen.queryByText(/Módulos do Terrarium/i)).not.toBeInTheDocument();
   });
 
-  it('deve renderizar os itens do menu e saudação de boas-vindas quando isOpen for true', () => {
+  it('deve renderizar os itens do menu (incluindo Colheita) e saudação de boas-vindas quando isOpen for true', () => {
     renderTerrariumMenu(true);
 
     expect(screen.getByText(/Módulos do Terrarium/i)).toBeInTheDocument();
     expect(screen.getByText(/Bem - vindo,/i)).toBeInTheDocument();
     expect(screen.getByText(/^Mapa$/i)).toBeInTheDocument();
     expect(screen.getByText(/Gestão de Canteiros/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Colheita$/i)).toBeInTheDocument();
     expect(screen.getByText(/Modelos de Culturas/i)).toBeInTheDocument();
     expect(screen.getByText(/Irrigação & Reservatório/i)).toBeInTheDocument();
     expect(screen.getByText(/Compostagem & Minhocário/i)).toBeInTheDocument();
