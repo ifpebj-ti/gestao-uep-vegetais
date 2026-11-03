@@ -9,8 +9,18 @@ import {
   Clock,
   Sparkles,
   Info,
+  Scale,
+  Plus,
+  Trash2,
+  Calendar,
 } from 'lucide-react';
 import { ModeloCultivoApi, PrevisaoColheitaApi } from '../../../services/canteiroService';
+import {
+  RegistroColheitaItem,
+  obterColheitasDoCanteiro,
+  adicionarRegistroColheita,
+  removerRegistroColheita,
+} from '../data/colheitaStore';
 
 export interface FichaCampoData {
   grupo: string;
@@ -95,6 +105,35 @@ interface FichaCampoOlericulturaProps {
 
 // Helpers para valores agronômicos padrão coerentes com a cultura
 export function getValoresPadrao(canteiro: CanteiroData): FichaCampoData {
+  const isVazio =
+    canteiro.status === 'preparacao' ||
+    canteiro.diasPlantio === 0 ||
+    !canteiro.dataPlantio ||
+    canteiro.cultura.toLowerCase().includes('vazio');
+
+  if (isVazio) {
+    return {
+      grupo: '',
+      canteiroCodigo: canteiro.codigo,
+      variedade: '',
+      cultura: '',
+      dataPlantio: '',
+      espacamento: '',
+      plantasPorCanteiro: '',
+      previsaoColheita: '',
+      adubacao: '',
+      controlePragas: '',
+      limpaCapina: '',
+      obs: '',
+      statusEntrega: 'pendente',
+      dataEntrega: '',
+      vistoProfessor: {
+        assinado: false,
+      },
+      areaCanteiroM2: canteiro.areaM2 || 7.2,
+    };
+  }
+
   const dPlantio = new Date(canteiro.dataPlantio + 'T00:00:00');
   const dColheita = new Date(dPlantio);
   dColheita.setDate(dColheita.getDate() + (canteiro.diasPrevistosColheita || 45));
@@ -162,11 +201,85 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
   const [salvandoModelo, setSalvandoModelo] = useState(false);
   const [modeloEditado, setModeloEditado] = useState<ModeloCultivoApi | null>(null);
 
+  // Estado da colheita realizada neste canteiro (colheita única por ciclo)
+  const [colheitasCanteiro, setColheitasCanteiro] = useState<RegistroColheitaItem[]>(() =>
+    obterColheitasDoCanteiro(canteiro.id, canteiro.codigo)
+  );
+  const [mostrarFormColheita, setMostrarFormColheita] = useState(false);
+  const [pesoNovaColheita, setPesoNovaColheita] = useState('');
+  const [dataNovaColheita, setDataNovaColheita] = useState(() =>
+    new Date().toLocaleDateString('pt-BR')
+  );
+  const [destinoNovaColheita, setDestinoNovaColheita] = useState('Refeitório Estudantil IFPE');
+  const [obsNovaColheita, setObsNovaColheita] = useState('');
+
   useEffect(() => {
     const proximaFicha = fichaInicial || getValoresPadrao(canteiro);
     setFicha(proximaFicha);
     setParecerInput(proximaFicha.vistoProfessor?.parecer || '');
-  }, [canteiro.id, fichaInicial]);
+    setColheitasCanteiro(obterColheitasDoCanteiro(canteiro.id, canteiro.codigo));
+    setMostrarFormColheita(false);
+  }, [canteiro.id, canteiro.codigo, fichaInicial]);
+
+  const colheitaUnica = colheitasCanteiro[0] || null;
+  const podeRegistrarColheita =
+    podeEditar ||
+    (!(ficha.cultura || canteiro.cultura).toLowerCase().includes('vazio') &&
+      canteiro.status !== 'preparacao');
+
+  const abrirFormularioColheita = () => {
+    if (colheitaUnica) {
+      setPesoNovaColheita(String(colheitaUnica.kgProduzidos).replace('.', ','));
+      setDataNovaColheita(colheitaUnica.dataColheita);
+      setDestinoNovaColheita(colheitaUnica.destino);
+      setObsNovaColheita(colheitaUnica.observacao || '');
+    } else {
+      setPesoNovaColheita('');
+      setDataNovaColheita(new Date().toLocaleDateString('pt-BR'));
+      setDestinoNovaColheita('Refeitório Estudantil IFPE');
+      setObsNovaColheita('');
+    }
+    setMostrarFormColheita(true);
+  };
+
+  const handleAdicionarColheitaCanteiro = (e: React.FormEvent) => {
+    e.preventDefault();
+    const kgNum = parseFloat(pesoNovaColheita.replace(',', '.'));
+    if (isNaN(kgNum) || kgNum <= 0) return;
+
+    const previsaoEstimada =
+      ficha.previsaoKg?.previsaoKg ??
+      colheitaUnica?.kgPrevistos ??
+      Number(((canteiro.areaM2 || 7.2) * 3.0).toFixed(1));
+
+    adicionarRegistroColheita({
+      canteiroId: canteiro.id,
+      canteiroCodigo: ficha.canteiroCodigo || canteiro.codigo,
+      cultura: ficha.cultura || canteiro.cultura,
+      variedade: ficha.variedade || canteiro.variedade || 'Hortaliça UEP',
+      turma: canteiro.turmaResponsavel || 'Turma Olericultura',
+      responsavel: ficha.grupo || canteiro.estudanteLider || 'Grupo Responsável',
+      dataColheita: dataNovaColheita.trim() || new Date().toLocaleDateString('pt-BR'),
+      kgProduzidos: kgNum,
+      kgPrevistos: previsaoEstimada,
+      destino: destinoNovaColheita,
+      observacao:
+        obsNovaColheita.trim() || 'Colheita realizada pelo grupo responsável',
+      status: 'colhido',
+    });
+
+    setColheitasCanteiro(obterColheitasDoCanteiro(canteiro.id, canteiro.codigo));
+    setMostrarFormColheita(false);
+    setMensagemSucesso(
+      `Colheita de ${kgNum.toLocaleString('pt-BR')} kg salva na ficha e sincronizada com o painel de Colheita!`
+    );
+    window.setTimeout(() => setMensagemSucesso(''), 4000);
+  };
+
+  const handleRemoverColheitaCanteiro = (colheitaId: string) => {
+    removerRegistroColheita(colheitaId);
+    setColheitasCanteiro(obterColheitasDoCanteiro(canteiro.id, canteiro.codigo));
+  };
 
   useEffect(() => {
     const selecionado = modelosCultivo.find((modelo) => modelo.id === ficha.modeloCultivoId) || null;
@@ -687,6 +800,166 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
             <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-slate-700">
               {ficha.obs || 'Nenhuma observação registrada.'}
             </p>
+          </div>
+
+          {/* 5. COLHEITA REALIZADA NO CANTEIRO (KG) */}
+          <div className="p-4 sm:p-5 bg-emerald-50/30 print:bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                  <Scale className="h-4 w-4 text-[#27633b] print:hidden" />
+                  <span>Colheita Realizada no Canteiro (kg):</span>
+                </h3>
+                {colheitaUnica && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-extrabold text-[#27633b] print:border print:border-slate-800 print:bg-white print:text-slate-900">
+                    {colheitaUnica.kgProduzidos.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    kg colhidos
+                  </span>
+                )}
+              </div>
+
+              {podeRegistrarColheita && !mostrarFormColheita && (
+                <button
+                  type="button"
+                  onClick={abrirFormularioColheita}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#27633b] px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#1f502f] transition print:hidden"
+                >
+                  {!colheitaUnica && <Plus className="h-3.5 w-3.5" />}
+                  <span>
+                    {colheitaUnica ? 'Editar Colheita' : 'Informar Colheita (kg)'}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Formulário para o aluno/professor informar a colheita única deste canteiro */}
+            {podeRegistrarColheita && mostrarFormColheita && (
+              <form
+                onSubmit={handleAdicionarColheitaCanteiro}
+                className="mt-3 rounded-xl border border-emerald-200 bg-white p-3.5 shadow-sm print:hidden"
+              >
+                <div className="mb-2.5 flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-950">
+                    {colheitaUnica
+                      ? `Editar colheita do canteiro ${ficha.canteiroCodigo || canteiro.codigo}`
+                      : `Informar colheita do canteiro ${ficha.canteiroCodigo || canteiro.codigo}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormColheita(false)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Peso colhido (kg) *
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      placeholder="Ex: 24,5"
+                      value={pesoNovaColheita}
+                      onChange={(e) => setPesoNovaColheita(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-slate-900 focus:border-[#27633b] focus:outline-none"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-slate-700">
+                    Data da colheita
+                    <input
+                      type="text"
+                      placeholder="DD/MM/AAAA"
+                      value={dataNovaColheita}
+                      onChange={(e) => setDataNovaColheita(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-normal text-slate-800 focus:border-[#27633b] focus:outline-none"
+                    />
+                  </label>
+
+                  <label className="text-xs font-semibold text-slate-700">
+                    Destino da produção
+                    <select
+                      value={destinoNovaColheita}
+                      onChange={(e) => setDestinoNovaColheita(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-normal text-slate-800 focus:border-[#27633b] focus:outline-none"
+                    >
+                      <option value="Refeitório Estudantil IFPE">Refeitório Estudantil IFPE</option>
+                      <option value="Restaurante Universitário & Feira Agroecológica">
+                        Restaurante Universitário & Feira Agroecológica
+                      </option>
+                      <option value="Feira Agroecológica IFPE">Feira Agroecológica IFPE</option>
+                      <option value="Cozinha Experimental & Refeitório">
+                        Cozinha Experimental & Refeitório
+                      </option>
+                      <option value="Agroindústria & Refeitório">Agroindústria & Refeitório</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="mt-2.5 flex flex-col sm:flex-row sm:items-end gap-2.5">
+                  <label className="flex-1 text-xs font-semibold text-slate-700">
+                    Observação da colheita (opcional)
+                    <input
+                      type="text"
+                      placeholder="Ex: Colheita realizada pelo grupo responsável"
+                      value={obsNovaColheita}
+                      onChange={(e) => setObsNovaColheita(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-normal text-slate-800 focus:border-[#27633b] focus:outline-none"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#27633b] px-4 py-2 text-xs font-bold text-white hover:bg-[#1f502f] transition shrink-0"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Salvar colheita</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Exibição da colheita única do canteiro */}
+            {colheitaUnica ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-900/10 bg-white px-3.5 py-2.5 text-xs shadow-2xs print:border-slate-300">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="font-extrabold text-[#27633b] text-sm">
+                    {colheitaUnica.kgProduzidos.toLocaleString('pt-BR', {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    kg
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                    <Calendar className="h-3.5 w-3.5 text-emerald-700 print:hidden" />
+                    Data: {colheitaUnica.dataColheita}
+                  </span>
+                  <span className="text-slate-600">• Destino: <strong>{colheitaUnica.destino}</strong></span>
+                  {colheitaUnica.observacao && (
+                    <span className="italic text-slate-500">({colheitaUnica.observacao})</span>
+                  )}
+                </div>
+
+                {podeRegistrarColheita && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoverColheitaCanteiro(colheitaUnica.id)}
+                    title="Remover registro de colheita"
+                    className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition print:hidden"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs italic text-slate-500">
+                Nenhuma colheita registrada para este canteiro até o momento.
+              </p>
+            )}
           </div>
         </div>
 

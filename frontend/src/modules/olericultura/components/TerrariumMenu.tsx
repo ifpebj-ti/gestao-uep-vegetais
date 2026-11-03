@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Droplets,
+  Scale,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../config/constants';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -151,6 +152,17 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
             <div className="flex items-center gap-3">
               <Sprout className="h-4 w-4 text-emerald-700" />
               <span>Gestão de Canteiros</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
+
+          <button
+            onClick={() => handleNavigate(perfil === 'aluno' ? '/olericultura/aluno/colheita' : '/colheita')}
+            className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition"
+          >
+            <div className="flex items-center gap-3">
+              <Scale className="h-4 w-4 text-emerald-700" />
+              <span>Colheita</span>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400" />
           </button>

@@ -18,8 +18,11 @@ export interface TerrariumMapProps {
   isTeacherView?: boolean;
 }
 
+// Shared invisible material for fast raycast hitboxes (mesh.visible = true, material.visible = false)
+const HITBOX_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
+
 export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
-  ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery, isTeacherView }, ref) => {
+  ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const onSelectCanteiroRef = useRef(onSelectCanteiro);
@@ -35,23 +38,28 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
     const controlsRef = useRef<OrbitControls | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const interactiveMeshesRef = useRef<Map<string, THREE.Group>>(new Map());
+    const hitboxMeshesRef = useRef<THREE.Mesh[]>([]);
     const waterMeshRef = useRef<THREE.Mesh | null>(null);
 
     // Hover and Selection tracking refs
     const selectedGroupRef = useRef<THREE.Group | null>(null);
     const hoveredGroupRef = useRef<THREE.Group | null>(null);
+    const hoveredCanteiroIdRef = useRef<string | null>(null);
+    const tooltipCoordsRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const isFirstFilterRunRef = useRef(true);
 
-    // Hover tooltip state
+    // Hover tooltip state (only updates when hovered canteiro changes)
     const [hoveredCanteiro, setHoveredCanteiro] = useState<CanteiroData | null>(null);
-    const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number; visible: boolean }>({
-      x: 0,
-      y: 0,
-      visible: false,
-    });
 
     // Initial camera configurations
     const DEFAULT_CAM_POS = new THREE.Vector3(14, 25, 26);
     const DEFAULT_CAM_TARGET = new THREE.Vector3(2.5, 0, 3.5);
+
+    const markShadowDirty = () => {
+      if (rendererRef.current) {
+        rendererRef.current.shadowMap.needsUpdate = true;
+      }
+    };
 
     // Expose methods to parent component (MapaPage)
     useImperativeHandle(ref, () => ({
@@ -64,11 +72,9 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         let targetLookAt = DEFAULT_CAM_TARGET.clone();
 
         if (preset === 'topdown') {
-          // Exactly like the 2D architectural blueprint from Figma
           targetPos = new THREE.Vector3(2.5, 48, 3.5);
           targetLookAt = new THREE.Vector3(2.5, 0, 3.5);
         } else if (preset === 'ground') {
-          // Eye-level aisle walking perspective
           targetPos = new THREE.Vector3(2.5, 2.2, -18);
           targetLookAt = new THREE.Vector3(2.5, 1.2, 5);
         } else if (preset === 'isometric') {
@@ -76,11 +82,13 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           targetLookAt = new THREE.Vector3(2.5, 0, 3.5);
         }
 
+        gsap.killTweensOf([camera.position, controls.target]);
+
         gsap.to(camera.position, {
           x: targetPos.x,
           y: targetPos.y,
           z: targetPos.z,
-          duration: 1.4,
+          duration: 1.2,
           ease: 'power3.inOut',
         });
 
@@ -88,9 +96,8 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           x: targetLookAt.x,
           y: targetLookAt.y,
           z: targetLookAt.z,
-          duration: 1.4,
+          duration: 1.2,
           ease: 'power3.inOut',
-          onUpdate: () => controls.update(),
         });
       },
 
@@ -104,29 +111,30 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         const camera = cameraRef.current;
         const controls = controlsRef.current;
 
+        gsap.killTweensOf([camera.position, controls.target]);
+
         gsap.to(controls.target, {
           x: posX,
           y: 0.6,
           z: posZ,
-          duration: 1.2,
+          duration: 1.0,
           ease: 'power2.inOut',
-          onUpdate: () => controls.update(),
         });
 
         gsap.to(camera.position, {
           x: posX + 6,
           y: 6.5,
           z: posZ + 7,
-          duration: 1.2,
+          duration: 1.0,
           ease: 'power2.inOut',
         });
 
         const targetGroup = interactiveMeshesRef.current.get(canteiroId);
         if (targetGroup) {
           if (selectedGroupRef.current && selectedGroupRef.current !== targetGroup) {
-            applyVisualState(selectedGroupRef.current, 'normal');
+            applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
           }
-          applyVisualState(targetGroup, 'selected');
+          applyVisualState(targetGroup, 'selected', markShadowDirty);
           selectedGroupRef.current = targetGroup;
         }
 
@@ -138,11 +146,13 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         const camera = cameraRef.current;
         const controls = controlsRef.current;
 
+        gsap.killTweensOf([camera.position, controls.target]);
+
         gsap.to(camera.position, {
           x: DEFAULT_CAM_POS.x,
           y: DEFAULT_CAM_POS.y,
           z: DEFAULT_CAM_POS.z,
-          duration: 1.2,
+          duration: 1.0,
           ease: 'power2.inOut',
         });
 
@@ -150,13 +160,12 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           x: DEFAULT_CAM_TARGET.x,
           y: DEFAULT_CAM_TARGET.y,
           z: DEFAULT_CAM_TARGET.z,
-          duration: 1.2,
+          duration: 1.0,
           ease: 'power2.inOut',
-          onUpdate: () => controls.update(),
         });
 
         if (selectedGroupRef.current) {
-          applyVisualState(selectedGroupRef.current, 'normal');
+          applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
           selectedGroupRef.current = null;
         }
       },
@@ -166,28 +175,32 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       const container = containerRef.current;
       if (!container) return;
 
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 600;
 
-      // 1. SCENE
+      // 1. SCENE (Clean warm cream background, no grayish fog)
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color('#eef3e9');
-      scene.fog = new THREE.FogExp2('#eef3e9', 0.009);
+      scene.background = new THREE.Color('#f4f1e7');
       sceneRef.current = scene;
 
       // 2. CAMERA
-      const camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 300);
+      const camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 350);
       camera.position.copy(DEFAULT_CAM_POS);
       cameraRef.current = camera;
 
-      // 3. RENDERER
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      // 3. RENDERER (NoToneMapping prevents ACES grayish desaturation)
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: 'high-performance',
+      });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.shadowMap.autoUpdate = false;
+      renderer.shadowMap.needsUpdate = true;
+      renderer.toneMapping = THREE.NoToneMapping;
       container.innerHTML = '';
       container.appendChild(renderer.domElement);
       renderer.domElement.style.cursor = 'grab';
@@ -196,7 +209,10 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       // 4. CONTROLS
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
+      controls.dampingFactor = 0.07;
+      controls.rotateSpeed = 0.85;
+      controls.zoomSpeed = 1.0;
+      controls.panSpeed = 0.85;
       controls.maxPolarAngle = Math.PI / 2.08;
       controls.minDistance = 6;
       controls.maxDistance = 75;
@@ -204,22 +220,22 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       controls.update();
       controlsRef.current = controls;
 
-      // 5. LIGHTING
-      const ambientLight = new THREE.AmbientLight('#ffffff', 0.85);
+      // 5. LIGHTING (Bright, natural daylight without gray cast)
+      const ambientLight = new THREE.AmbientLight('#ffffff', 1.15);
       scene.add(ambientLight);
 
-      const hemiLight = new THREE.HemisphereLight('#f1f8e9', '#8d6e63', 0.65);
+      const hemiLight = new THREE.HemisphereLight('#ffffff', '#f4f1e7', 0.55);
       hemiLight.position.set(0, 50, 0);
       scene.add(hemiLight);
 
-      const sunLight = new THREE.DirectionalLight('#fff8e7', 1.7);
+      const sunLight = new THREE.DirectionalLight('#fffdf7', 1.35);
       sunLight.position.set(30, 45, 25);
       sunLight.castShadow = true;
-      sunLight.shadow.mapSize.width = 2048;
-      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.mapSize.width = 1024;
+      sunLight.shadow.mapSize.height = 1024;
       sunLight.shadow.camera.near = 0.5;
       sunLight.shadow.camera.far = 120;
-      sunLight.shadow.bias = -0.0003;
+      sunLight.shadow.bias = -0.0005;
       const d = 32;
       sunLight.shadow.camera.left = -d;
       sunLight.shadow.camera.right = d;
@@ -227,133 +243,153 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       sunLight.shadow.camera.bottom = -d;
       scene.add(sunLight);
 
-      const fillLight = new THREE.DirectionalLight('#c8e6c9', 0.5);
-      fillLight.position.set(-25, 20, -20);
-      scene.add(fillLight);
-
       // 6. ENVIRONMENT & GROUND
       buildEnvironment(scene);
 
       // 7. BUILD ALL HORTICULTURE SECTORS & CANTEIROS
       interactiveMeshesRef.current.clear();
-      buildHorticultureSectors(scene, interactiveMeshesRef.current, (waterMesh) => {
-        waterMeshRef.current = waterMesh;
-      });
+      hitboxMeshesRef.current = [];
+      buildHorticultureSectors(
+        scene,
+        interactiveMeshesRef.current,
+        hitboxMeshesRef.current,
+        (waterMesh) => {
+          waterMeshRef.current = waterMesh;
+        }
+      );
 
-      // 8. RAYCASTING & INTERACTION
+      renderer.shadowMap.needsUpdate = true;
+
+      // 8. RAYCASTING & INTERACTION (Skipped while rotating/dragging camera for 0 lag)
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
+      let isDragging = false;
+      let pointerMovedWhileDown = false;
+      let downX = 0;
+      let downY = 0;
+      let lastRaycastTime = 0;
 
-      const handlePointerMove = (e: MouseEvent) => {
-        const rect = container.getBoundingClientRect();
-        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-
-        const interactiveGroups = Array.from(interactiveMeshesRef.current.values());
-        const intersects = raycaster.intersectObjects(interactiveGroups, true);
-
-        if (intersects.length > 0) {
-          let currentObj: THREE.Object3D | null = intersects[0].object;
-          let foundCanteiroId: string | null = null;
-          let rootGroup: THREE.Group | null = null;
-
-          while (currentObj && currentObj !== scene) {
-            if (currentObj.userData && currentObj.userData.canteiroId) {
-              foundCanteiroId = currentObj.userData.canteiroId;
-              rootGroup = currentObj as THREE.Group;
-              break;
-            }
-            currentObj = currentObj.parent;
-          }
-
-          if (foundCanteiroId && rootGroup) {
-            const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId);
-            if (canteiro) {
-              setHoveredCanteiro(canteiro);
-              setTooltipPos({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-                visible: true,
-              });
-              container.style.cursor = 'pointer';
-              renderer.domElement.style.cursor = 'pointer';
-
-              // If hovering on a different canteiro group
-              if (hoveredGroupRef.current !== rootGroup) {
-                // If previous hovered group is NOT selected, reset it to normal
-                if (hoveredGroupRef.current && hoveredGroupRef.current !== selectedGroupRef.current) {
-                  applyVisualState(hoveredGroupRef.current, 'normal');
-                }
-
-                // If new rootGroup is NOT the selected one, apply hover green
-                if (rootGroup !== selectedGroupRef.current) {
-                  applyVisualState(rootGroup, 'hover');
-                }
-
-                hoveredGroupRef.current = rootGroup;
-              }
-              return;
-            }
-          }
+      const updateTooltipPosition = (x: number, y: number) => {
+        tooltipCoordsRef.current = { x, y };
+        if (tooltipRef.current) {
+          tooltipRef.current.style.transform = `translate3d(${x + 16}px, ${y + 16}px, 0)`;
         }
-
-        // Mouse is not over any canteiro
-        if (hoveredGroupRef.current) {
-          // If the group that was hovered is NOT the selected one, reset to normal
-          if (hoveredGroupRef.current !== selectedGroupRef.current) {
-            applyVisualState(hoveredGroupRef.current, 'normal');
-          }
-          hoveredGroupRef.current = null;
-        }
-
-        setHoveredCanteiro(null);
-        setTooltipPos((prev) => ({ ...prev, visible: false }));
-        container.style.cursor = 'grab';
-        renderer.domElement.style.cursor = 'grab';
       };
 
-      const handlePointerDown = () => {
+      const handlePointerDown = (e: MouseEvent) => {
+        isDragging = true;
+        pointerMovedWhileDown = false;
+        downX = e.clientX;
+        downY = e.clientY;
         container.style.cursor = 'grabbing';
         renderer.domElement.style.cursor = 'grabbing';
       };
 
       const handlePointerUp = () => {
+        isDragging = false;
         const nextCursor = hoveredGroupRef.current ? 'pointer' : 'grab';
         container.style.cursor = nextCursor;
         renderer.domElement.style.cursor = nextCursor;
       };
 
+      const handlePointerMove = (e: MouseEvent) => {
+        if (isDragging) {
+          if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) {
+            pointerMovedWhileDown = true;
+            if (hoveredCanteiroIdRef.current !== null) {
+              hoveredCanteiroIdRef.current = null;
+              setHoveredCanteiro(null);
+            }
+          }
+          return;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const localX = e.clientX - rect.left;
+        const localY = e.clientY - rect.top;
+
+        if (hoveredCanteiroIdRef.current) {
+          updateTooltipPosition(localX, localY);
+        }
+
+        // Throttle raycast to ~30Hz while hovering so mouse move never blocks rendering
+        const now = performance.now();
+        if (now - lastRaycastTime < 32) return;
+        lastRaycastTime = now;
+
+        mouse.x = (localX / rect.width) * 2 - 1;
+        mouse.y = -(localY / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(hitboxMeshesRef.current, false);
+
+        if (intersects.length > 0) {
+          const hitMesh = intersects[0].object;
+          const foundCanteiroId = hitMesh.userData.canteiroId as string | undefined;
+          const rootGroup = hitMesh.userData.rootGroup as THREE.Group | undefined;
+
+          if (foundCanteiroId && rootGroup) {
+            updateTooltipPosition(localX, localY);
+            if (hoveredCanteiroIdRef.current !== foundCanteiroId) {
+              hoveredCanteiroIdRef.current = foundCanteiroId;
+              const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId) || null;
+              setHoveredCanteiro(canteiro);
+            }
+
+            container.style.cursor = 'pointer';
+            renderer.domElement.style.cursor = 'pointer';
+
+            if (hoveredGroupRef.current !== rootGroup) {
+              if (hoveredGroupRef.current && hoveredGroupRef.current !== selectedGroupRef.current) {
+                applyVisualState(hoveredGroupRef.current, 'normal', markShadowDirty);
+              }
+              if (rootGroup !== selectedGroupRef.current) {
+                applyVisualState(rootGroup, 'hover', markShadowDirty);
+              }
+              hoveredGroupRef.current = rootGroup;
+            }
+            return;
+          }
+        }
+
+        if (hoveredGroupRef.current) {
+          if (hoveredGroupRef.current !== selectedGroupRef.current) {
+            applyVisualState(hoveredGroupRef.current, 'normal', markShadowDirty);
+          }
+          hoveredGroupRef.current = null;
+        }
+
+        if (hoveredCanteiroIdRef.current !== null) {
+          hoveredCanteiroIdRef.current = null;
+          setHoveredCanteiro(null);
+        }
+        container.style.cursor = 'grab';
+        renderer.domElement.style.cursor = 'grab';
+      };
+
       const handleClick = (e: MouseEvent) => {
+        // Ignore clicks that were actually camera drags
+        if (pointerMovedWhileDown) return;
+
         const rect = container.getBoundingClientRect();
         mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
-        const interactiveGroups = Array.from(interactiveMeshesRef.current.values());
-        const intersects = raycaster.intersectObjects(interactiveGroups, true);
+        const intersects = raycaster.intersectObjects(hitboxMeshesRef.current, false);
 
         if (intersects.length > 0) {
-          let currentObj: THREE.Object3D | null = intersects[0].object;
-          let foundCanteiroId: string | null = null;
-          let clickedGroup: THREE.Group | null = null;
-
-          while (currentObj && currentObj !== scene) {
-            if (currentObj.userData && currentObj.userData.canteiroId) {
-              foundCanteiroId = currentObj.userData.canteiroId;
-              clickedGroup = currentObj as THREE.Group;
-              break;
-            }
-            currentObj = currentObj.parent;
-          }
+          const hitMesh = intersects[0].object;
+          const foundCanteiroId = hitMesh.userData.canteiroId as string | undefined;
+          const clickedGroup = hitMesh.userData.rootGroup as THREE.Group | undefined;
 
           if (foundCanteiroId && clickedGroup) {
             const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId);
             if (canteiro) {
-              // Smooth camera transition to the clicked canteiro
               const posX = canteiro.posicao.x;
               const posZ = canteiro.posicao.z;
+
+              gsap.killTweensOf([camera.position, controls.target]);
 
               gsap.to(controls.target, {
                 x: posX,
@@ -361,7 +397,6 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
                 z: posZ,
                 duration: 1.0,
                 ease: 'power2.inOut',
-                onUpdate: () => controls.update(),
               });
 
               gsap.to(camera.position, {
@@ -372,13 +407,11 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
                 ease: 'power2.inOut',
               });
 
-              // Unselect previously selected canteiro
               if (selectedGroupRef.current && selectedGroupRef.current !== clickedGroup) {
-                applyVisualState(selectedGroupRef.current, 'normal');
+                applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
               }
 
-              // Apply selected green state ONLY to clicked canteiro
-              applyVisualState(clickedGroup, 'selected');
+              applyVisualState(clickedGroup, 'selected', markShadowDirty);
               selectedGroupRef.current = clickedGroup;
 
               onSelectCanteiroRef.current?.(canteiro);
@@ -387,23 +420,15 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         }
       };
 
-      container.addEventListener('mousemove', handlePointerMove);
-      container.addEventListener('mousedown', handlePointerDown);
-      container.addEventListener('mouseup', handlePointerUp);
+      container.addEventListener('mousemove', handlePointerMove, { passive: true });
+      container.addEventListener('mousedown', handlePointerDown, { passive: true });
+      window.addEventListener('mouseup', handlePointerUp, { passive: true });
       container.addEventListener('click', handleClick);
 
-      // 9. ANIMATION LOOP
-      let clock = new THREE.Clock();
+      // 9. SMOOTH ANIMATION LOOP (Single controls.update() per frame for fluid rotation)
       const animate = () => {
         animationFrameRef.current = requestAnimationFrame(animate);
-        const elapsedTime = clock.getElapsedTime();
-
-        // Animate water reservoir shimmer
-        if (waterMeshRef.current && (waterMeshRef.current.material as THREE.MeshStandardMaterial)) {
-          const mat = waterMeshRef.current.material as THREE.MeshStandardMaterial;
-          mat.roughness = 0.15 + Math.sin(elapsedTime * 2.2) * 0.05;
-          waterMeshRef.current.position.y = 0.55 + Math.sin(elapsedTime * 1.8) * 0.02;
-        }
+        if (document.hidden) return;
 
         controls.update();
         renderer.render(scene, camera);
@@ -415,27 +440,37 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         if (!container || !renderer || !camera) return;
         const newW = container.clientWidth;
         const newH = container.clientHeight;
+        if (newW === 0 || newH === 0) return;
         camera.aspect = newW / newH;
         camera.updateProjectionMatrix();
         renderer.setSize(newW, newH);
       };
       window.addEventListener('resize', handleResize);
 
-      // CLEANUP
+      // 11. FULL GPU / VRAM CLEANUP ON UNMOUNT
       return () => {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('mouseup', handlePointerUp);
         container.removeEventListener('mousemove', handlePointerMove);
         container.removeEventListener('mousedown', handlePointerDown);
-        container.removeEventListener('mouseup', handlePointerUp);
         container.removeEventListener('click', handleClick);
 
-        if (animationFrameRef.current) {
+        if (animationFrameRef.current !== null) {
           cancelAnimationFrame(animationFrameRef.current);
         }
 
+        gsap.killTweensOf([camera.position, controls.target]);
+        interactiveMeshesRef.current.forEach((group) => {
+          gsap.killTweensOf(group.position);
+          gsap.killTweensOf(group.scale);
+        });
+
+        disposeSceneResources(scene);
         controls.dispose();
         renderer.dispose();
         scene.clear();
+        interactiveMeshesRef.current.clear();
+        hitboxMeshesRef.current = [];
       };
     }, []);
 
@@ -447,20 +482,30 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
 
       if (selectedGroupRef.current && selectedGroupRef.current !== targetGroup) {
         if (selectedGroupRef.current !== hoveredGroupRef.current) {
-          applyVisualState(selectedGroupRef.current, 'normal');
+          applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
         } else {
-          applyVisualState(selectedGroupRef.current, 'hover');
+          applyVisualState(selectedGroupRef.current, 'hover', markShadowDirty);
         }
       }
 
       if (targetGroup) {
-        applyVisualState(targetGroup, 'selected');
+        applyVisualState(targetGroup, 'selected', markShadowDirty);
       }
       selectedGroupRef.current = targetGroup;
     }, [selectedCanteiroId]);
 
-    // Filter/Search visual effects
+    // Filter/Search visual effects (skipped on initial mount when no filter is active)
     useEffect(() => {
+      const hasActiveFilter =
+        (Boolean(filterStatus) && filterStatus !== 'todos') ||
+        Boolean(searchQuery && searchQuery.trim() !== '');
+
+      if (isFirstFilterRunRef.current && !hasActiveFilter) {
+        isFirstFilterRunRef.current = false;
+        return;
+      }
+      isFirstFilterRunRef.current = false;
+
       interactiveMeshesRef.current.forEach((group, id) => {
         const canteiro = CANTEIROS_DATA.find((c) => c.id === id);
         if (!canteiro) return;
@@ -482,22 +527,22 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           if (!match) visible = false;
         }
 
-        // Animate opacity/scale based on filter
         gsap.to(group.scale, {
           x: visible ? 1 : 0.82,
           y: visible ? 1 : 0.4,
           z: visible ? 1 : 0.82,
           duration: 0.35,
           ease: 'power2.out',
+          onComplete: markShadowDirty,
         });
 
         group.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
+          if (child instanceof THREE.Mesh && child.material && child.material !== HITBOX_MATERIAL) {
             const mat = child.material as THREE.MeshStandardMaterial;
             if (mat.transparent !== undefined) {
-              mat.transparent = true;
+              mat.transparent = !visible || Boolean(child.userData.alwaysTransparent);
               gsap.to(mat, {
-                opacity: visible ? 1 : 0.25,
+                opacity: visible ? (child.userData.baseOpacity ?? 1) : 0.25,
                 duration: 0.35,
               });
             }
@@ -507,20 +552,21 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
     }, [filterStatus, searchQuery]);
 
     return (
-      <div className="relative w-full h-full overflow-hidden select-none">
+      <div className="relative w-full h-full overflow-hidden select-none bg-[#f4f1e7]">
         {/* Three.js canvas container */}
         <div ref={containerRef} className="w-full h-full cursor-grab" />
 
         {/* Dynamic 3D Follow Tooltip */}
-        {tooltipPos.visible && hoveredCanteiro && (
+        {hoveredCanteiro && (
           <div
             ref={tooltipRef}
             style={{
-              left: `${tooltipPos.x + 16}px`,
-              top: `${tooltipPos.y + 16}px`,
-              transform: 'translate(0, 0)',
+              left: 0,
+              top: 0,
+              transform: `translate3d(${tooltipCoordsRef.current.x + 16}px, ${tooltipCoordsRef.current.y + 16}px, 0)`,
+              willChange: 'transform',
             }}
-            className="pointer-events-none absolute z-40 rounded-2xl border border-emerald-900/15 bg-white/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-md transition-all duration-75 animate-in fade-in zoom-in-95"
+            className="pointer-events-none absolute z-40 rounded-2xl border border-emerald-900/15 bg-white/95 px-3.5 py-2.5 shadow-2xl backdrop-blur-md transition-opacity duration-75 animate-in fade-in zoom-in-95"
           >
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#27633b] text-xs font-bold text-white shadow-sm shrink-0">
@@ -551,17 +597,65 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
 TerrariumMap.displayName = 'TerrariumMap';
 
 // ==========================================
+// GPU RESOURCE CLEANUP HELPER
+// ==========================================
+
+function disposeMaterial(material: THREE.Material) {
+  if (material === HITBOX_MATERIAL) return;
+  const matRecord = material as unknown as Record<string, unknown>;
+  for (const key of Object.keys(matRecord)) {
+    const value = matRecord[key];
+    if (value instanceof THREE.Texture) {
+      value.dispose();
+    }
+  }
+  material.dispose();
+}
+
+function disposeSceneResources(scene: THREE.Scene) {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+
+  scene.traverse((obj) => {
+    if (obj instanceof THREE.Mesh) {
+      if (obj.geometry) {
+        geometries.add(obj.geometry);
+      }
+      if (Array.isArray(obj.material)) {
+        obj.material.forEach((m) => materials.add(m));
+      } else if (obj.material) {
+        materials.add(obj.material);
+      }
+    }
+  });
+
+  geometries.forEach((geo) => geo.dispose());
+  materials.forEach((mat) => disposeMaterial(mat));
+}
+
+// ==========================================
 // PRECISE VISUAL STATE HANDLER
 // ONLY the selected or hovered canteiro changes!
 // ==========================================
 
-function applyVisualState(group: THREE.Group, state: 'normal' | 'hover' | 'selected') {
+function applyVisualState(
+  group: THREE.Group,
+  state: 'normal' | 'hover' | 'selected',
+  onShadowDirty?: () => void
+) {
   const borderMat = group.userData.borderMat as THREE.MeshStandardMaterial | undefined;
   const ringMesh = group.userData.ringMesh as THREE.Mesh | undefined;
   const originalColorHex = (group.userData.originalColorHex as string) || '#654321';
 
+  gsap.killTweensOf(group.position);
+
   if (state === 'normal') {
-    gsap.to(group.position, { y: 0, duration: 0.25, ease: 'power2.out' });
+    gsap.to(group.position, {
+      y: 0,
+      duration: 0.25,
+      ease: 'power2.out',
+      onComplete: onShadowDirty,
+    });
     if (borderMat) {
       borderMat.color.set(originalColorHex);
       borderMat.emissive.set(0x000000);
@@ -571,8 +665,12 @@ function applyVisualState(group: THREE.Group, state: 'normal' | 'hover' | 'selec
       ringMesh.visible = false;
     }
   } else if (state === 'hover') {
-    // Only hovered canteiro changes to a lively natural green
-    gsap.to(group.position, { y: 0.15, duration: 0.2, ease: 'power2.out' });
+    gsap.to(group.position, {
+      y: 0.15,
+      duration: 0.2,
+      ease: 'power2.out',
+      onComplete: onShadowDirty,
+    });
     if (borderMat) {
       borderMat.color.set('#2e7d32');
       borderMat.emissive.set('#4caf50');
@@ -586,8 +684,12 @@ function applyVisualState(group: THREE.Group, state: 'normal' | 'hover' | 'selec
       rMat.emissiveIntensity = 0.6;
     }
   } else if (state === 'selected') {
-    // Only the clicked/selected canteiro stays highlighted in rich emerald green
-    gsap.to(group.position, { y: 0.25, duration: 0.25, ease: 'power2.out' });
+    gsap.to(group.position, {
+      y: 0.25,
+      duration: 0.25,
+      ease: 'power2.out',
+      onComplete: onShadowDirty,
+    });
     if (borderMat) {
       borderMat.color.set('#1b5e20');
       borderMat.emissive.set('#22c55e');
@@ -608,45 +710,36 @@ function applyVisualState(group: THREE.Group, state: 'normal' | 'hover' | 'selec
 // ==========================================
 
 function buildEnvironment(scene: THREE.Scene) {
-  // Main Ground Terrain (Agroecological field)
-  const terrainGeo = new THREE.PlaneGeometry(80, 95, 32, 32);
-  const terrainMat = new THREE.MeshStandardMaterial({
-    color: '#e4ecdc',
-    roughness: 0.92,
-    metalness: 0.05,
-  });
-  const terrain = new THREE.Mesh(terrainGeo, terrainMat);
-  terrain.rotation.x = -Math.PI / 2;
-  terrain.position.set(0, -0.05, 5);
-  terrain.receiveShadow = true;
-  scene.add(terrain);
+  // Seamless ground shadow receiver on top of warm #f4f1e7 background (no grayish slab!)
+  const shadowFloorGeo = new THREE.PlaneGeometry(240, 240);
+  const shadowFloorMat = new THREE.ShadowMaterial({ opacity: 0.12 });
+  const shadowFloor = new THREE.Mesh(shadowFloorGeo, shadowFloorMat);
+  shadowFloor.rotation.x = -Math.PI / 2;
+  shadowFloor.position.set(0, -0.02, 5);
+  shadowFloor.receiveShadow = true;
+  scene.add(shadowFloor);
 
-  // Pathways / Caminhos de terra batida e circulação entre os setores
-  const pathMat = new THREE.MeshStandardMaterial({
-    color: '#d6cbb3',
-    roughness: 0.95,
-    metalness: 0.02,
+  // Pathways / Caminhos de terra batida suave e circulação entre os setores
+  const pathMat = new THREE.MeshBasicMaterial({
+    color: '#e6dec8',
   });
 
   // Main central road between columns (corredor central)
   const centralAisle = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 42), pathMat);
   centralAisle.rotation.x = -Math.PI / 2;
   centralAisle.position.set(8.5, 0.005, 0);
-  centralAisle.receiveShadow = true;
   scene.add(centralAisle);
 
   // Crossway towards composteira and water tank
   const westCrossway = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.4), pathMat);
   westCrossway.rotation.x = -Math.PI / 2;
   westCrossway.position.set(-1.5, 0.005, 0);
-  westCrossway.receiveShadow = true;
   scene.add(westCrossway);
 
   // Road in front of composteira
   const compostRoad = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 38), pathMat);
   compostRoad.rotation.x = -Math.PI / 2;
   compostRoad.position.set(-4.5, 0.005, 2);
-  compostRoad.receiveShadow = true;
   scene.add(compostRoad);
 
   // Decorative agroecological perimeter fence posts
@@ -685,9 +778,14 @@ function buildEnvironment(scene: THREE.Scene) {
 
 function createPerimeterFlora(scene: THREE.Scene) {
   const treeTrunkGeo = new THREE.CylinderGeometry(0.2, 0.35, 3.2, 6);
+  const canopyGeos = [
+    new THREE.DodecahedronGeometry(1.8, 1),
+    new THREE.DodecahedronGeometry(2.1, 1),
+    new THREE.DodecahedronGeometry(2.4, 1),
+  ];
   const trunkMat = new THREE.MeshStandardMaterial({ color: '#4a3525', roughness: 0.9 });
   const canopyMat = new THREE.MeshStandardMaterial({ color: '#2d6a4f', roughness: 0.85, flatShading: true });
-  const ipêMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.85, flatShading: true });
+  const ipeMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.85, flatShading: true });
 
   const treePositions = [
     { x: -16, z: -20, isIpe: false },
@@ -714,10 +812,7 @@ function createPerimeterFlora(scene: THREE.Scene) {
     trunk.castShadow = true;
     treeGroup.add(trunk);
 
-    const canopy = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(1.8 + (idx % 3) * 0.3, 1),
-      pos.isIpe ? ipêMat : canopyMat
-    );
+    const canopy = new THREE.Mesh(canopyGeos[idx % 3], pos.isIpe ? ipeMat : canopyMat);
     canopy.position.y = 3.6;
     canopy.castShadow = true;
     canopy.receiveShadow = true;
@@ -731,6 +826,7 @@ function createPerimeterFlora(scene: THREE.Scene) {
 function buildHorticultureSectors(
   scene: THREE.Scene,
   interactiveMap: Map<string, THREE.Group>,
+  hitboxMeshes: THREE.Mesh[],
   onWaterCreated: (waterMesh: THREE.Mesh) => void
 ) {
   CANTEIROS_DATA.forEach((canteiro) => {
@@ -751,6 +847,19 @@ function buildHorticultureSectors(
       createReceptionSector(group, canteiro);
     }
 
+    // Add single lightweight bounding hitbox per sector for O(1) raycasting
+    const hitboxHeight = canteiro.tipo === 'recepcao' ? 2.3 : 1.1;
+    const hitboxGeo = new THREE.BoxGeometry(
+      canteiro.posicao.largura + 0.2,
+      hitboxHeight,
+      canteiro.posicao.comprimento + 0.2
+    );
+    const hitbox = new THREE.Mesh(hitboxGeo, HITBOX_MATERIAL);
+    hitbox.position.set(0, hitboxHeight / 2, 0);
+    hitbox.userData = { canteiroId: canteiro.id, rootGroup: group };
+    group.add(hitbox);
+    hitboxMeshes.push(hitbox);
+
     group.position.set(canteiro.posicao.x, 0, canteiro.posicao.z);
     if (canteiro.posicao.rotacao) {
       group.rotation.y = canteiro.posicao.rotacao;
@@ -762,13 +871,11 @@ function buildHorticultureSectors(
 }
 
 // 1. STANDARD ELEVATED CANTEIRO (C01 to C24)
-// Each canteiro receives its OWN independent materials so changing one does not affect others!
 function createStandardCanteiro(group: THREE.Group, data: CanteiroData) {
   const { largura, comprimento } = data.posicao;
   const height = 0.45;
   const wallThick = 0.14;
 
-  // Individual wood material for THIS canteiro
   const woodMat = new THREE.MeshStandardMaterial({
     color: '#654321',
     roughness: 0.88,
@@ -777,7 +884,6 @@ function createStandardCanteiro(group: THREE.Group, data: CanteiroData) {
   group.userData.borderMat = woodMat;
   group.userData.originalColorHex = '#654321';
 
-  // Individual soil material for THIS canteiro (remains nutrient-rich dark loam)
   const soilMat = new THREE.MeshStandardMaterial({
     color: '#2a1d15',
     roughness: 0.96,
@@ -785,36 +891,38 @@ function createStandardCanteiro(group: THREE.Group, data: CanteiroData) {
   });
   group.userData.soilMat = soilMat;
 
-  // Outer wooden frame box with hollow center
+  const borderZGeo = new THREE.BoxGeometry(largura, height, wallThick);
+  const borderXGeo = new THREE.BoxGeometry(wallThick, height, comprimento);
+
   // Left border
-  const borderZ1 = new THREE.Mesh(new THREE.BoxGeometry(largura, height, wallThick), woodMat);
+  const borderZ1 = new THREE.Mesh(borderZGeo, woodMat);
   borderZ1.position.set(0, height / 2, -comprimento / 2 + wallThick / 2);
   borderZ1.castShadow = true;
   borderZ1.receiveShadow = true;
   group.add(borderZ1);
 
   // Right border
-  const borderZ2 = new THREE.Mesh(new THREE.BoxGeometry(largura, height, wallThick), woodMat);
+  const borderZ2 = new THREE.Mesh(borderZGeo, woodMat);
   borderZ2.position.set(0, height / 2, comprimento / 2 - wallThick / 2);
   borderZ2.castShadow = true;
   borderZ2.receiveShadow = true;
   group.add(borderZ2);
 
   // Top border
-  const borderX1 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, height, comprimento), woodMat);
+  const borderX1 = new THREE.Mesh(borderXGeo, woodMat);
   borderX1.position.set(-largura / 2 + wallThick / 2, height / 2, 0);
   borderX1.castShadow = true;
   borderX1.receiveShadow = true;
   group.add(borderX1);
 
   // Bottom border
-  const borderX2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, height, comprimento), woodMat);
+  const borderX2 = new THREE.Mesh(borderXGeo, woodMat);
   borderX2.position.set(largura / 2 - wallThick / 2, height / 2, 0);
   borderX2.castShadow = true;
   borderX2.receiveShadow = true;
   group.add(borderX2);
 
-  // Soil interior (raised fertile dark soil)
+  // Soil interior
   const soil = new THREE.Mesh(
     new THREE.BoxGeometry(largura - wallThick * 1.5, height - 0.08, comprimento - wallThick * 1.5),
     soilMat
@@ -833,6 +941,7 @@ function createStandardCanteiro(group: THREE.Group, data: CanteiroData) {
     opacity: 0.85,
   });
   const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.userData = { alwaysTransparent: true, baseOpacity: 0.85 };
   ring.position.set(0, height + 0.03, 0);
   ring.visible = false;
   group.add(ring);
@@ -865,14 +974,12 @@ function createMedicinalBed(group: THREE.Group, data: CanteiroData) {
   });
   group.userData.soilMat = soilMat;
 
-  // Raised stone/wood curb
   const border = new THREE.Mesh(new THREE.BoxGeometry(largura, height, comprimento), woodMat);
   border.position.set(0, height / 2, 0);
   border.castShadow = true;
   border.receiveShadow = true;
   group.add(border);
 
-  // Top soil layer
   const soil = new THREE.Mesh(
     new THREE.BoxGeometry(largura - 0.25, height + 0.02, comprimento - 0.25),
     soilMat
@@ -881,7 +988,6 @@ function createMedicinalBed(group: THREE.Group, data: CanteiroData) {
   soil.receiveShadow = true;
   group.add(soil);
 
-  // Selection / Highlight accent ring on top edge
   const ringGeo = new THREE.BoxGeometry(largura + 0.06, 0.06, comprimento + 0.06);
   const ringMat = new THREE.MeshStandardMaterial({
     color: '#22c55e',
@@ -891,13 +997,22 @@ function createMedicinalBed(group: THREE.Group, data: CanteiroData) {
     opacity: 0.85,
   });
   const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.userData = { alwaysTransparent: true, baseOpacity: 0.85 };
   ring.position.set(0, height + 0.03, 0);
   ring.visible = false;
   group.add(ring);
   group.userData.ringMesh = ring;
 
-  // Aromatic herbal bushes
+  // Shared geometries & materials per bed for aromatic herbal bushes
   const herbColors = ['#15803d', '#166534', '#3f6212', '#4d7c0f', '#047857'];
+  const herbMats = herbColors.map(
+    (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true })
+  );
+  const flowerPurpleMat = new THREE.MeshStandardMaterial({ color: '#c084fc', roughness: 0.6 });
+  const flowerYellowMat = new THREE.MeshStandardMaterial({ color: '#fde047', roughness: 0.6 });
+  const unitBushGeo = new THREE.DodecahedronGeometry(1, 1);
+  const unitFlowerGeo = new THREE.SphereGeometry(0.3, 6, 6);
+
   const numClusters = Math.floor(largura * 1.8);
 
   for (let i = 0; i < numClusters; i++) {
@@ -905,25 +1020,14 @@ function createMedicinalBed(group: THREE.Group, data: CanteiroData) {
     const pz = -comprimento / 2 + 0.4 + Math.random() * (comprimento - 0.8);
     const scale = 0.3 + Math.random() * 0.25;
 
-    const herbMat = new THREE.MeshStandardMaterial({
-      color: herbColors[i % herbColors.length],
-      roughness: 0.85,
-      flatShading: true,
-    });
-
-    const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(scale, 1), herbMat);
+    const bush = new THREE.Mesh(unitBushGeo, herbMats[i % herbMats.length]);
+    bush.scale.setScalar(scale);
     bush.position.set(px, height + scale * 0.7, pz);
-    bush.castShadow = true;
-    bush.receiveShadow = true;
     group.add(bush);
 
-    // Subtle purple or yellow flowers on herbs
     if (i % 3 === 0) {
-      const flowerMat = new THREE.MeshStandardMaterial({
-        color: i % 2 === 0 ? '#c084fc' : '#fde047',
-        roughness: 0.6,
-      });
-      const flower = new THREE.Mesh(new THREE.SphereGeometry(scale * 0.3, 6, 6), flowerMat);
+      const flower = new THREE.Mesh(unitFlowerGeo, i % 2 === 0 ? flowerPurpleMat : flowerYellowMat);
+      flower.scale.setScalar(scale);
       flower.position.set(px, height + scale * 1.4, pz);
       group.add(flower);
     }
@@ -943,11 +1047,12 @@ function createComposteraSector(group: THREE.Group, data: CanteiroData) {
 
   const compostMatActive = new THREE.MeshStandardMaterial({ color: '#3d2612', roughness: 0.95 });
   const compostMatStraw = new THREE.MeshStandardMaterial({ color: '#b08968', roughness: 0.9 });
+  const dividerGeo = new THREE.BoxGeometry(largura, 1.2, 0.1);
 
   for (let b = 0; b < numBaias; b++) {
     const bz = -comprimento / 2 + (b + 0.5) * baiaLen;
 
-    const divider = new THREE.Mesh(new THREE.BoxGeometry(largura, 1.2, 0.1), slatMat);
+    const divider = new THREE.Mesh(dividerGeo, slatMat);
     divider.position.set(0, 0.6, bz - baiaLen / 2);
     divider.castShadow = true;
     group.add(divider);
@@ -965,7 +1070,7 @@ function createComposteraSector(group: THREE.Group, data: CanteiroData) {
     group.add(mound);
   }
 
-  const endDivider = new THREE.Mesh(new THREE.BoxGeometry(largura, 1.2, 0.1), slatMat);
+  const endDivider = new THREE.Mesh(dividerGeo, slatMat);
   endDivider.position.set(0, 0.6, comprimento / 2);
   endDivider.castShadow = true;
   group.add(endDivider);
@@ -975,7 +1080,6 @@ function createComposteraSector(group: THREE.Group, data: CanteiroData) {
     new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.8 })
   );
   probePole.position.set(0.6, 1.2, -comprimento / 4);
-  probePole.castShadow = true;
   group.add(probePole);
 
   const probeHead = new THREE.Mesh(
@@ -1028,6 +1132,7 @@ function createWaterReservoirSector(
     opacity: 0.88,
   });
   const water = new THREE.Mesh(waterGeo, waterMat);
+  water.userData = { alwaysTransparent: true, baseOpacity: 0.88 };
   water.rotation.x = -Math.PI / 2;
   water.position.y = 0.55;
   group.add(water);
@@ -1050,23 +1155,20 @@ function createMinhocarioSector(group: THREE.Group, data: CanteiroData) {
   group.userData.borderMat = woodMat;
   group.userData.originalColorHex = '#78350f';
 
+  const humusMat = new THREE.MeshStandardMaterial({ color: '#1c1917', roughness: 0.98 });
   const numTiers = 3;
+  const tierGeo = new THREE.BoxGeometry(largura * 0.9, 0.32, (comprimento / numTiers) * 0.9);
+  const humusGeo = new THREE.BoxGeometry(largura * 0.8, 0.08, (comprimento / numTiers) * 0.78);
+
   for (let i = 0; i < numTiers; i++) {
-    const tier = new THREE.Mesh(
-      new THREE.BoxGeometry(largura * 0.9, 0.32, (comprimento / numTiers) * 0.9),
-      woodMat
-    );
+    const tier = new THREE.Mesh(tierGeo, woodMat);
     const zOffset = -comprimento / 3 + i * (comprimento / numTiers);
     tier.position.set(0, 0.2 + i * 0.06, zOffset);
     tier.castShadow = true;
     tier.receiveShadow = true;
     group.add(tier);
 
-    const humusMat = new THREE.MeshStandardMaterial({ color: '#1c1917', roughness: 0.98 });
-    const humus = new THREE.Mesh(
-      new THREE.BoxGeometry(largura * 0.8, 0.08, (comprimento / numTiers) * 0.78),
-      humusMat
-    );
+    const humus = new THREE.Mesh(humusGeo, humusMat);
     humus.position.set(0, 0.37 + i * 0.06, zOffset);
     group.add(humus);
   }
@@ -1118,6 +1220,7 @@ function createReceptionSector(group: THREE.Group, data: CanteiroData) {
   group.userData.originalColorHex = '#27633b';
 
   const roof = new THREE.Mesh(new THREE.BoxGeometry(largura + 0.4, 0.06, comprimento + 0.4), roofMat);
+  roof.userData = { alwaysTransparent: true, baseOpacity: 0.85 };
   roof.position.y = 2.22;
   roof.castShadow = true;
   group.add(roof);
@@ -1131,7 +1234,7 @@ function createReceptionSector(group: THREE.Group, data: CanteiroData) {
   createSignpost(group, 'RECEPÇÃO', -largura / 2 - 0.4, -comprimento / 2);
 }
 
-// 7. VEGETAL POPULATION (Procedural Plant Models)
+// 7. VEGETAL POPULATION (Procedural Plant Models with shared geometries per bed)
 function populateCropsInBed(
   group: THREE.Group,
   data: CanteiroData,
@@ -1140,6 +1243,16 @@ function populateCropsInBed(
   soilTopY: number
 ) {
   const crop = data.cultura.toLowerCase();
+
+  // Canteiro vazio / em preparação: exibir apenas a terra escura preparada sem plantas
+  if (
+    data.status === 'preparacao' ||
+    data.diasPlantio === 0 ||
+    crop.includes('vazio') ||
+    crop.includes('sem cultura')
+  ) {
+    return;
+  }
 
   if (crop.includes('alface') || crop.includes('rúcula') || crop.includes('espinafre') || crop.includes('mostarda')) {
     const isPurple = crop.includes('roxa');
@@ -1152,6 +1265,8 @@ function populateCropsInBed(
       color: isPurple ? '#a21caf' : '#4ade80',
       roughness: 0.65,
     });
+    const outerGeo = new THREE.DodecahedronGeometry(0.18, 1);
+    const heartGeo = new THREE.SphereGeometry(0.11, 6, 6);
 
     const rows = 2;
     const cols = 7;
@@ -1164,12 +1279,11 @@ function populateCropsInBed(
         const pz = -bedL / 2 + r * dz;
 
         const head = new THREE.Group();
-        const outerLeaves = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18, 1), leafMat);
+        const outerLeaves = new THREE.Mesh(outerGeo, leafMat);
         outerLeaves.scale.set(1.1, 0.65, 1.1);
-        outerLeaves.castShadow = true;
         head.add(outerLeaves);
 
-        const heart = new THREE.Mesh(new THREE.SphereGeometry(0.11, 7, 7), leafInnerMat);
+        const heart = new THREE.Mesh(heartGeo, leafInnerMat);
         heart.position.y = 0.05;
         head.add(heart);
 
@@ -1181,6 +1295,8 @@ function populateCropsInBed(
     const fernMat = new THREE.MeshStandardMaterial({ color: '#15803d', roughness: 0.8, flatShading: true });
     const rootCrownColor = crop.includes('cenoura') ? '#ea580c' : crop.includes('beterraba') ? '#831843' : '#dc2626';
     const rootMat = new THREE.MeshStandardMaterial({ color: rootCrownColor, roughness: 0.7 });
+    const crownGeo = new THREE.CylinderGeometry(0.05, 0.03, 0.08, 6);
+    const foliageGeo = new THREE.ConeGeometry(0.12, 0.28, 6);
 
     const rows = 2;
     const cols = 8;
@@ -1192,13 +1308,12 @@ function populateCropsInBed(
         const px = -bedW / 2 + c * dx;
         const pz = -bedL / 2 + r * dz;
 
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.03, 0.08, 6), rootMat);
+        const crown = new THREE.Mesh(crownGeo, rootMat);
         crown.position.set(px, soilTopY + 0.04, pz);
         group.add(crown);
 
-        const foliage = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.28, 6), fernMat);
+        const foliage = new THREE.Mesh(foliageGeo, fernMat);
         foliage.position.set(px, soilTopY + 0.18, pz);
-        foliage.castShadow = true;
         group.add(foliage);
       }
     }
@@ -1207,6 +1322,9 @@ function populateCropsInBed(
     const vineMat = new THREE.MeshStandardMaterial({ color: '#166534', roughness: 0.8, flatShading: true });
     const fruitColor = crop.includes('tomate') ? '#ef4444' : crop.includes('berinjela') ? '#581c87' : '#15803d';
     const fruitMat = new THREE.MeshStandardMaterial({ color: fruitColor, roughness: 0.4 });
+    const stakeGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6);
+    const bushGeo = new THREE.DodecahedronGeometry(0.28, 1);
+    const fruitGeo = new THREE.SphereGeometry(0.06, 6, 6);
 
     const cols = 5;
     const dx = bedW / (cols + 1);
@@ -1214,19 +1332,18 @@ function populateCropsInBed(
     for (let c = 1; c <= cols; c++) {
       const px = -bedW / 2 + c * dx;
 
-      const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6), stakeMat);
+      const stake = new THREE.Mesh(stakeGeo, stakeMat);
       stake.position.set(px, soilTopY + 0.6, 0);
-      stake.castShadow = true;
       group.add(stake);
 
-      const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28, 1), vineMat);
+      const bush = new THREE.Mesh(bushGeo, vineMat);
       bush.scale.set(0.9, 1.4, 0.9);
       bush.position.set(px, soilTopY + 0.55, 0);
       bush.castShadow = true;
       group.add(bush);
 
       for (let f = 0; f < 3; f++) {
-        const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), fruitMat);
+        const fruit = new THREE.Mesh(fruitGeo, fruitMat);
         const ang = (f * Math.PI * 2) / 3;
         fruit.position.set(px + Math.cos(ang) * 0.22, soilTopY + 0.4 + f * 0.12, Math.sin(ang) * 0.22);
         group.add(fruit);
@@ -1234,25 +1351,26 @@ function populateCropsInBed(
     }
   } else if (crop.includes('couve') || crop.includes('repolho') || crop.includes('brócolis')) {
     const brassicaMat = new THREE.MeshStandardMaterial({ color: '#047857', roughness: 0.8, flatShading: true });
+    const rosetteGeo = new THREE.DodecahedronGeometry(0.26, 1);
     const cols = 5;
     const dx = bedW / (cols + 1);
 
     for (let c = 1; c <= cols; c++) {
       const px = -bedW / 2 + c * dx;
-      const rosette = new THREE.Mesh(new THREE.DodecahedronGeometry(0.26, 1), brassicaMat);
+      const rosette = new THREE.Mesh(rosetteGeo, brassicaMat);
       rosette.scale.set(1.4, 0.6, 1.4);
       rosette.position.set(px, soilTopY + 0.16, 0);
-      rosette.castShadow = true;
       group.add(rosette);
     }
   } else {
     const sproutMat = new THREE.MeshStandardMaterial({ color: '#84cc16', roughness: 0.6 });
+    const sproutGeo = new THREE.ConeGeometry(0.05, 0.12, 5);
     const cols = 8;
     const dx = bedW / (cols + 1);
 
     for (let c = 1; c <= cols; c++) {
       const px = -bedW / 2 + c * dx;
-      const sprout = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 5), sproutMat);
+      const sprout = new THREE.Mesh(sproutGeo, sproutMat);
       sprout.position.set(px, soilTopY + 0.06, 0);
       group.add(sprout);
     }
@@ -1290,6 +1408,7 @@ function createSignpost(group: THREE.Group, text: string, x: number, z: number) 
   const texture = new THREE.CanvasTexture(canvas);
   const textMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
   const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.28), textMat);
+  textPlane.userData = { alwaysTransparent: true, baseOpacity: 1 };
   textPlane.position.set(x, 0.65, z + 0.03);
   group.add(textPlane);
 }

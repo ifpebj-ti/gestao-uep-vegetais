@@ -2,6 +2,37 @@ export type TipoSetor = 'hortalica' | 'medicinal' | 'composteira' | 'agua' | 'mi
 export type StatusCultura = 'pronto_colheita' | 'em_crescimento' | 'recem_plantado' | 'preparacao' | 'adubado';
 export type PerfilUsuario = 'professor' | 'aluno' | 'indefinido';
 
+export function obterSetorPorCultura(cultura?: string | null, fallbackSetor?: string): string | null {
+  const nome = (cultura || '').trim().toLowerCase();
+  if (!nome || nome.includes('vazio') || nome.includes('sem cultura')) {
+    return null;
+  }
+
+  if (nome.includes('alface') || nome.includes('rúcula') || nome.includes('rucula') || nome.includes('espinafre') || nome.includes('agrião') || nome.includes('agriao')) {
+    return 'Hortaliças Folhosas';
+  }
+  if (nome.includes('cenoura') || nome.includes('beterraba') || nome.includes('batata') || nome.includes('rabanete') || nome.includes('mandioca') || nome.includes('inhame')) {
+    return 'Raízes e Tubérculos';
+  }
+  if (nome.includes('brócol') || nome.includes('brocol') || nome.includes('couve') || nome.includes('repolho') || nome.includes('mostarda')) {
+    return 'Brássicas';
+  }
+  if (nome.includes('abobrinha') || nome.includes('abóbora') || nome.includes('pepino') || nome.includes('melancia') || nome.includes('melão')) {
+    return 'Cucurbitáceas';
+  }
+  if (nome.includes('tomate') || nome.includes('pimentão') || nome.includes('pimentao') || nome.includes('berinjela') || nome.includes('pimenta') || nome.includes('jiló')) {
+    return 'Frutos Solanáceas';
+  }
+  if (nome.includes('cebolinha') || nome.includes('coentro') || nome.includes('salsa') || nome.includes('alho') || nome.includes('cebola')) {
+    return 'Condimentares e Folhosas';
+  }
+  if (nome.includes('quiabo')) {
+    return 'Malváceas';
+  }
+
+  return fallbackSetor?.trim() || null;
+}
+
 export interface CanteiroData {
   id: string;
   codigo: string;
@@ -70,27 +101,27 @@ export const CANTEIROS_DATA: CanteiroData[] = [
     id: 'c-02',
     codigo: 'C02',
     nome: 'Canteiro 02',
-    setor: 'Hortaliças Folhosas',
+    setor: '',
     tipo: 'hortalica',
-    cultura: 'Alface Americana',
-    variedade: 'Lucy Brown',
-    status: 'em_crescimento',
-    statusLabel: 'Em Crescimento',
-    statusColor: '#2563eb',
-    dataPlantio: '2026-09-05',
-    diasPlantio: 24,
-    diasPrevistosColheita: 45,
-    umidadeSolo: 76,
-    temperaturaSolo: '24.1°C',
-    phSolo: 6.4,
+    cultura: 'Canteiro Vazio',
+    variedade: '',
+    status: 'preparacao',
+    statusLabel: 'Vazio / Em Preparo',
+    statusColor: '#d97706',
+    dataPlantio: '',
+    diasPlantio: 0,
+    diasPrevistosColheita: 0,
+    umidadeSolo: 65,
+    temperaturaSolo: '24.0°C',
+    phSolo: 6.5,
     areaM2: 7.2,
-    irrigacao: 'Gotejamento de precisão',
-    adubacao: 'Biofertilizante foliar quinzenal',
-    turmaResponsavel: 'Agronomia 3º Período - Turma A',
+    irrigacao: 'Sistema desligado (aguardando plantio)',
+    adubacao: '',
+    turmaResponsavel: 'Não atribuída',
     professorResponsavel: 'Prof. George Guimarães',
-    estudanteLider: 'Lucas Gabriel Lima',
-    observacoes: 'Formação de cabeça densa em andamento. Irrigação ajustada após medição matinal.',
-    tarefasPendentes: ['Capina manual entre linhas', 'Aplicação de calda bordalesa preventiva'],
+    estudanteLider: '',
+    observacoes: 'Canteiro vazio com solo preparado, aguardando definição de cultura e equipe pelo professor.',
+    tarefasPendentes: ['Definir equipe de alunos responsáveis', 'Selecionar modelo agronômico da cultura na ficha'],
     posicao: { x: 5, z: -13.5, largura: 5.2, comprimento: 1.6 }
   },
   {
@@ -585,27 +616,27 @@ export const CANTEIROS_DATA: CanteiroData[] = [
     id: 'c-21',
     codigo: 'C21',
     nome: 'Canteiro 21',
-    setor: 'Aliáceas',
+    setor: '',
     tipo: 'hortalica',
-    cultura: 'Alho-Poró',
-    variedade: 'Cararentan 2',
+    cultura: 'Canteiro Vazio',
+    variedade: '',
     status: 'preparacao',
-    statusLabel: 'Em Preparação',
+    statusLabel: 'Vazio / Em Preparo',
     statusColor: '#d97706',
-    dataPlantio: '2026-09-27',
-    diasPlantio: 2,
-    diasPrevistosColheita: 120,
+    dataPlantio: '',
+    diasPlantio: 0,
+    diasPrevistosColheita: 0,
     umidadeSolo: 70,
     temperaturaSolo: '24.8°C',
     phSolo: 6.8,
     areaM2: 7.2,
     irrigacao: 'Gotejamento em montagem',
-    adubacao: 'Adubação verde incorporada (Crotalária)',
-    turmaResponsavel: 'Agronomia 3º Período - Turma A',
+    adubacao: '',
+    turmaResponsavel: 'Não atribuída',
     professorResponsavel: 'Prof. George Guimarães',
-    estudanteLider: 'Diego Ferreira',
-    observacoes: 'Solo corrigido e destorroado aguardando transplante das mudas do viveiro.',
-    tarefasPendentes: ['Transplante de 240 mudas da sementeira', 'Instalação das linhas de gotejo'],
+    estudanteLider: '',
+    observacoes: 'Canteiro vazio com solo corrigido e destorroado, aguardando definição de cultura e equipe pelo professor.',
+    tarefasPendentes: ['Definir equipe de alunos responsáveis', 'Selecionar modelo agronômico da cultura na ficha'],
     posicao: { x: 12, z: 7.5, largura: 5.2, comprimento: 1.6 }
   },
   {

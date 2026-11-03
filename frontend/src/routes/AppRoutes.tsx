@@ -25,6 +25,9 @@ const CanteiroDetailPage = React.lazy(() =>
 const GestaoCanteirosPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/GestaoCanteirosPage').then((m) => ({ default: m.GestaoCanteirosPage }))
 );
+const ColheitaPage = React.lazy(() =>
+  import('../modules/olericultura/pages/professor/ColheitaPage').then((m) => ({ default: m.ColheitaPage }))
+);
 const PomarPage = React.lazy(() =>
   import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
 );
@@ -65,6 +68,8 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/professor/gestao-canteiros" element={<GestaoCanteirosPage />} />
+                <Route path="/colheita" element={<ColheitaPage />} />
+                <Route path="/olericultura/professor/colheita" element={<ColheitaPage />} />
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
               </Route>
 
@@ -74,6 +79,7 @@ export default function AppRoutes() {
                 <Route path="/olericultura/aluno/canteiro/:id" element={<CanteiroDetailPage />} />
                 <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
+                <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
               </Route>
 
