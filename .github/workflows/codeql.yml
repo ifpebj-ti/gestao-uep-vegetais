@@ -1,0 +1,82 @@
+name: CodeQL Security Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '30 3 * * 1'
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Setup Java 21 for CodeQL autobuild
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+          # O repositório mantém o CodeQL default setup ativo, que é o responsável
+          # por publicar os resultados. Evita conflito entre duas configurações.
+          upload: never
+
+  security-gate:
+    name: Block open high/critical CodeQL alerts
+    needs: analyze
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: read
+
+    steps:
+      - name: Fail when high or critical alerts remain open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_alerts="$(gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${REPOSITORY}/code-scanning/alerts?ref=refs/heads/main&per_page=100" \
+            --slurp --jq '[.[][] | select(.state == "open" and (.rule.security_severity_level == "high" or .rule.security_severity_level == "critical"))] | length')"
+
+          if [[ "${open_alerts}" -ne 0 ]]; then
+            echo "${open_alerts} open high/critical Code Scanning alert(s) found on main."
+            exit 1
+          fi
+
+          echo 'No open high/critical Code Scanning alerts found on main.'
