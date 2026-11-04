@@ -8,7 +8,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,9 +45,8 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                // A API usa JWT no cabeçalho Authorization e não autenticação por cookie.
-                // CSRF nÃ£o Ã© necessÃ¡rio para Bearer tokens em uma API sem sessÃ£o/cookies.
-                .csrf(AbstractHttpConfigurer::disable)
+                // Mantém proteção CSRF habilitada (padrão do Spring Security).
+                .csrf(csrf -> { })
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(configuredAllowedOrigins)))
                 .headers(headers -> headers
                         .contentTypeOptions(contentTypeOptions -> { })
