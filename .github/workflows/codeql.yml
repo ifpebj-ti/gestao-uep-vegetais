@@ -72,7 +72,8 @@ jobs:
           open_alerts="$(gh api --paginate \
             -H 'Accept: application/vnd.github+json' \
             "/repos/${REPOSITORY}/code-scanning/alerts?ref=refs/heads/main&per_page=100" \
-            --slurp --jq '[.[][] | select(.state == "open" and (.rule.security_severity_level == "high" or .rule.security_severity_level == "critical"))] | length')"
+            --jq '[.[] | select(.state == "open" and (.rule.security_severity_level == "high" or .rule.security_severity_level == "critical"))] | length' \
+            | awk '{ total += $1 } END { print total + 0 }')"
 
           if [[ "${open_alerts}" -ne 0 ]]; then
             echo "${open_alerts} open high/critical Code Scanning alert(s) found on main."
