@@ -13,7 +13,7 @@ import java.util.Map;
 public class AuthExceptionHandler {
 
     @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<Map<String, String>> contaNaoVerificada(DisabledException exception) {
+    public ResponseEntity<Map<String, String>> contaNaoVerificada() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of(
                         "codigo", "EMAIL_NAO_VERIFICADO",
@@ -22,7 +22,7 @@ public class AuthExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> credenciaisInvalidas(BadCredentialsException exception) {
+    public ResponseEntity<Map<String, String>> credenciaisInvalidas() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("erro", "E-mail ou senha incorretos"));
     }
