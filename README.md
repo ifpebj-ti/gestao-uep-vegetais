@@ -31,13 +31,14 @@ A proposta do projeto é oferecer uma ferramenta acessível para auxiliar no pla
 
 A nova versão traz:
 
-- 🌱 **Mapeamento 3D e Planta Baixa 2D Interativa:** Navegação imersiva e responsiva pelos canteiros da UEP com Three.js e GSAP;
-- 📋 **Fichas de Campo Oficiais:** Preenchimento de dados agronômicos, manejo fitossanitário e visto de aprovação docente;
+- 🌱 **Mapeamento 3D e Planta Baixa 2D Interativa:** Navegação imersiva, otimizada e responsiva pelos canteiros da UEP com Three.js e GSAP;
+- 📋 **Fichas de Campo Oficiais:** Preenchimento de dados agronômicos, manejo fitossanitário, registro de colheita do canteiro (`kg`) e visto de aprovação docente;
+- ⚖️ **Gestão de Colheita e Produtividade Real (`kg`):** Consolidação de quilos produzidos por vegetal, comparativo entre rendimento real na balança e meta prevista pelo modelo agronômico e histórico de destinação;
 - 👥 **Perfis de Acesso Acadêmicos:** Fluxos segmentados e dedicados para Professores e Estudantes;
 - 📱 **Progressive Web App (PWA):** Interface responsiva projetada para uso em campo;
 - 🔌 **Arquitetura Resiliente & Offline-First:** Tratamento inteligente de falhas de conectividade;
 - 🔒 **Blindagem de Segurança & DevSecOps:** Headers HTTP recomendados pela OWASP, JWT com expiração e varredura estática de vulnerabilidades;
-- 📊 **Otimização do Escalonamento:** Acompanhamento dinâmico do ciclo fenológico e previsões de colheita.
+- 📊 **Otimização do Escalonamento:** Acompanhamento dinâmico do ciclo fenológico, cronograma semanal e previsões de colheita.
 
 ---
 
@@ -51,7 +52,7 @@ Desenvolver o sistema **Terrarium**, uma aplicação Web/PWA de gestão agrícol
 
 - **Projetar uma arquitetura segura:** Aplicar práticas de integração contínua (CI/CD) e diretrizes OWASP no desenvolvimento;
 - **Modernizar o planejamento agrícola:** Adaptar a lógica de escalonamento do software original para as atuais demandas operacionais e pedagógicas;
-- **Desenvolver interfaces interativas:** Implementar mapas 3D interativos e fichas de campo digitais para otimizar o monitoramento espacial dos canteiros;
+- **Desenvolver interfaces interativas:** Implementar mapas 3D interativos, cronogramas semanais, painel de colheita e fichas de campo digitais para otimizar o monitoramento espacial e produtivo dos canteiros;
 - **Garantir uso em campo:** Estruturar o sistema como Progressive Web App (PWA) para viabilizar o funcionamento em áreas de baixa conectividade;
 - **Estruturar acessos acadêmicos:** Implementar controle de perfis (professores e estudantes) para adequar o sistema às dinâmicas de ensino e extensão.
 
@@ -81,30 +82,32 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 ### 💻 Frontend
 - **Framework & Core:** [React 19](https://react.dev/) com [TypeScript](https://www.typescriptlang.org/)
 - **Bundler & Build Tool:** [Vite 7](https://vitejs.dev/) com *Code Splitting* (`React.lazy` + `manualChunks`)
-- **Renderização Gráfica & 3D:** [Three.js](https://threejs.org/) (WebGL acelerado, iluminação suave, controles orbitais) e [GSAP](https://greensock.com/gsap/) (interpolação e transições de câmera)
+- **Renderização Gráfica & 3D:** [Three.js](https://threejs.org/) (WebGL acelerado, iluminação suave, raycasting otimizado com hitboxes e controles orbitais) e [GSAP](https://greensock.com/gsap/) (interpolação e transições de câmera)
 - **Estilização & Design System:** [TailwindCSS v4](https://tailwindcss.com/) com paleta agronômica personalizada e ícones do [Lucide React](https://lucide.dev/)
 - **Roteamento & Proteção:** [React Router DOM v7](https://reactrouter.com/) com guarda de rotas privadas (`ProtectedRoute`)
 - **Cliente HTTP Centralizado:** `apiClient` com injeção automática de `Bearer Token`, timeout com `AbortController` e interceptor de sessão expirada (`401`)
-- **Testes & Qualidade:** [Vitest](https://vitest.dev/), [@testing-library/react](https://testing-library.com/) e JSDOM (61 testes unitários automatizados)
+- **Testes & Qualidade:** [Vitest](https://vitest.dev/), [@testing-library/react](https://testing-library.com/) e JSDOM (**98 testes unitários automatizados em 19 suítes**)
 
 ### ⚙️ Backend
 - **Linguagem & Plataforma:** Java 21 (LTS)
-- **Framework:** [Spring Boot 3.5](https://spring.io/projects/spring-boot)
-- **Persistência de Dados:** Spring Data JPA e Hibernate ORM
+- **Framework:** [Spring Boot](https://spring.io/projects/spring-boot)
+- **Persistência de Dados:** Spring Data JPA, Hibernate ORM e migrações versionadas com Flyway
 - **Banco de Dados:** PostgreSQL 16
-- **Segurança & Autenticação:** Spring Security 6 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)) e criptografia BCrypt
+- **Segurança & Autenticação:** Spring Security 6 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)), OAuth 2.0 Google Institucional e criptografia BCrypt
 - **Métricas e Diagnóstico:** Spring Boot Actuator
+- **Testes Automatizados:** JUnit 5 e Spring MockMvc (**47 testes automatizados em 11 suítes**)
 - **Produtividade:** Project Lombok
 
 ### 🛡️ Infraestrutura, Contêineres & DevSecOps
 - **Contêineres Multi-Stage:**
-  - **Frontend:** Build Node 20 Alpine servido via Nginx 1.27 Alpine.
-  - **Backend:** Compilação Maven 3.9 Temurin 21 empacotada em JRE 21 Alpine non-root.
+  - **Frontend:** Build Node 24 Alpine servido via Nginx 1.27 Alpine com pacotes de segurança atualizados.
+  - **Backend:** Compilação Maven 3.9 Temurin 21 empacotada em JRE 21 Alpine non-root (`appuser`) com pacotes de segurança atualizados.
 - **Servidor Web (Nginx):** Compactação gzip, cache de assets imutáveis e cabeçalhos de segurança OWASP (`CSP`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `server_tokens off`).
 - **Orquestração:** Docker Compose com rede em bridge isolada (`gestao-uep-network`) e volume nomeado (`pgdata`).
 - **Pipeline de CI/CD (GitHub Actions):**
-  - Checagem estática de tipagem e integridade (`npm run lint`).
-  - Execução contínua da suíte de testes (`npm run test:run`).
+  - Execução dos testes automatizados do Backend (`mvn --batch-mode test`).
+  - Checagem estática de tipagem e integridade do Frontend (`npm run lint`).
+  - Execução contínua da suíte de testes do Frontend (`npm run test:run`).
   - Verificação de build de produção (`npm run build`).
   - Compilação Multi-Arquitetura (`amd64` / `arm64`) com QEMU e Buildx.
   - Varredura de segurança com **Aqua Security Trivy** (bloqueio de vulnerabilidades `CRITICAL`).
@@ -128,12 +131,13 @@ gestao-uep-vegetais/
 │   ├── src/
 │   │   └── main/
 │   │       ├── java/com/gestao/uep/
-│   │       │   ├── controllers/       # Controllers REST (/api/auth)
-│   │       │   ├── domain/            # Entidades JPA, Enums e DTOs
+│   │       │   ├── controllers/       # Controllers REST (Auth, Canteiros, Modelos de Cultivo, Usuários)
+│   │       │   ├── domain/            # Entidades JPA, Enums, Repositories e DTOs
 │   │       │   ├── infra/             # Segurança Spring Security e Filtro JWT
-│   │       │   ├── services/          # Regras de negócio e geração de tokens
+│   │       │   ├── services/          # Regras de negócio, cálculo de previsão de colheita e tokens
 │   │       │   └── GestaoUepApplication.java
 │   │       └── resources/
+│   │           ├── db/migration/      # Migrações SQL versionadas com Flyway
 │   │           └── application.yml    # Configuração de portas, datasource e JWT
 │   ├── Dockerfile                     # Multi-stage build (Maven 3.9 + JRE 21 Alpine non-root)
 │   └── pom.xml                        # Dependências e plugins Maven do backend
@@ -146,25 +150,25 @@ gestao-uep-vegetais/
 │   │   ├── modules/                   # Módulos de domínio desacoplados e escaláveis
 │   │   │   ├── auth/                  # Autenticação e jornada de entrada
 │   │   │   │   ├── components/        # Layouts e botões de login (AuthLayout, GoogleLoginButton)
-│   │   │   │   ├── pages/             # Telas de pré-login (SelectUepPage), Login, Cadastro e Recuperação
+│   │   │   │   ├── pages/             # Telas de pré-login (SelectUepPage), Login, Cadastro, Confirmação e Recuperação
 │   │   │   │   └── utils/             # Identificação automática de perfil por e-mail institucional
 │   │   │   ├── olericultura/          # Módulo UEP 1: Olericultura (hortaliças e canteiros)
-│   │   │   │   ├── components/        # Mapa 3D interativo (TerrariumMap), Menu lateral, Ficha de Campo
-│   │   │   │   ├── data/              # Modelagem de dados agronômicos e canteiros (C01 a C12)
+│   │   │   │   ├── components/        # Mapa 3D interativo (TerrariumMap), Menu lateral, Ficha de Campo e Cronograma Semanal
+│   │   │   │   ├── data/              # Modelagem de dados agronômicos, canteiros (C01 a C24) e registros de colheita
 │   │   │   │   └── pages/
-│   │   │   │       ├── professor/     # Visão Docente (MapaPage, CanteiroDetailPage)
-│   │   │   │       └── aluno/         # Visão Discente (atividades e submissões de campo)
+│   │   │   │       └── professor/     # Telas de Mapa 3D, Detalhe do Canteiro, Gestão de Canteiros e Colheita (kg)
 │   │   │   └── fruticultura/          # Módulo UEP 2: Fruticultura (pomares e parcelas)
 │   │   ├── routes/                    # Roteamento central com lazy loading, aliases e RBAC (ProtectedRoute)
-│   │   ├── services/                  # Serviços de comunicação HTTP (apiClient e authService)
+│   │   ├── services/                  # Serviços de comunicação HTTP (apiClient, authService e canteiroService)
 │   │   └── types/                     # Definições centrais de tipos TypeScript (auth.ts, uep.ts)
 │   ├── .dockerignore                  # Exclusão de segredos e node_modules no contexto Docker
-│   ├── Dockerfile                     # Multi-stage build (Node 20 Alpine + Nginx 1.27 Alpine)
+│   ├── Dockerfile                     # Multi-stage build (Node 24 Alpine + Nginx 1.27 Alpine)
 │   ├── nginx.conf                     # Configuração SPA do Nginx com cabeçalhos OWASP
 │   ├── package.json                   # Dependências, scripts (lint, test, build) e tipo ESM
 │   ├── tsconfig.json                  # Configurações do compilador TypeScript
 │   └── vite.config.ts                 # Configuração do Vite, Vitest e divisão de chunks
 ├── .env.example                       # Modelo das variáveis de ambiente necessárias
+├── CHANGELOG.md                       # Histórico estruturado de entregas e versões do projeto
 ├── docker-compose.yml                 # Orquestração local dos serviços (PostgreSQL, Backend, Frontend)
 ├── LICENSE                            # Licença de uso do projeto
 └── README.md                          # Documentação técnica e visão geral
@@ -190,13 +194,13 @@ Copie o arquivo de exemplo para criar o seu `.env`:
 cp .env.example .env
 ```
 
-Para habilitar o botao **Entrar com Google**, crie um cliente OAuth do tipo
+Para habilitar o botão **Entrar com Google**, crie um cliente OAuth do tipo
 aplicativo Web no Google Cloud e configure as origens JavaScript autorizadas
 (`http://localhost:5173` durante o desenvolvimento e a URL do frontend em
-producao). Use o mesmo Client ID nas variaveis `GOOGLE_CLIENT_ID` e
+produção). Use o mesmo Client ID nas variáveis `GOOGLE_CLIENT_ID` e
 `VITE_GOOGLE_CLIENT_ID`. O backend valida o token e aceita somente contas dos
-dominios `@discente.ifpe.edu.br` e `@belojardim.ifpe.edu.br`; contas pessoais
-`@gmail.com` sao recusadas.
+domínios `@discente.ifpe.edu.br` e `@belojardim.ifpe.edu.br`; contas pessoais
+`@gmail.com` são recusadas.
 
 ### 3. Subir Toda a Aplicação com Docker Compose
 ```bash
@@ -210,8 +214,9 @@ docker compose up -d --build
 
 ---
 
-# 🧪 Executando Testes e Qualidade (Frontend)
+# 🧪 Executando Testes e Qualidade
 
+### Frontend (`Vitest` + `TypeScript`)
 Dentro da pasta `frontend/`:
 ```bash
 # Instalar dependências
@@ -220,9 +225,16 @@ npm ci
 # Verificação estática de tipos (Lint)
 npm run lint
 
-# Execução da suíte de testes unitários com Vitest
+# Execução da suíte de testes unitários com Vitest (19 suítes / 98 testes)
 npm run test:run
 
 # Build de produção e validação dos pacotes
 npm run build
+```
+
+### Backend (`Maven` + `JUnit 5`)
+Dentro da pasta `backend/`:
+```bash
+# Execução da suíte de testes do backend (11 suítes / 47 testes)
+mvn --batch-mode test
 ```

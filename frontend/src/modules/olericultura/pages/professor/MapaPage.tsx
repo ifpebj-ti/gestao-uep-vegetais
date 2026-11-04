@@ -68,7 +68,7 @@ export const MapaPage: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#eef3e9] font-sans">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#f4f1e7] font-sans">
       {/* ======================================================== */}
       {/* 1. TOP HEADER & FIGMA BLUEPRINT NAVIGATION CHROME */}
       {/* ======================================================== */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CANTEIROS_DATA, CanteiroData } from '../../data/horticulturaData';
+import { CANTEIROS_DATA, CanteiroData, obterSetorPorCultura } from '../../data/horticulturaData';
 import {
   Calendar,
   CheckCircle2,
@@ -215,6 +215,7 @@ export const CanteiroDetailPage: React.FC = () => {
   const modeloExibido = modeloSelecionado || modeloDaFicha;
   const culturaExibida = modeloExibido?.cultura?.trim() || fichaInicial?.cultura?.trim() || canteiro.cultura;
   const nomeCientificoExibido = modeloExibido?.variedade?.trim() || fichaInicial?.variedade?.trim() || canteiro.variedade;
+  const setorExibido = obterSetorPorCultura(culturaExibida, canteiro.setor);
   const equipeExibida: AlunoResumo[] = responsaveis.length > 0
     ? responsaveis
     : canteiro.estudanteLider
@@ -259,9 +260,11 @@ export const CanteiroDetailPage: React.FC = () => {
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#27633b] font-mono text-sm font-bold text-white shadow-sm">
                   {canteiro.codigo}
                 </span>
-                <span className="rounded-lg bg-emerald-100/80 px-2.5 py-1 text-xs font-semibold text-[#1a4428]">
-                  {canteiro.setor}
-                </span>
+                {setorExibido && (
+                  <span className="rounded-lg bg-emerald-100/80 px-2.5 py-1 text-xs font-semibold text-[#1a4428]">
+                    {setorExibido}
+                  </span>
+                )}
                 <span
                   style={{ backgroundColor: `${canteiro.statusColor}18`, color: canteiro.statusColor }}
                   className="rounded-lg px-3 py-1 text-xs font-bold"
