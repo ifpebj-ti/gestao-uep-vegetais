@@ -37,7 +37,7 @@ COPY . .
 RUN npm run build
 
 # ---- Estágio 3: Servir com Nginx ----
-FROM nginx:1.27-bookworm AS production
+FROM nginx:stable-bookworm AS production
 
 # Atualiza os pacotes da base Debian e remove os índices da imagem final.
 RUN apt-get update \
