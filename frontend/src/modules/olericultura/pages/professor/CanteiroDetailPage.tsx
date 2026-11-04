@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CANTEIROS_DATA, CanteiroData, obterSetorPorCultura } from '../../data/horticulturaData';
 import {
   Calendar,
-  CheckCircle2,
   Sprout,
   FileText,
   Menu,

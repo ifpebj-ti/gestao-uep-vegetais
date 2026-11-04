@@ -396,38 +396,6 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
     }
   };
 
-  const renderCampo = (campo: keyof FichaCampoData, className = 'text-slate-800 font-semibold') => {
-    const valor = String(ficha[campo] ?? '');
-    if (!podeEditar) return <span className={className}>{valor || '—'}</span>;
-
-    return (
-      <input
-        aria-label={String(campo)}
-        value={valor}
-        onChange={(evento) => atualizarCampo(campo, evento.target.value)}
-        className={`min-w-0 flex-1 rounded-md border border-emerald-200 bg-emerald-50/30 px-2 py-1 text-xs text-slate-800 focus:border-[#27633b] focus:outline-none ${className}`}
-      />
-    );
-  };
-
-  const renderTexto = (campo: keyof FichaCampoData, placeholder: string) => {
-    const valor = String(ficha[campo] ?? '');
-    if (!podeEditar) {
-      return <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-slate-700">{valor || placeholder}</p>;
-    }
-
-    return (
-      <textarea
-        aria-label={String(campo)}
-        value={valor}
-        onChange={(evento) => atualizarCampo(campo, evento.target.value)}
-        placeholder={placeholder}
-        rows={4}
-        className="mt-2 w-full resize-y rounded-lg border border-emerald-200 bg-emerald-50/30 p-2 text-xs leading-relaxed text-slate-700 focus:border-[#27633b] focus:outline-none"
-      />
-    );
-  };
-
   return (
     <div className="space-y-4 print:space-y-0 print:m-0 print:p-0">
       {/* Barra de Ações & Notificações */}
