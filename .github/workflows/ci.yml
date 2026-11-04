@@ -54,6 +54,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Audit Frontend Dependencies
+        working-directory: ./frontend
+        run: npm audit --audit-level=high
+
       # Validação estática de tipagem e integridade do código
       - name: Frontend Lint & Type Check
         working-directory: ./frontend
