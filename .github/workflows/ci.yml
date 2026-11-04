@@ -134,13 +134,16 @@ jobs:
       # Varredura de vulnerabilidades de seguranca com o Aqua Security Trivy
       # Falha a pipeline (exit-code: 1) caso encontre vulnerabilidades com severidade CRITICAL
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:temp-scan
-          format: 'table'
-          severity: 'CRITICAL'
-          exit-code: '1'
-          ignore-unfixed: true
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.cache/trivy:/root/.cache/trivy" \
+            aquasec/trivy:0.75.0 image \
+            --format table \
+            --severity CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed \
+            "${IMAGE_NAME}:temp-scan"
 
       # Gera as tags e metadados oficiais para a imagem
       - name: Extrair metadados do Docker
