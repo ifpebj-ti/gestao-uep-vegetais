@@ -22,7 +22,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
     </GoogleOAuthProvider>
   );
 
-  it('deve direcionar usuário deslogado para a seleção de UEP na raiz (/)', async () => {
+  it('deve direcionar usuário deslogado para a tela de login na raiz (/)', async () => {
     window.history.pushState({}, '', '/');
 
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
@@ -36,9 +36,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
 
     renderAppRoutes();
 
-    expect(await screen.findByText(/Selecione a Unidade de Ensino e Produção/i)).toBeInTheDocument();
-    expect(screen.getByText('Olericultura')).toBeInTheDocument();
-    expect(screen.getByText('Fruticultura')).toBeInTheDocument();
+    expect(await screen.findByText('Acesse sua conta')).toBeInTheDocument();
   });
 
   it('deve redirecionar usuário deslogado para /login ao tentar acessar rota protegida /mapa', async () => {
@@ -126,5 +124,29 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
 
     expect(await screen.findByTestId('terrarium-map-mock')).toBeInTheDocument();
     expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
+  });
+
+  it('deve permitir acesso do ADMIN à rota /admin e bloquear PROFESSOR na rota /admin', async () => {
+    window.history.pushState({}, '', '/admin');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-admin',
+        nome: 'Administrador Terrarium',
+        email: 'admin@belojardim.ifpe.edu.br',
+        role: 'ADMIN',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(
+      await screen.findByRole('heading', { name: /gestão de professores e ueps/i })
+    ).toBeInTheDocument();
   });
 });

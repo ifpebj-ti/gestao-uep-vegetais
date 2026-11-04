@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { UepProvider } from '../contexts/UepContext';
 import { ProtectedRoute } from './ProtectedRoute';
-import { SelectUepPage } from '../modules/auth/pages/SelectUepPage';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
+import { AdminDashboardPage } from '../modules/admin/pages/AdminDashboardPage';
 
 // Code-splitting via React.lazy para reduzir o bundle inicial
 const ForgotPasswordPage = React.lazy(() =>
@@ -48,15 +48,17 @@ export default function AppRoutes() {
         <UepProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Passo 1 da Jornada: Escolha da UEP */}
-              <Route path="/" element={<SelectUepPage />} />
-              <Route path="/selecionar-uep" element={<SelectUepPage />} />
-
-              {/* Passo 2 da Jornada: Autenticação */}
+              {/* Autenticação */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+
+              {/* Rotas Protegidas - Perfil Administrador */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                <Route path="/admin" element={<AdminDashboardPage />} />
+              </Route>
 
               {/* Rotas Protegidas - Perfil Professor */}
               <Route element={<ProtectedRoute allowedRoles={['PROFESSOR', 'ADMIN']} />}>
@@ -83,7 +85,7 @@ export default function AppRoutes() {
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
               </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Suspense>
         </UepProvider>

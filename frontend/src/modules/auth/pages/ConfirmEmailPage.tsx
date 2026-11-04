@@ -88,11 +88,12 @@ export const ConfirmEmailPage: React.FC = () => {
                         <Button
                             type="button"
                             variant="primary"
+                            size="lg"
+                            fullWidth
                             onClick={() => navigate('/login')}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#27633b] py-3.5 text-base font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#174b32]"
+                            rightIcon={<ArrowRight className="h-4 w-4" />}
                         >
-                            <span>Ir para o login</span>
-                            <ArrowRight className="h-4 w-4" />
+                            Ir para o login
                         </Button>
                     </div>
                 </div>
@@ -116,8 +117,9 @@ export const ConfirmEmailPage: React.FC = () => {
                         <Button
                             type="button"
                             variant="primary"
+                            size="md"
+                            fullWidth
                             onClick={() => setStatus('idle')}
-                            className="w-full rounded-xl bg-[#27633b] py-3 text-sm font-bold text-white hover:bg-[#174b32]"
                         >
                             Digitar código manualmente
                         </Button>
@@ -167,7 +169,8 @@ export const ConfirmEmailPage: React.FC = () => {
                         <Button
                             type="submit"
                             variant="primary"
-                            className="w-full rounded-xl bg-[#27633b] py-3.5 text-base font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#174b32]"
+                            size="lg"
+                            fullWidth
                         >
                             Confirmar e-mail
                         </Button>

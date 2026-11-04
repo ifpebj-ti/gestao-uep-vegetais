@@ -32,4 +32,15 @@ describe('Componente Button', () => {
     expect(screen.getByText('Carregando...')).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
   });
+
+  it('deve aplicar as classes do modelo (variant), tamanho (size) e largura total (fullWidth)', () => {
+    render(
+      <Button variant="danger" size="sm" fullWidth>
+        Remover
+      </Button>
+    );
+    const button = screen.getByRole('button', { name: /remover/i });
+    expect(button.className).toContain('btn-danger');
+    expect(button.className).toContain('w-full');
+  });
 });

@@ -52,6 +52,7 @@ describe('LoginPage', () => {
       token: 'mock-jwt-token',
       nome: 'Isabela Santos',
       email: 'isabela@ifpe.edu.br',
+      uep: 'olericultura',
     });
 
     renderLoginPage();
@@ -73,17 +74,9 @@ describe('LoginPage', () => {
     });
   });
 
-  it('deve exibir a UEP padrão como Olericultura e o link para Trocar UEP', () => {
+  it('não deve exibir seletor nem link de troca de UEP na tela de login', () => {
     renderLoginPage();
 
-    expect(screen.getByText('olericultura')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /trocar uep/i })).toHaveAttribute('href', '/selecionar-uep');
-  });
-
-  it('deve exibir a UEP Fruticultura quando informada via state de navegação', () => {
-    renderLoginPage({ selectedUep: 'fruticultura' });
-
-    expect(screen.getByText('fruticultura')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /trocar uep/i })).not.toBeInTheDocument();
   });
 });
-

@@ -53,21 +53,23 @@ export const UnauthorizedAccess: React.FC<UnauthorizedAccessProps> = ({
           <Button
             type="button"
             variant="primary"
+            size="md"
+            fullWidth
             onClick={handleBack}
-            className="w-full justify-center gap-2 rounded-xl bg-[#27633b] py-3 text-sm font-bold text-white hover:bg-[#174b32]"
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
-            <ArrowLeft className="h-4 w-4" />
             Voltar para a página anterior
           </Button>
 
           <Button
             type="button"
             variant="secondary"
-            onClick={() => navigate('/')}
-            className="w-full justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            size="md"
+            fullWidth
+            onClick={() => navigate('/login')}
+            leftIcon={<Home className="h-4 w-4" />}
           >
-            <Home className="h-4 w-4" />
-            Ir para a seleção de UEP
+            Ir para o login
           </Button>
         </div>
       </div>
