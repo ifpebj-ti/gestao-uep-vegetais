@@ -1,4 +1,5 @@
 import { APP_CONFIG } from '../config/constants';
+import { adminService } from './adminService';
 
 export interface LoginCredentials {
   email: string;
@@ -11,6 +12,7 @@ export interface LoginResponse {
   nome: string;
   email: string;
   role?: 'ADMIN' | 'USUARIO' | 'PROFESSOR' | 'ALUNO' | string;
+  uep?: 'olericultura' | 'fruticultura' | string;
 }
 
 export interface UserSession {
@@ -18,6 +20,7 @@ export interface UserSession {
   nome: string;
   email: string;
   role?: 'ADMIN' | 'USUARIO' | 'PROFESSOR' | 'ALUNO' | string;
+  uep?: 'olericultura' | 'fruticultura' | string;
 }
 
 export interface RegisterData {
@@ -31,6 +34,13 @@ const STORAGE_KEY = APP_CONFIG.storageKeys.session;
 export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
+
+    // 1. Prioriza autenticação local do Frontend para o Admin e professores cadastrados no painel Admin
+    const localSession = adminService.autenticarLocal(email, senha);
+    if (localSession) {
+      this.saveSession(localSession, rememberMe);
+      return localSession;
+    }
 
     let response: Response;
     try {
@@ -63,8 +73,12 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    this.saveSession(data, rememberMe);
-    return data;
+    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
+    const enrichedData: LoginResponse =
+      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
+
+    this.saveSession(enrichedData, rememberMe);
+    return enrichedData;
   },
 
   async loginWithGoogle(
@@ -104,8 +118,12 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    this.saveSession(data, rememberMe);
-    return data;
+    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
+    const enrichedData: LoginResponse =
+      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
+
+    this.saveSession(enrichedData, rememberMe);
+    return enrichedData;
   },
 
   async register(data: RegisterData): Promise<{ message: string }> {
@@ -215,8 +233,6 @@ export const authService = {
         'Se a conta puder receber confirmação, um novo e-mail será enviado.',
     };
   },
-
-
 
   saveSession(session: UserSession, rememberMe = false): void {
     sessionStorage.removeItem(STORAGE_KEY);

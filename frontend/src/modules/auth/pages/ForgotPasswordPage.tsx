@@ -49,7 +49,8 @@ export const ForgotPasswordPage: React.FC = () => {
                     <Button
                         type="submit"
                         variant="primary"
-                        className="w-full rounded-xl bg-[#27633b] py-3 font-bold text-white hover:bg-[#174b32]"
+                        size="lg"
+                        fullWidth
                     >
                         Enviar instruções
                     </Button>

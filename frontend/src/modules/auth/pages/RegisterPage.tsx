@@ -57,6 +57,9 @@ export const RegisterPage: React.FC = () => {
             setErrorMessage(
                 'É necessário utilizar um e-mail institucional de aluno ou professor (ex: nome@discente.ifpe.edu.br ou nome@belojardim.ifpe.edu.br).'
             );
+        }
+
+        if (!isAcademicEmail(emailTrim)) {
             return;
         }
 
@@ -148,8 +151,9 @@ export const RegisterPage: React.FC = () => {
                         <Button
                             type="button"
                             variant="primary"
+                            size="lg"
+                            fullWidth
                             onClick={() => navigate('/login')}
-                            className="w-full rounded-xl bg-[#27633b] py-3.5 text-base font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#174b32]"
                         >
                             Ir para o login
                         </Button>
@@ -176,7 +180,6 @@ export const RegisterPage: React.FC = () => {
         );
     }
 
-
     return (
         <AuthLayout>
             <div className="mb-8">
@@ -196,7 +199,6 @@ export const RegisterPage: React.FC = () => {
                 </div>
             )}
 
-
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
                 <Input
                     id="nome"
@@ -206,7 +208,6 @@ export const RegisterPage: React.FC = () => {
                     onChange={(e) => setNome(e.target.value)}
                     disabled={isLoading}
                 />
-
 
                 <Input
                     id="email"
@@ -272,10 +273,7 @@ export const RegisterPage: React.FC = () => {
                             </ul>
                         </div>
                     )}
-
                 </div>
-
-
 
                 <Input
                     id="confirmarSenha"
@@ -316,8 +314,9 @@ export const RegisterPage: React.FC = () => {
                 <Button
                     type="submit"
                     variant="primary"
+                    size="lg"
+                    fullWidth
                     isLoading={isLoading}
-                    className="w-full rounded-xl bg-[#27633b] py-3.5 text-base font-bold text-white shadow-lg shadow-[#27633b]/20 transition-colors hover:bg-[#174b32]"
                 >
                     Criar conta
                 </Button>

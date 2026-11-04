@@ -36,14 +36,14 @@ describe('UnauthorizedAccess', () => {
     expect(handleBack).toHaveBeenCalledTimes(1);
   });
 
-  it('deve navegar para home ao clicar no botão de seleção de UEP', () => {
+  it('deve navegar para /login ao clicar no botão Ir para o login', () => {
     render(
       <MemoryRouter>
         <UnauthorizedAccess userRole="ALUNO" />
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /ir para a seleção de uep/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    fireEvent.click(screen.getByRole('button', { name: /ir para o login/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 });

@@ -12,10 +12,12 @@ import {
   LogOut,
   Droplets,
   Scale,
+  ShieldCheck,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../config/constants';
 import { useAuth } from '../../../contexts/AuthContext';
 import { PerfilUsuario } from '../data/horticulturaData';
+import { identifyRoleByEmail } from '../../auth/utils/roleIdentifier';
 
 export interface TerrariumMenuProps {
   isOpen: boolean;
@@ -34,11 +36,13 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
 
   if (!isOpen) return null;
 
+  const isAdmin = user ? identifyRoleByEmail(user.email, user.role) === 'ADMIN' : false;
+
   // Deriva o perfil diretamente da sessão de login
   const perfil: PerfilUsuario = (() => {
     const role = (user?.role || '').toLowerCase();
     if (role === 'aluno') return 'aluno';
-    if (role === 'professor') return 'professor';
+    if (role === 'professor' || role === 'admin') return 'professor';
     return 'indefinido';
   })();
 
@@ -108,17 +112,32 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
               )}
             </div>
             <span className="rounded-full bg-[#27633b]/10 px-2.5 py-1 text-[11px] font-bold text-[#27633b] shrink-0">
-              {perfil === 'professor'
-                ? 'Professor'
-                : perfil === 'aluno'
-                  ? 'Aluno'
-                  : 'Usuário'}
+              {isAdmin
+                ? 'Admin'
+                : perfil === 'professor'
+                  ? 'Professor'
+                  : perfil === 'aluno'
+                    ? 'Aluno'
+                    : 'Usuário'}
             </span>
           </div>
         </div>
 
         {/* Navigation Menu Links */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1 text-xs">
+          {isAdmin && (
+            <button
+              onClick={() => handleNavigate('/admin')}
+              className="mb-2 flex w-full items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/80 px-3.5 py-3 font-bold text-[#174b32] hover:bg-emerald-100 transition"
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-4 w-4 text-[#27633b]" />
+                <span>Painel do Administrador</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-[#27633b]" />
+            </button>
+          )}
+
           <div className="pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3">
             Módulos do Terrarium
           </div>

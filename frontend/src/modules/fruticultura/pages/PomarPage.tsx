@@ -1,21 +1,29 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Apple, ArrowLeft, Sprout } from 'lucide-react';
+import { Apple, LogOut, ShieldCheck, Sprout } from 'lucide-react';
+import { Button } from '../../../components/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUep } from '../../../contexts/UepContext';
+import { identifyRoleByEmail } from '../../auth/utils/roleIdentifier';
 
 export const PomarPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { setSelectedUep } = useUep();
   const navigate = useNavigate();
 
+  const userRole = user ? identifyRoleByEmail(user.email, user.role) : 'PROFESSOR';
+  const isAdmin = userRole === 'ADMIN';
+  const isAluno = userRole === 'ALUNO';
+
   const handleSwitchToOlericultura = () => {
     setSelectedUep('olericultura');
-    const isAluno = user?.role?.toLowerCase() === 'aluno';
     navigate(isAluno ? '/olericultura/aluno/mapa' : '/olericultura/professor/mapa');
   };
 
-  const isAluno = user?.role?.toLowerCase() === 'aluno';
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#fbf7f0] p-6 text-slate-800 font-sans">
@@ -34,26 +42,44 @@ export const PomarPage: React.FC = () => {
 
         <p className="mt-3 text-sm text-slate-600 leading-relaxed">
           Você está autenticado como{' '}
-          <strong className="text-amber-700 uppercase">{isAluno ? 'Aluno' : 'Professor'}</strong> ({user?.nome || user?.email}).
-          A modelagem tridimensional e fichas de campo das fruteiras estão sendo preparadas pela equipe.
+          <strong className="text-amber-700 uppercase">
+            {isAdmin ? 'Admin' : isAluno ? 'Aluno' : 'Professor'}
+          </strong>{' '}
+          ({user?.nome || user?.email}). A modelagem tridimensional e fichas de campo das fruteiras estão sendo preparadas pela equipe.
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            onClick={() => navigate('/selecionar-uep')}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 hover:scale-105 active:scale-95 transition"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Trocar de UEP</span>
-          </button>
+        <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
+          {isAdmin && (
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              onClick={() => navigate('/admin')}
+              leftIcon={<ShieldCheck className="h-4 w-4" />}
+            >
+              Painel do Admin
+            </Button>
+          )}
 
-          <button
-            onClick={handleSwitchToOlericultura}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[#27633b] px-5 py-3 text-xs font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#1a4428] hover:scale-105 active:scale-95 transition"
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={handleLogout}
+            leftIcon={<LogOut className="h-4 w-4" />}
           >
-            <Sprout className="h-4 w-4" />
-            <span>Acessar Olericultura</span>
-          </button>
+            Sair da conta
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            onClick={handleSwitchToOlericultura}
+            leftIcon={<Sprout className="h-4 w-4" />}
+          >
+            Acessar Olericultura
+          </Button>
         </div>
       </div>
     </div>

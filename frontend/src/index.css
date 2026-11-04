@@ -55,8 +55,41 @@
   --font-serif: 'Libra Serif Modern', serif;
 }
 
+/* ==========================================================================
+   TOKENS CENTRALIZADOS DE CORES DOS MODELOS DE BOTÃO
+   Altere qualquer cor abaixo para refletir automaticamente em todo o sistema
+   ========================================================================== */
 :root {
   color-scheme: light;
+
+  /* Modelo Primary (Verde Institucional Terrarium) */
+  --btn-primary-bg: #27633b;
+  --btn-primary-bg-hover: #174b32;
+  --btn-primary-text: #ffffff;
+  --btn-primary-shadow: rgba(39, 99, 59, 0.22);
+
+  /* Modelo Secondary (Neutro / Ação Secundária) */
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-bg-hover: #f8fafc;
+  --btn-secondary-text: #334155;
+  --btn-secondary-border: #e2e8f0;
+
+  /* Modelo Outline (Contorno Verde Institucional) */
+  --btn-outline-bg: transparent;
+  --btn-outline-bg-hover: #ecfdf5;
+  --btn-outline-text: #174b32;
+  --btn-outline-border: #a7f3d0;
+
+  /* Modelo Danger (Remover / Excluir / Sair) */
+  --btn-danger-bg: #fef2f2;
+  --btn-danger-bg-hover: #fee2e2;
+  --btn-danger-text: #dc2626;
+  --btn-danger-border: #fecaca;
+
+  /* Modelo Amber (Fruticultura / Destaque Quente) */
+  --btn-amber-bg: #d97706;
+  --btn-amber-bg-hover: #b45309;
+  --btn-amber-text: #ffffff;
 }
 
 body {
@@ -93,18 +126,14 @@ select:disabled {
   cursor: not-allowed;
 }
 
-
 /* Base button styles */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 0.75rem;
-  padding: 0.625rem 1.25rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
   transition: all 0.15s ease-in-out;
   cursor: pointer;
   border: 1px solid transparent;
@@ -116,31 +145,50 @@ select:disabled {
 }
 
 .btn-primary {
-  background-color: #27633b;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(39, 99, 59, 0.2);
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: 0 4px 12px var(--btn-primary-shadow);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #174b32;
+  background-color: var(--btn-primary-bg-hover);
 }
 
 .btn-secondary {
-  background-color: #e2e8f0;
-  color: #1e293b;
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #cbd5e1;
+  background-color: var(--btn-secondary-bg-hover);
 }
 
 .btn-outline {
-  border: 1px solid #cbd5e1;
-  background-color: transparent;
-  color: #334155;
+  border-color: var(--btn-outline-border);
+  background-color: var(--btn-outline-bg);
+  color: var(--btn-outline-text);
 }
 
 .btn-outline:hover:not(:disabled) {
-  background-color: #f8fafc;
-  border-color: #94a3b8;
+  background-color: var(--btn-outline-bg-hover);
+}
+
+.btn-danger {
+  background-color: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
+  border-color: var(--btn-danger-border);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--btn-danger-bg-hover);
+}
+
+.btn-amber {
+  background-color: var(--btn-amber-bg);
+  color: var(--btn-amber-text);
+}
+
+.btn-amber:hover:not(:disabled) {
+  background-color: var(--btn-amber-bg-hover);
 }
