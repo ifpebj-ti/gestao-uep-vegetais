@@ -19,15 +19,18 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # ---- Estágio 2: Imagem final de produção ----
-FROM eclipse-temurin:21-jre-alpine AS production
+FROM eclipse-temurin:21-jre-noble AS production
 
 WORKDIR /app
 
-# Atualiza pacotes do runtime Alpine para receber correções de segurança.
-RUN apk update && apk upgrade --no-cache
+# Atualiza os pacotes da base Ubuntu e remove os índices para não deixá-los na imagem.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Crie um usuário não-root para segurança
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd --system appgroup \
+    && useradd --system --no-create-home --gid appgroup appuser
 
 # Copie o JAR do estágio builder
 COPY --from=builder /app/target/*.jar app.jar

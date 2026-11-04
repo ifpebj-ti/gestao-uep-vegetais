@@ -37,9 +37,15 @@ services:
       - DB_PASS=${DB_PASS:-postgres}
       - JWT_SECRET=${JWT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+      - MAIL_SMTP_AUTH=false
+      - MAIL_SMTP_STARTTLS=false
     depends_on:
       database:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     networks:
       - app-network
     healthcheck:
@@ -97,6 +103,18 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Mailpit — SMTP local para desenvolvimento e testes
+  # ---------------------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    container_name: gestao-uep-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+    networks:
+      - app-network
 
 # =============================================================================
 # Volumes nomeados — Persistência de dados
