@@ -132,9 +132,10 @@ jobs:
       # Varredura de vulnerabilidades de seguranca com o Aqua Security Trivy
       # Falha a pipeline (exit-code: 1) caso encontre vulnerabilidades com severidade CRITICAL
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:temp-scan
+          version: v0.75.0
           format: 'table'
           severity: 'CRITICAL'
           exit-code: '1'
