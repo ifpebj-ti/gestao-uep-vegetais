@@ -45,6 +45,33 @@ vi.mock('../../components/TerrariumMap', () => {
           >
             Selecionar Canteiro 01
           </button>
+          <button
+            data-testid="simulate-select-infraestrutura"
+            onClick={() =>
+              onSelectCanteiro({
+                id: 'recepcao',
+                codigo: 'RECP',
+                nome: 'Recepção de Materiais',
+                setor: 'Apoio e Logística UEP',
+                tipo: 'recepcao',
+                cultura: 'Triagem e Substratos',
+                status: 'em_crescimento',
+                statusLabel: 'Operacional',
+                statusColor: '#64748b',
+                diasPlantio: 271,
+                diasPrevistosColheita: 365,
+                umidadeSolo: 50,
+                areaM2: 16.0,
+                observacoes: 'Área coberta',
+                professorResponsavel: 'Prof. George Guimarães',
+                estudanteLider: 'Alice Albuquerque',
+                turmaResponsavel: 'Monitoria UEP Vegetais',
+                tarefasPendentes: [],
+              })
+            }
+          >
+            Selecionar Recepcao
+          </button>
         </div>
       );
     },
@@ -130,5 +157,15 @@ describe('MapaPage', () => {
     fireEvent.click(triggerSelect);
 
     expect(mockNavigate).toHaveBeenCalledWith('/canteiro/c-01');
+  });
+
+  it('não deve abrir o card de detalhes ao selecionar setores de infraestrutura (Recepção, Composteira, etc.)', () => {
+    renderMapaPage();
+
+    const triggerInfra = screen.getByTestId('simulate-select-infraestrutura');
+    fireEvent.click(triggerInfra);
+
+    expect(screen.queryByText('Recepção de Materiais')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver mais/i })).not.toBeInTheDocument();
   });
 });

@@ -15,6 +15,7 @@ import {
   RotateCcw,
   ExternalLink,
   Sprout,
+  GraduationCap,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../../config/constants';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -50,6 +51,14 @@ export const MapaPage: React.FC = () => {
 
   // Handle canteiro selection from 3D map
   const handleSelectCanteiro = (canteiro: CanteiroData | null) => {
+    // Setores de infraestrutura (Recepção, Composteira, Água, Minhocário) exibem apenas tooltip ao passar o mouse
+    if (
+      canteiro &&
+      ['recepcao', 'composteira', 'agua', 'minhocario'].includes(canteiro.id)
+    ) {
+      return;
+    }
+
     setSelectedCanteiro(canteiro);
     if (canteiro && redirectDirectlyRef.current) {
       const detailPath = perfil === 'aluno'
@@ -73,18 +82,28 @@ export const MapaPage: React.FC = () => {
       {/* 1. TOP HEADER & FIGMA BLUEPRINT NAVIGATION CHROME */}
       {/* ======================================================== */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
-        {/* LEFT CORNER: Sleek Hamburger Menu Pill (Matching Figma's green tab) */}
+        {/* LEFT CORNER: Sleek Hamburger Menu Pill & Turmas shortcut */}
         <div className="pointer-events-auto flex items-center gap-3">
           <button
             onClick={() => setIsMenuOpen(true)}
             aria-label="Abrir menu de navegação do sistema"
-            className="group flex h-12 items-center gap-2.5 rounded-2xl bg-[#27633b] px-4 text-white shadow-xl shadow-[#27633b]/25 transition-all duration-200 hover:bg-[#1a4428] hover:scale-105 active:scale-95"
+            className="group flex h-12 items-center gap-2.5 rounded-2xl bg-[#27633b] px-4 text-white shadow-xl shadow-[#27633b]/25 transition-all duration-200 hover:bg-[#1a4428] hover:scale-105 active:scale-95 cursor-pointer"
             title="Menu do Sistema Terrarium"
           >
             <Menu className="h-5 w-5 transition group-hover:rotate-6" />
             <span className="hidden text-xs font-bold tracking-wider uppercase sm:inline">
               Menu
             </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/olericultura/professor/turmas')}
+            aria-label="Minhas Turmas e Códigos"
+            className="flex h-12 items-center gap-2 rounded-2xl border border-emerald-900/10 bg-white/90 px-3.5 text-xs font-bold text-[#27633b] shadow-xl backdrop-blur-md transition hover:bg-emerald-50 hover:scale-105 active:scale-95 cursor-pointer"
+            title="Minhas Turmas e Códigos de Acesso"
+          >
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden md:inline">Minhas Turmas</span>
           </button>
         </div>
 
@@ -194,7 +213,7 @@ export const MapaPage: React.FC = () => {
       {/* ======================================================== */}
       {/* 5. CANTEIRO INSPECTOR CARD (Bottom Sheet / Slide-in Card) */}
       {/* ======================================================== */}
-      {selectedCanteiro && (
+      {selectedCanteiro && !['recepcao', 'composteira', 'agua', 'minhocario'].includes(selectedCanteiro.id) && (
         <aside
           role="complementary"
           aria-label={`Detalhes do ${selectedCanteiro.nome}`}

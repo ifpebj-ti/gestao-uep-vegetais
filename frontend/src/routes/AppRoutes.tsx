@@ -1,10 +1,14 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { UepProvider } from '../contexts/UepContext';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
 import { AdminDashboardPage } from '../modules/admin/pages/AdminDashboardPage';
+import { AlunoMapaPage } from '../modules/olericultura/pages/aluno/AlunoMapaPage';
+import { AlunoCanteiroDetailPage } from '../modules/olericultura/pages/aluno/AlunoCanteiroDetailPage';
+import { TurmasProfessorPage } from '../modules/olericultura/pages/professor/TurmasProfessorPage';
+import { TurmaDetalheProfessorPage } from '../modules/olericultura/pages/professor/TurmaDetalheProfessorPage';
 
 // Code-splitting via React.lazy para reduzir o bundle inicial
 const ForgotPasswordPage = React.lazy(() =>
@@ -72,13 +76,17 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/colheita" element={<ColheitaPage />} />
                 <Route path="/olericultura/professor/colheita" element={<ColheitaPage />} />
+                <Route path="/turmas" element={<TurmasProfessorPage />} />
+                <Route path="/olericultura/professor/turmas" element={<TurmasProfessorPage />} />
+                <Route path="/turmas/:id" element={<TurmaDetalheProfessorPage />} />
+                <Route path="/olericultura/professor/turmas/:id" element={<TurmaDetalheProfessorPage />} />
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
               </Route>
 
               {/* Rotas Protegidas - Perfil Aluno */}
               <Route element={<ProtectedRoute allowedRoles={['ALUNO', 'ADMIN']} />}>
-                <Route path="/olericultura/aluno/mapa" element={<MapaPage />} />
-                <Route path="/olericultura/aluno/canteiro/:id" element={<CanteiroDetailPage />} />
+                <Route path="/olericultura/aluno/mapa" element={<AlunoMapaPage />} />
+                <Route path="/olericultura/aluno/canteiro/:id" element={<AlunoCanteiroDetailPage />} />
                 <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />
