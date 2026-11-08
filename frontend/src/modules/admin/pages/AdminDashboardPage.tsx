@@ -13,13 +13,11 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  ArrowUpRight,
   Mail,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../config/constants';
 import { Button } from '../../../components/Button';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useUep } from '../../../contexts/UepContext';
 import { UepType } from '../../../types/uep';
 import {
   adminService,
@@ -30,7 +28,6 @@ import {
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { setSelectedUep } = useUep();
 
   const [professores, setProfessores] = useState<ProfessorCadastrado[]>(() =>
     adminService.listarProfessores()
@@ -164,15 +161,6 @@ export const AdminDashboardPage: React.FC = () => {
     mostrarFeedback('sucesso', `Professor(a) ${prof.nome} removido(a) da lista.`);
   };
 
-  const handleAcessarUep = (uep: UepType) => {
-    setSelectedUep(uep);
-    if (uep === 'fruticultura') {
-      navigate('/fruticultura/professor/pomar');
-    } else {
-      navigate('/olericultura/professor/mapa');
-    }
-  };
-
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -216,34 +204,9 @@ export const AdminDashboardPage: React.FC = () => {
             >
               Gestão de Professores e UEPs
             </h1>
-            <p className="mt-1 text-sm text-white/85">
-              Cadastre os docentes pelo e-mail institucional e vincule cada professor à sua respectiva UEP.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <Button
-              type="button"
-              variant="header-glass"
-              size="sm"
-              onClick={() => handleAcessarUep('olericultura')}
-              leftIcon={<Sprout className="h-4 w-4 text-emerald-300" />}
-              rightIcon={<ArrowUpRight className="h-3.5 w-3.5 opacity-75" />}
-            >
-              Ver Olericultura
-            </Button>
-
-            <Button
-              type="button"
-              variant="header-glass"
-              size="sm"
-              onClick={() => handleAcessarUep('fruticultura')}
-              leftIcon={<Apple className="h-4 w-4 text-amber-300" />}
-              rightIcon={<ArrowUpRight className="h-3.5 w-3.5 opacity-75" />}
-            >
-              Ver Fruticultura
-            </Button>
-
             <Button
               type="button"
               variant="header-light"
@@ -588,9 +551,6 @@ export const AdminDashboardPage: React.FC = () => {
                   placeholder="professor@belojardim.ifpe.edu.br"
                   className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-900 focus:border-[#27633b] focus:bg-white focus:outline-hidden"
                 />
-                <p className="mt-1.5 text-[11px] text-slate-500">
-                  Permitido somente domínio institucional (<strong>@belojardim.ifpe.edu.br</strong> ou <strong>@ifpe.edu.br</strong>). O professor acessará com sua própria conta institucional, sem necessidade de senha gerada pelo Admin.
-                </p>
               </div>
 
               {/* Seleção Visual de UEP */}
