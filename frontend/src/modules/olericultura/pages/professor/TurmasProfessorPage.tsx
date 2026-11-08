@@ -71,7 +71,7 @@ export const TurmasProfessorPage: React.FC = () => {
     }
 
     try {
-      const nova = turmaService.criarTurma({
+      turmaService.criarTurma({
         nome,
         professorEmail,
         professorNome,
