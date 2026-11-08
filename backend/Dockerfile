@@ -19,7 +19,7 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # ---- Estágio 2: Imagem final de produção ----
-FROM eclipse-temurin:24-jre-noble AS production
+FROM eclipse-temurin:25-jre-noble AS production
 
 WORKDIR /app
 
