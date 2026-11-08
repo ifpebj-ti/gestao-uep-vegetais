@@ -4,9 +4,6 @@ import {
   Plus,
   Copy,
   CheckCircle2,
-  Calendar,
-  Sprout,
-  Apple,
   X,
   AlertCircle,
 } from 'lucide-react';
@@ -59,7 +56,7 @@ export const PainelTurmasProfessor: React.FC<PainelTurmasProfessorProps> = ({
     }
 
     try {
-      const nova = turmaService.criarTurma({
+      turmaService.criarTurma({
         nome,
         professorEmail,
         professorNome,

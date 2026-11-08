@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Sprout,
   Leaf,
-  FileText,
   Settings,
   LogOut,
   Droplets,

@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Calendar,
   Sprout,
-  Apple,
   X,
   AlertCircle,
   KeyRound,

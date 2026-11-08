@@ -7,23 +7,18 @@ import {
   CheckCircle2,
   Trash2,
   Calendar,
-  Sprout,
   ArrowLeft,
   Search,
   AlertCircle,
-  X,
   UserX,
-  Clock,
 } from 'lucide-react';
 import { BackButton } from '../../../../components/BackButton';
 import { Button } from '../../../../components/Button';
 import { turmaService, Turma, AlunoTurmaResumo } from '../../../../services/turmaService';
-import { useAuth } from '../../../../contexts/AuthContext';
 
 export const TurmaDetalheProfessorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [turma, setTurma] = useState<Turma | null>(() => (id ? turmaService.buscarTurmaPorId(id) : null));
   const [alunos, setAlunos] = useState<AlunoTurmaResumo[]>(() =>

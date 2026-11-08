@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { TurmaDetalheProfessorPage } from './TurmaDetalheProfessorPage';
 import * as AuthContextModule from '../../../../contexts/AuthContext';
-import { turmaService } from '../../../../services/turmaService';
 
 describe('TurmaDetalheProfessorPage - Gestão de Alunos da Turma', () => {
   beforeEach(() => {
