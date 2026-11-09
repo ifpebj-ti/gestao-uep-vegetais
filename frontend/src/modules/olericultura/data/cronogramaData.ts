@@ -1339,7 +1339,6 @@ export const CRONOGRAMA_CANTEIROS: CanteiroCronograma[] = [
 export const gerarCronogramaParaCanteiro = (canteiro: CanteiroData): CanteiroCronograma => {
   const isProntoColheita = canteiro.status === 'pronto_colheita';
   const isEmCrescimento = canteiro.status === 'em_crescimento';
-  const isRecemPlantado = canteiro.status === 'recem_plantado';
 
   let icone: CanteiroCronograma['icone'] = 'folha';
   const cultLower = canteiro.cultura.toLowerCase();

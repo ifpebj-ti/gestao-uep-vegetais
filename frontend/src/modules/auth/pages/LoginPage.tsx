@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../../components/Button';
@@ -31,6 +31,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const redirectAfterLogin = (user: UserSession) => {
         const role = identifyRoleByEmail(user.email, user.role);
@@ -83,9 +90,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             const user = await login({ email: email.trim(), senha });
             onLoginSuccess?.(user.nome);
             setSuccessMessage(`Bem-vindo(a), ${user.nome}! Login realizado com sucesso.`);
-            setTimeout(() => {
+            timeoutRef.current = setTimeout(() => {
                 redirectAfterLogin(user);
-            }, 400);
+            }, 300);
         } catch (error: unknown) {
             setErrorMessage(
                 error instanceof Error
@@ -105,9 +112,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             const user = await loginWithGoogle(credential);
             onLoginSuccess?.(user.nome);
             setSuccessMessage(`Bem-vindo(a), ${user.nome}! Login realizado com sucesso.`);
-            setTimeout(() => {
+            timeoutRef.current = setTimeout(() => {
                 redirectAfterLogin(user);
-            }, 400);
+            }, 300);
         } catch (error: unknown) {
             setErrorMessage(
                 error instanceof Error

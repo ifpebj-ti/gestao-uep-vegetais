@@ -19,15 +19,18 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # ---- Estágio 2: Imagem final de produção ----
-FROM eclipse-temurin:21-jre-alpine AS production
+FROM eclipse-temurin:25-jre-noble AS production
 
 WORKDIR /app
 
-# Atualiza os pacotes da base Alpine 
-RUN apk update && apk upgrade --no-cache
+# Atualiza os pacotes da base Ubuntu e remove os índices para não deixá-los na imagem.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Crie um usuário não-root para segurança
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd --system appgroup \
+    && useradd --system --no-create-home --gid appgroup appuser
 
 # Copie o JAR do estágio builder
 COPY --from=builder /app/target/*.jar app.jar
@@ -40,7 +43,7 @@ EXPOSE 8080
 
 # Health check via Spring Boot Actuator
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+  CMD wget --no-verbose --tries=1 -O /dev/null http://localhost:8080/actuator/health || exit 1
 
 # Comando de inicialização
 CMD ["java", "-jar", "app.jar"]
