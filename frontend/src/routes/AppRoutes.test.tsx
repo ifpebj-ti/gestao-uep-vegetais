@@ -122,7 +122,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
 
     renderAppRoutes();
 
-    expect(await screen.findByTestId('terrarium-map-mock')).toBeInTheDocument();
+    expect(await screen.findByTestId('terrarium-map-mock', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
   });
 

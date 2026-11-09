@@ -248,11 +248,11 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
             </div>
 
             <button
-              onClick={() => alert('Configurações da UEP e Sensores')}
+              onClick={() => handleNavigate('/olericultura/configuracoes')}
               className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
               <Settings className="h-4 w-4 text-slate-500" />
-              <span>Configurações</span>
+              <span>Configurações & Layout 3D</span>
             </button>
 
             <button
