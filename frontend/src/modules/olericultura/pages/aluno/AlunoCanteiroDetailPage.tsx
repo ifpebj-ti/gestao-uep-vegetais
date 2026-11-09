@@ -1,19 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
-  Sprout,
   Calendar,
   CheckCircle2,
   Clock,
   ListTodo,
   Plus,
   History,
-  ArrowLeft,
   FileText,
   UserCheck,
   X,
   AlertCircle,
-  TrendingUp,
 } from 'lucide-react';
 import { CANTEIROS_DATA } from '../../data/horticulturaData';
 import { FichaCampoOlericultura, FichaCampoData } from '../../components/FichaCampoOlericultura';
@@ -28,7 +25,6 @@ import {
 
 export const AlunoCanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const alunoEmail = user?.email || 'aluno@discente.ifpe.edu.br';
@@ -130,15 +126,6 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
     turmaService.alternarStatusTarefa(tarefaId, !statusAtual, alunoNome);
     recarregarDados();
   };
-
-  const tarefasPendentes = useMemo(
-    () => tarefas.filter((t) => !t.concluida),
-    [tarefas]
-  );
-  const tarefasConcluidas = useMemo(
-    () => tarefas.filter((t) => t.concluida),
-    [tarefas]
-  );
 
   return (
     <div className="min-h-screen bg-[#f4f1e7] text-slate-800 font-sans">

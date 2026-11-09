@@ -5,13 +5,9 @@ import {
   GraduationCap,
   Sprout,
   Calendar,
-  CheckCircle2,
   Clock,
   ArrowRight,
   ListTodo,
-  Plus,
-  Compass,
-  FileText,
   UserCheck,
 } from 'lucide-react';
 import { TerrariumMap } from '../../components/TerrariumMap';
