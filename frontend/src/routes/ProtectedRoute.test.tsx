@@ -114,7 +114,7 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('ALUNO')).toBeInTheDocument();
   });
 
-  it('deve permitir acesso para ADMIN mesmo em rotas restritas a PROFESSOR', () => {
+  it('deve bloquear acesso para ADMIN em rotas restritas a PROFESSOR', () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: {
         token: 'token-valido',
@@ -131,6 +131,8 @@ describe('ProtectedRoute', () => {
 
     renderWithRouter('/protegida', ['PROFESSOR']);
 
-    expect(screen.getByText('Conteúdo Protegido')).toBeInTheDocument();
+    expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText('ADMIN')).toBeInTheDocument();
   });
 });

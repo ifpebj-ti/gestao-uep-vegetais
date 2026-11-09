@@ -36,8 +36,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Validação RBAC por papel
   if (allowedRoles && allowedRoles.length > 0) {
     const userRole = identifyRoleByEmail(user.email, user.role);
-    const hasPermission =
-      allowedRoles.includes(userRole) || userRole === 'ADMIN';
+    const hasPermission = allowedRoles.includes(userRole);
 
     if (!hasPermission) {
       return <UnauthorizedAccess userRole={userRole} />;

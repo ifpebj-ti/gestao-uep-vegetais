@@ -189,7 +189,7 @@ export const TerrariumMenu: React.FC<TerrariumMenuProps> = ({
             )}
 
             <button
-              onClick={() => handleNavigate('/gestao-canteiros')}
+              onClick={() => handleNavigate(perfil === 'aluno' ? '/olericultura/aluno/gestao-canteiros' : '/gestao-canteiros')}
               className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
             >
               <div className="flex items-center gap-3">
