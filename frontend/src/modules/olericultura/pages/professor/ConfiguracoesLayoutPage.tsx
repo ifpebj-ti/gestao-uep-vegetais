@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Settings,
   Plus,
@@ -6,34 +6,24 @@ import {
   Copy,
   RotateCw,
   Search,
-  Sprout,
   Compass,
   Layers,
   CheckCircle2,
   AlertCircle,
   X,
-  Maximize2,
   Move,
   Menu,
-  Eye,
   List,
   RotateCcw,
   Sparkles,
-  Info,
   Ruler,
 } from 'lucide-react';
 import { Button } from '../../../../components/Button';
 import { TerrariumMenu } from '../../components/TerrariumMenu';
 import { TerrariumIcons } from '../../components/layoutIcons';
-import { APP_CONFIG } from '../../../../config/constants';
-import {
-  CanteiroData,
-  TipoSetor,
-  StatusCultura,
-} from '../../data/horticulturaData';
+import { CanteiroData } from '../../data/horticulturaData';
 import {
   canteiroLayoutService,
-  NovoCanteiroInput,
   DimensoesTerreno,
 } from '../../../../services/canteiroLayoutService';
 
@@ -284,7 +274,7 @@ export const ConfiguracoesLayoutPage: React.FC = () => {
       },
     });
 
-    const atualizados = recarregar();
+    recarregar();
     setCanteiroSelecionadoId(novo.id);
     exibirFeedback(`Novo canteiro ${novoCodigo} inserido no mapa! Arraste-o para onde desejar.`);
   };
