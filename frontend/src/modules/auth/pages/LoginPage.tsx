@@ -40,14 +40,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }, []);
 
     const redirectAfterLogin = (user: UserSession) => {
-        if (typeof window === 'undefined') return;
-        const fromPath = (location.state as LocationState | null)?.from?.pathname;
-        if (fromPath) {
-            navigate(fromPath, { replace: true });
-            return;
-        }
-
         const role = identifyRoleByEmail(user.email, user.role);
+
+        // O Admin só tem acesso ao painel de administração (/admin) e não ao mapa
         if (role === 'ADMIN') {
             navigate('/admin', { replace: true });
             return;
@@ -56,13 +51,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         const userUep = adminService.obterUepDoProfessor(user.email, user.uep);
         setSelectedUep(userUep);
 
-        if (userUep === 'fruticultura') {
-            navigate(role === 'ALUNO' ? '/fruticultura/aluno/pomar' : '/fruticultura/professor/pomar', { replace: true });
-            return;
+        // Define a rota padrão com base no perfil e na UEP
+        const rotaPadrao = userUep === 'fruticultura'
+            ? (role === 'ALUNO' ? '/fruticultura/aluno/pomar' : '/fruticultura/professor/pomar')
+            : (role === 'ALUNO' ? '/olericultura/aluno/mapa' : '/olericultura/professor/mapa');
+
+        const fromPath = (location.state as LocationState | null)?.from?.pathname;
+
+        // Se houver uma rota anterior salva, só redireciona para ela se for permitida para o perfil do usuário
+        if (fromPath) {
+            const rotaValida = role === 'PROFESSOR'
+                ? !fromPath.includes('/aluno/') && !fromPath.includes('/admin')
+                : role === 'ALUNO'
+                    ? !fromPath.includes('/professor/') && !fromPath.includes('/admin')
+                    : false;
+
+            if (rotaValida) {
+                navigate(fromPath, { replace: true });
+                return;
+            }
         }
 
-        // Olericultura (padrão ou vinculado pelo Admin)
-        navigate(role === 'ALUNO' ? '/olericultura/aluno/mapa' : '/olericultura/professor/mapa', { replace: true });
+        navigate(rotaPadrao, { replace: true });
     };
 
     const handleSubmit = async (event: React.SyntheticEvent) => {

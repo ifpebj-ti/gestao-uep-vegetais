@@ -5,6 +5,8 @@ import { UepProvider } from '../contexts/UepContext';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
 import { AdminDashboardPage } from '../modules/admin/pages/AdminDashboardPage';
+import { AlunoMapaPage } from '../modules/olericultura/pages/aluno/AlunoMapaPage';
+import { AlunoCanteiroDetailPage } from '../modules/olericultura/pages/aluno/AlunoCanteiroDetailPage';
 import { TurmasProfessorPage } from '../modules/olericultura/pages/professor/TurmasProfessorPage';
 import { TurmaDetalheProfessorPage } from '../modules/olericultura/pages/professor/TurmaDetalheProfessorPage';
 
@@ -63,7 +65,7 @@ export default function AppRoutes() {
               </Route>
 
               {/* Rotas Protegidas - Perfil Professor */}
-              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR', 'ADMIN']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
                 <Route path="/mapa" element={<MapaPage />} />
                 <Route path="/olericultura/professor/mapa" element={<MapaPage />} />
                 <Route path="/canteiro/:id" element={<CanteiroDetailPage />} />
@@ -82,9 +84,9 @@ export default function AppRoutes() {
               </Route>
 
               {/* Rotas Protegidas - Perfil Aluno */}
-              <Route element={<ProtectedRoute allowedRoles={['ALUNO', 'ADMIN']} />}>
-                <Route path="/olericultura/aluno/mapa" element={<MapaPage />} />
-                <Route path="/olericultura/aluno/canteiro/:id" element={<CanteiroDetailPage />} />
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} />}>
+                <Route path="/olericultura/aluno/mapa" element={<AlunoMapaPage />} />
+                <Route path="/olericultura/aluno/canteiro/:id" element={<AlunoCanteiroDetailPage />} />
                 <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />

@@ -99,7 +99,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
 
     renderAppRoutes();
 
-    expect(await screen.findByTestId('terrarium-map-mock')).toBeInTheDocument();
+    expect(await screen.findByText('Área do Aluno')).toBeInTheDocument();
     expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
   });
 
@@ -148,5 +148,29 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
     expect(
       await screen.findByRole('heading', { name: /gestão de professores e ueps/i })
     ).toBeInTheDocument();
+  });
+
+  it('deve bloquear ADMIN com tela 403 ao tentar acessar a rota de mapa (/olericultura/professor/mapa)', async () => {
+    window.history.pushState({}, '', '/olericultura/professor/mapa');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-admin',
+        nome: 'Administrador Terrarium',
+        email: 'admin@belojardim.ifpe.edu.br',
+        role: 'ADMIN',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText('ADMIN')).toBeInTheDocument();
+    expect(screen.queryByTestId('terrarium-map-mock')).not.toBeInTheDocument();
   });
 });
