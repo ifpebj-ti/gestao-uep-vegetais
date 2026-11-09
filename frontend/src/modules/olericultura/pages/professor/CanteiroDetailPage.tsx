@@ -6,12 +6,16 @@ import {
   Sprout,
   FileText,
   Menu,
+  UserCheck,
+  Clock,
 } from 'lucide-react';
 import { FichaCampoOlericultura } from '../../components/FichaCampoOlericultura';
 import { CronogramaSemanal } from '../../components/CronogramaSemanal';
 import { TerrariumMenu } from '../../components/TerrariumMenu';
 import { BackButton } from '../../../../components/BackButton';
+import { Button } from '../../../../components/Button';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { turmaService, TarefaAluno, RegistroHistoricoAluno } from '../../../../services/turmaService';
 import { FichaCampoData, normalizarEspacamento } from '../../components/FichaCampoOlericultura';
 import { ApiError } from '../../../../services/apiClient';
 import {
@@ -46,6 +50,20 @@ export const CanteiroDetailPage: React.FC = () => {
   const [modelosCultivo, setModelosCultivo] = useState<ModeloCultivoApi[]>([]);
   const [modeloSelecionado, setModeloSelecionado] = useState<ModeloCultivoApi | null>(null);
   const [activeTab, setActiveTab] = useState<'ficha' | 'cronograma' | 'historico'>('ficha');
+  const [tarefasAlunos, setTarefasAlunos] = useState<TarefaAluno[]>(() =>
+    id ? turmaService.listarTarefas(id) : []
+  );
+  const [historicoAlunos, setHistoricoAlunos] = useState<RegistroHistoricoAluno[]>(() =>
+    id ? turmaService.listarHistorico(id) : []
+  );
+
+  const handleDarVisto = (tarefaId: string) => {
+    turmaService.darVistoProfessor(tarefaId, user?.nome || 'Prof. George Henrique');
+    if (id) {
+      setTarefasAlunos(turmaService.listarTarefas(id));
+      setHistoricoAlunos(turmaService.listarHistorico(id));
+    }
+  };
 
   const canteiro: CanteiroData | undefined = CANTEIROS_DATA.find((c) => c.id === id);
 
@@ -448,30 +466,111 @@ export const CanteiroDetailPage: React.FC = () => {
             />
           )}
 
-          {/* Aba 3: Histórico */}
+          {/* Aba 3: Histórico e Tarefas dos Alunos */}
           {activeTab === 'historico' && (
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
-              <h3 className="text-base font-bold text-slate-900">Linha do Tempo das Intervenções</h3>
-              <ol className="relative border-l border-emerald-200 ml-3 space-y-5 text-xs">
-                <li className="ml-5">
-                  <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-600" />
-                  <span className="font-semibold text-slate-400">Há 3 dias</span>
-                  <h4 className="font-bold text-slate-800">Adubação de cobertura com Bokashi líquido</h4>
-                  <p className="text-slate-500">Realizada pelos alunos responsáveis sob supervisão do Prof. George Guimarães.</p>
-                </li>
-                <li className="ml-5">
-                  <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-slate-400" />
-                  <span className="font-semibold text-slate-400">Há 14 dias</span>
-                  <h4 className="font-bold text-slate-800">Raleio e desbaste entre plantas</h4>
-                  <p className="text-slate-500">Uniformização do espaçamento entre mudas conforme ficha de campo.</p>
-                </li>
-                <li className="ml-5">
-                  <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-slate-400" />
-                  <span className="font-semibold text-slate-400">{canteiro.dataPlantio}</span>
-                  <h4 className="font-bold text-slate-800">Preparo do canteiro e plantio inicial</h4>
-                  <p className="text-slate-500">Incorporação de 3kg/m² de composto orgânico da baia 4 da UEP.</p>
-                </li>
-              </ol>
+            <div className="space-y-6">
+              {/* Tarefas e Visto do Professor */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      Tarefas Práticas Registradas pelos Alunos
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Acompanhe as atividades dos alunos e assine o visto pedagógico
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                    {tarefasAlunos.filter((t) => t.vistoProfessor).length}/{tarefasAlunos.length} com Visto
+                  </span>
+                </div>
+
+                {tarefasAlunos.length === 0 ? (
+                  <p className="py-4 text-center text-xs text-slate-400">
+                    Nenhuma tarefa lançada pelos alunos para este canteiro ainda.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {tarefasAlunos.map((tarefa) => (
+                      <div
+                        key={tarefa.id}
+                        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border p-3.5 transition ${
+                          tarefa.concluida ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-bold ${
+                                tarefa.concluida ? 'line-through text-slate-500' : 'text-slate-900'
+                              }`}
+                            >
+                              {tarefa.titulo}
+                            </span>
+                            <span className="rounded-md bg-stone-200/80 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-700">
+                              {tarefa.tipo}
+                            </span>
+                          </div>
+                          {tarefa.descricao && (
+                            <p className="mt-0.5 text-xs text-slate-500">{tarefa.descricao}</p>
+                          )}
+                          <div className="mt-1 flex items-center gap-3 text-[11px] text-slate-400">
+                            <span>Aluno: <strong>{tarefa.alunoNome}</strong> ({tarefa.alunoEmail})</span>
+                            {tarefa.dataLimite && <span>Prazo: {tarefa.dataLimite}</span>}
+                          </div>
+                        </div>
+
+                        <div>
+                          {tarefa.vistoProfessor ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                              <UserCheck className="h-4 w-4" />
+                              <span>Visto concedido ({tarefa.vistoPor})</span>
+                            </span>
+                          ) : profile === 'professor' ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDarVisto(tarefa.id)}
+                              leftIcon={<UserCheck className="h-3.5 w-3.5" />}
+                            >
+                              Dar Visto Docente
+                            </Button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>Aguardando Visto</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Diário de Campo / Linha do Tempo */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+                <h3 className="text-base font-bold text-slate-900">Linha do Tempo das Intervenções</h3>
+                <ol className="relative border-l border-emerald-200 ml-3 space-y-5 text-xs">
+                  {historicoAlunos.map((h) => (
+                    <li key={h.id} className="ml-5">
+                      <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-600" />
+                      <span className="font-semibold text-slate-400">
+                        {new Date(h.dataHora).toLocaleDateString('pt-BR')} às {new Date(h.dataHora).toLocaleTimeString('pt-BR')} &bull; por {h.alunoNome}
+                      </span>
+                      <h4 className="font-bold text-slate-800">{h.acao}</h4>
+                      <p className="text-slate-500">{h.detalhes}</p>
+                    </li>
+                  ))}
+                  <li className="ml-5">
+                    <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-slate-400" />
+                    <span className="font-semibold text-slate-400">{canteiro.dataPlantio}</span>
+                    <h4 className="font-bold text-slate-800">Preparo do canteiro e plantio inicial</h4>
+                    <p className="text-slate-500">Incorporação de composto orgânico da baia 4 da UEP.</p>
+                  </li>
+                </ol>
+              </div>
             </div>
           )}
         </div>

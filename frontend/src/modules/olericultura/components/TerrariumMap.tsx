@@ -21,6 +21,15 @@ export interface TerrariumMapProps {
 // Shared invisible material for fast raycast hitboxes (mesh.visible = true, material.visible = false)
 const HITBOX_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
 
+export const INFRAESTRUTURA_IDS = ['recepcao', 'composteira', 'agua', 'minhocario'];
+
+export function isSetorInfraestrutura(id?: string, tipo?: string): boolean {
+  return Boolean(
+    (id && INFRAESTRUTURA_IDS.includes(id)) ||
+    (tipo && INFRAESTRUTURA_IDS.includes(tipo))
+  );
+}
+
 export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
   ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -129,16 +138,19 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           ease: 'power2.inOut',
         });
 
-        const targetGroup = interactiveMeshesRef.current.get(canteiroId);
-        if (targetGroup) {
-          if (selectedGroupRef.current && selectedGroupRef.current !== targetGroup) {
-            applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
+        const isInfra = isSetorInfraestrutura(item.id, item.tipo);
+        if (!isInfra) {
+          const targetGroup = interactiveMeshesRef.current.get(canteiroId);
+          if (targetGroup) {
+            if (selectedGroupRef.current && selectedGroupRef.current !== targetGroup) {
+              applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
+            }
+            applyVisualState(targetGroup, 'selected', markShadowDirty);
+            selectedGroupRef.current = targetGroup;
           }
-          applyVisualState(targetGroup, 'selected', markShadowDirty);
-          selectedGroupRef.current = targetGroup;
-        }
 
-        onSelectCanteiroRef.current?.(item);
+          onSelectCanteiroRef.current?.(item);
+        }
       },
 
       resetView() {
@@ -336,8 +348,9 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
               setHoveredCanteiro(canteiro);
             }
 
-            container.style.cursor = 'pointer';
-            renderer.domElement.style.cursor = 'pointer';
+            const isInfra = isSetorInfraestrutura(foundCanteiroId);
+            container.style.cursor = isInfra ? 'default' : 'pointer';
+            renderer.domElement.style.cursor = isInfra ? 'default' : 'pointer';
 
             if (hoveredGroupRef.current !== rootGroup) {
               if (hoveredGroupRef.current && hoveredGroupRef.current !== selectedGroupRef.current) {
@@ -386,6 +399,12 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           if (foundCanteiroId && clickedGroup) {
             const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId);
             if (canteiro) {
+              if (isSetorInfraestrutura(canteiro.id, canteiro.tipo)) {
+                // Setores de infraestrutura (Recepção, Composteira, Água, Minhocário)
+                // exibem exclusivamente o tooltip ao passar o mouse, sem disparar seleção nem abrir card de detalhes.
+                return;
+              }
+
               const posX = canteiro.posicao.x;
               const posZ = canteiro.posicao.z;
 
