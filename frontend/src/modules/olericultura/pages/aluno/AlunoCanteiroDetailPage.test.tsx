@@ -57,6 +57,7 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     vi.restoreAllMocks();
     vi.spyOn(canteiroService, 'getModelosCultivo').mockResolvedValue([]);
     vi.spyOn(canteiroService, 'getFicha').mockResolvedValue(fichaApi());
+    vi.spyOn(canteiroService, 'getHistorico').mockResolvedValue([]);
     vi.spyOn(canteiroService, 'saveFicha').mockImplementation(async (_id, ficha) => fichaApi(ficha));
 
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
@@ -124,6 +125,33 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     expect(screen.getByText(/diário de campo e linha do tempo/i)).toBeInTheDocument();
   });
 
+  it('carrega e mostra alterações compartilhadas da ficha na linha do tempo', async () => {
+    vi.mocked(canteiroService.getHistorico).mockResolvedValue([{
+      dataHora: '2026-11-11T12:00:00Z',
+      autorNome: 'Maria Silva',
+      autorPapel: 'ALUNO',
+      alteracoes: [{ campo: 'cultura', valorAnterior: 'Alface', valorNovo: 'Batata' }],
+    }]);
+    renderComponent();
+
+    await waitFor(() => expect(canteiroService.getHistorico).toHaveBeenCalledWith('c-01'));
+    fireEvent.click(screen.getByRole('button', { name: /linha do tempo & histórico/i }));
+
+    expect(await screen.findByText('Maria Silva')).toBeInTheDocument();
+    expect(screen.getByText('(Aluno)')).toBeInTheDocument();
+    expect(screen.getByText('Alface')).toBeInTheDocument();
+    expect(screen.getByText('Batata')).toBeInTheDocument();
+  });
+
+  it('sinaliza falha do histórico da API sem remover a linha do tempo local de tarefas', async () => {
+    vi.mocked(canteiroService.getHistorico).mockRejectedValue(new Error('Servidor indisponível'));
+    renderComponent();
+    fireEvent.click(screen.getByRole('button', { name: /linha do tempo & histórico/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível carregar as alterações da ficha/i);
+    expect(screen.getByText('Transplantio Concluído')).toBeInTheDocument();
+  });
+
   it('deve exibir a aba de Ficha de Campo de Olericultura e carregar dados do servidor', async () => {
     renderComponent();
 
@@ -175,6 +203,7 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     fireEvent.click(screen.getByRole('button', { name: /salvar ficha/i }));
 
     await waitFor(() => expect(screen.getByLabelText('Cultura')).toHaveValue('Cultura editada'));
+    await waitFor(() => expect(canteiroService.getHistorico).toHaveBeenCalledTimes(2));
     expect(canteiroService.saveFicha).toHaveBeenCalledWith('c-01', expect.objectContaining({
       cultura: 'Cultura editada ',
       turma: 'Turma API',

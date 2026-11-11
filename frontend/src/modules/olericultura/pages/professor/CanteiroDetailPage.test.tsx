@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../../../../contexts/AuthContext';
+import * as AuthContextModule from '../../../../contexts/AuthContext';
+import { canteiroService } from '../../../../services/canteiroService';
 import { CanteiroDetailPage, parseDataPlantio } from './CanteiroDetailPage';
 
 describe('CanteiroDetailPage', () => {
@@ -119,5 +121,43 @@ describe('CanteiroDetailPage', () => {
 
     expect(screen.getByText('Canteiro não encontrado')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^voltar$/i })).toBeInTheDocument();
+  });
+
+  it('carrega e mostra as alterações compartilhadas da ficha no histórico do professor', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: { token: 'token-professor', nome: 'Professora Ana', email: 'ana@ifpe.edu.br', role: 'PROFESSOR' },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+    vi.spyOn(canteiroService, 'getFicha').mockResolvedValue({
+      canteiroId: 'c-01', grupo: 'Grupo A', turma: 'Turma A', canteiroCodigo: 'C01',
+      cultura: 'Alface', variedade: null, dataPlantio: null, espacamento: null,
+      plantasPorCanteiro: null, previsaoColheita: null, adubacao: null,
+      controlePragas: null, limpaCapina: null, obs: null, statusEntrega: 'pendente',
+      dataEntrega: null, vistoAssinado: false, dataVisto: null, parecer: null,
+      updatedAt: null, updatedBy: null, persistida: true, modeloCultivoId: null,
+      areaCanteiroM2: null, plantasPorCanteiroValor: null, previsaoKg: null,
+    });
+    vi.spyOn(canteiroService, 'getHistorico').mockResolvedValue([{
+      dataHora: '2026-11-11T12:00:00Z',
+      autorNome: 'Maria Silva',
+      autorPapel: 'ALUNO',
+      alteracoes: [{ campo: 'cultura', valorAnterior: 'Alface', valorNovo: 'Batata' }],
+    }]);
+    vi.spyOn(canteiroService, 'getResponsaveis').mockResolvedValue([]);
+    vi.spyOn(canteiroService, 'getAlunos').mockResolvedValue([]);
+
+    renderCanteiroPage();
+    fireEvent.click(screen.getByRole('button', { name: /histórico & linha do tempo/i }));
+
+    await screen.findByText(/altera[cç][oõ]es da ficha de campo/i);
+    expect(await screen.findByText('Maria Silva')).toBeInTheDocument();
+    expect(screen.getByText('(Aluno)')).toBeInTheDocument();
+    expect(screen.getAllByText('Alface').length).toBeGreaterThan(0);
+    expect(screen.getByText('Batata')).toBeInTheDocument();
+    expect(canteiroService.getHistorico).toHaveBeenCalledWith('c-01');
   });
 });

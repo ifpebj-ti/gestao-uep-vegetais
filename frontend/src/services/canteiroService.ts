@@ -64,6 +64,19 @@ export interface FichaCampoApi {
   previsaoKg: PrevisaoColheitaApi | null;
 }
 
+export interface AlteracaoFichaCampoApi {
+  campo: string;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+}
+
+export interface HistoricoFichaCampoApi {
+  dataHora: string;
+  autorNome: string;
+  autorPapel: string;
+  alteracoes: AlteracaoFichaCampoApi[];
+}
+
 export interface AlunoResumo {
   id: string;
   nome: string;
@@ -71,6 +84,10 @@ export interface AlunoResumo {
 }
 
 export const canteiroService = {
+  getHistorico(canteiroId: string): Promise<HistoricoFichaCampoApi[]> {
+    return apiClient.get<HistoricoFichaCampoApi[]>(`/canteiros/${canteiroId}/historico`);
+  },
+
   getFicha(canteiroId: string): Promise<FichaCampoApi> {
     return apiClient.get<FichaCampoApi>(`/canteiros/${canteiroId}/ficha`);
   },

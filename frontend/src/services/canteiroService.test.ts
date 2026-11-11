@@ -41,6 +41,19 @@ describe('canteiroService ficha API', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/canteiros/canteiro-1/ficha');
   });
 
+  it('busca o histórico de alterações compartilhado do canteiro', async () => {
+    const historico = [{
+      dataHora: '2026-11-11T12:00:00Z',
+      autorNome: 'Maria Silva',
+      autorPapel: 'ALUNO',
+      alteracoes: [{ campo: 'cultura', valorAnterior: 'Alface', valorNovo: 'Batata' }],
+    }];
+    vi.spyOn(apiClient, 'get').mockResolvedValue(historico);
+
+    await expect(canteiroService.getHistorico('canteiro-1')).resolves.toEqual(historico);
+    expect(apiClient.get).toHaveBeenCalledWith('/canteiros/canteiro-1/historico');
+  });
+
   it('persiste os campos editáveis via PUT e retorna a ficha do servidor', async () => {
     vi.spyOn(apiClient, 'put').mockResolvedValue(ficha);
 
