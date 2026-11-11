@@ -45,9 +45,11 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                // A API é stateless e recebe JWT pelo header Authorization, não por cookie.
-                // Mantém CSRF nas demais rotas e dispensa somente os endpoints da API.
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                // A API usa JWT no cabeçalho Authorization e não autenticação por cookie.
+                // Mantemos o filtro CSRF ativo e ignoramos os endpoints stateless da API e do actuator.
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**", "/actuator/**")
+                )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(configuredAllowedOrigins)))
                 .headers(headers -> headers
                         .contentTypeOptions(contentTypeOptions -> { })

@@ -35,6 +35,9 @@ const ColheitaPage = React.lazy(() =>
 const PomarPage = React.lazy(() =>
   import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
 );
+const ConfiguracoesLayoutPage = React.lazy(() =>
+  import('../modules/olericultura/pages/professor/ConfiguracoesLayoutPage').then((m) => ({ default: m.ConfiguracoesLayoutPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div className="flex min-h-screen items-center justify-center bg-[#f4f1e7]">
@@ -80,6 +83,8 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/turmas" element={<TurmasProfessorPage />} />
                 <Route path="/turmas/:id" element={<TurmaDetalheProfessorPage />} />
                 <Route path="/olericultura/professor/turmas/:id" element={<TurmaDetalheProfessorPage />} />
+                <Route path="/configuracoes" element={<ConfiguracoesLayoutPage />} />
+                <Route path="/olericultura/configuracoes" element={<ConfiguracoesLayoutPage />} />
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
               </Route>
 

@@ -19,11 +19,25 @@ import {
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../../config/constants';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { canteiroLayoutService } from '../../../../services/canteiroLayoutService';
 
 export const MapaPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const mapRef = useRef<TerrariumMapRef>(null);
+
+  // Lista dinâmica de canteiros e infraestruturas do layout 3D
+  const [canteiros, setCanteiros] = useState<CanteiroData[]>(() =>
+    canteiroLayoutService.listarCanteiros()
+  );
+
+  useEffect(() => {
+    const recarregar = () => {
+      setCanteiros(canteiroLayoutService.listarCanteiros());
+    };
+    window.addEventListener('focus', recarregar);
+    return () => window.removeEventListener('focus', recarregar);
+  }, []);
 
   // User Profile (Professor or Aluno) and Name: derived directly from authentication/login
   const perfil: PerfilUsuario = (() => {
@@ -191,6 +205,7 @@ export const MapaPage: React.FC = () => {
         selectedCanteiroId={selectedCanteiro?.id || null}
         onSelectCanteiro={handleSelectCanteiro}
         isTeacherView={perfil === 'professor'}
+        canteiros={canteiros}
       />
 
       {/* ======================================================== */}
