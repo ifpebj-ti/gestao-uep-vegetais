@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { KeyRound, GraduationCap, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { Turma, turmaService } from '../../../services/turmaService';
@@ -20,6 +20,15 @@ export const EntrarTurmaModal: React.FC<EntrarTurmaModalProps> = ({
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [turmaEncontrada, setTurmaEncontrada] = useState<Turma | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -37,7 +46,7 @@ export const EntrarTurmaModal: React.FC<EntrarTurmaModalProps> = ({
     try {
       const turma = turmaService.vincularAlunoPorCodigo(alunoEmail, limpo);
       setTurmaEncontrada(turma);
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         onSuccess(turma);
       }, 700);
     } catch (err: unknown) {

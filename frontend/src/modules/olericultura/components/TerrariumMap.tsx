@@ -2,7 +2,12 @@ import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 're
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import gsap from 'gsap';
-import { CanteiroData, CANTEIROS_DATA } from '../data/horticulturaData';
+import { CanteiroData } from '../data/horticulturaData';
+import {
+  canteiroLayoutService,
+  calcularVerticesTerreno,
+  Ponto2D,
+} from '../../../services/canteiroLayoutService';
 
 export interface TerrariumMapRef {
   setCameraPreset: (preset: 'isometric' | 'topdown' | 'ground' | 'reset') => void;
@@ -16,6 +21,7 @@ export interface TerrariumMapProps {
   filterStatus?: string;
   searchQuery?: string;
   isTeacherView?: boolean;
+  canteiros?: CanteiroData[];
 }
 
 // Shared invisible material for fast raycast hitboxes (mesh.visible = true, material.visible = false)
@@ -31,10 +37,17 @@ export function isSetorInfraestrutura(id?: string, tipo?: string): boolean {
 }
 
 export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
-  ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery }, ref) => {
+  ({ selectedCanteiroId, onSelectCanteiro, filterStatus, searchQuery, canteiros }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const onSelectCanteiroRef = useRef(onSelectCanteiro);
+
+    const listaCanteirosAtual = canteiros && canteiros.length > 0 ? canteiros : canteiroLayoutService.listarCanteiros();
+    const canteirosRef = useRef<CanteiroData[]>(listaCanteirosAtual);
+
+    useEffect(() => {
+      canteirosRef.current = canteiros && canteiros.length > 0 ? canteiros : canteiroLayoutService.listarCanteiros();
+    }, [canteiros]);
 
     useEffect(() => {
       onSelectCanteiroRef.current = onSelectCanteiro;
@@ -49,6 +62,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
     const interactiveMeshesRef = useRef<Map<string, THREE.Group>>(new Map());
     const hitboxMeshesRef = useRef<THREE.Mesh[]>([]);
     const waterMeshRef = useRef<THREE.Mesh | null>(null);
+    const environmentGroupRef = useRef<THREE.Group | null>(null);
 
     // Hover and Selection tracking refs
     const selectedGroupRef = useRef<THREE.Group | null>(null);
@@ -111,7 +125,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       },
 
       focusCanteiro(canteiroId: string) {
-        const item = CANTEIROS_DATA.find((c) => c.id === canteiroId);
+        const item = canteirosRef.current.find((c) => c.id === canteiroId);
         if (!item || !cameraRef.current || !controlsRef.current) return;
 
         const posX = item.posicao.x;
@@ -256,7 +270,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       scene.add(sunLight);
 
       // 6. ENVIRONMENT & GROUND
-      buildEnvironment(scene);
+      environmentGroupRef.current = buildEnvironment(scene);
 
       // 7. BUILD ALL HORTICULTURE SECTORS & CANTEIROS
       interactiveMeshesRef.current.clear();
@@ -265,6 +279,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         scene,
         interactiveMeshesRef.current,
         hitboxMeshesRef.current,
+        canteirosRef.current,
         (waterMesh) => {
           waterMeshRef.current = waterMesh;
         }
@@ -344,7 +359,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
             updateTooltipPosition(localX, localY);
             if (hoveredCanteiroIdRef.current !== foundCanteiroId) {
               hoveredCanteiroIdRef.current = foundCanteiroId;
-              const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId) || null;
+              const canteiro = canteirosRef.current.find((c) => c.id === foundCanteiroId) || null;
               setHoveredCanteiro(canteiro);
             }
 
@@ -397,7 +412,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
           const clickedGroup = hitMesh.userData.rootGroup as THREE.Group | undefined;
 
           if (foundCanteiroId && clickedGroup) {
-            const canteiro = CANTEIROS_DATA.find((c) => c.id === foundCanteiroId);
+            const canteiro = canteirosRef.current.find((c) => c.id === foundCanteiroId);
             if (canteiro) {
               if (isSetorInfraestrutura(canteiro.id, canteiro.tipo)) {
                 // Setores de infraestrutura (Recepção, Composteira, Água, Minhocário)
@@ -526,7 +541,7 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
       isFirstFilterRunRef.current = false;
 
       interactiveMeshesRef.current.forEach((group, id) => {
-        const canteiro = CANTEIROS_DATA.find((c) => c.id === id);
+        const canteiro = canteirosRef.current.find((c) => c.id === id);
         if (!canteiro) return;
 
         let visible = true;
@@ -569,6 +584,54 @@ export const TerrariumMap = forwardRef<TerrariumMapRef, TerrariumMapProps>(
         });
       });
     }, [filterStatus, searchQuery]);
+
+    // Recompõe os canteiros procedurais quando a lista dinâmica sofrer alterações
+    useEffect(() => {
+      if (!sceneRef.current) return;
+      const scene = sceneRef.current;
+
+      // Remove os grupos antigos da cena
+      interactiveMeshesRef.current.forEach((group) => {
+        scene.remove(group);
+      });
+      interactiveMeshesRef.current.clear();
+      hitboxMeshesRef.current = [];
+
+      buildHorticultureSectors(
+        scene,
+        interactiveMeshesRef.current,
+        hitboxMeshesRef.current,
+        canteirosRef.current,
+        (waterMesh) => {
+          waterMeshRef.current = waterMesh;
+        }
+      );
+
+      if (rendererRef.current) {
+        rendererRef.current.shadowMap.needsUpdate = true;
+      }
+    }, [canteiros]);
+
+    // Atualiza a cerca e as árvores perimetrais se as dimensões reais do terreno mudarem
+    useEffect(() => {
+      const handleTerrenoAlterado = () => {
+        if (!sceneRef.current) return;
+        const scene = sceneRef.current;
+        if (environmentGroupRef.current) {
+          scene.remove(environmentGroupRef.current);
+          disposeSceneResources(environmentGroupRef.current);
+        }
+        environmentGroupRef.current = buildEnvironment(scene);
+        if (rendererRef.current) {
+          rendererRef.current.shadowMap.needsUpdate = true;
+        }
+      };
+
+      window.addEventListener('terrarium:terreno-alterado', handleTerrenoAlterado);
+      return () => {
+        window.removeEventListener('terrarium:terreno-alterado', handleTerrenoAlterado);
+      };
+    }, []);
 
     return (
       <div className="relative w-full h-full overflow-hidden select-none bg-[#f4f1e7]">
@@ -631,11 +694,11 @@ function disposeMaterial(material: THREE.Material) {
   material.dispose();
 }
 
-function disposeSceneResources(scene: THREE.Scene) {
+function disposeSceneResources(root: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
 
-  scene.traverse((obj) => {
+  root.traverse((obj) => {
     if (obj instanceof THREE.Mesh) {
       if (obj.geometry) {
         geometries.add(obj.geometry);
@@ -728,15 +791,23 @@ function applyVisualState(
 // 3D SCENE CONSTRUCTION HELPERS
 // ==========================================
 
-function buildEnvironment(scene: THREE.Scene) {
+function buildEnvironment(scene: THREE.Scene): THREE.Group {
+  const envGroup = new THREE.Group();
+  envGroup.name = 'terrarium-environment-group';
+
+  const dimensoes = canteiroLayoutService.obterDimensoesTerreno();
+  const vertices = calcularVerticesTerreno(dimensoes);
+  const TERRENO_Z_MIN = -21.0;
+
   // Seamless ground shadow receiver on top of warm #f4f1e7 background (no grayish slab!)
-  const shadowFloorGeo = new THREE.PlaneGeometry(240, 240);
+  const floorDim = Math.max(300, Math.max(dimensoes.largura, dimensoes.comprimento) * 3);
+  const shadowFloorGeo = new THREE.PlaneGeometry(floorDim, floorDim);
   const shadowFloorMat = new THREE.ShadowMaterial({ opacity: 0.12 });
   const shadowFloor = new THREE.Mesh(shadowFloorGeo, shadowFloorMat);
   shadowFloor.rotation.x = -Math.PI / 2;
   shadowFloor.position.set(0, -0.02, 5);
   shadowFloor.receiveShadow = true;
-  scene.add(shadowFloor);
+  envGroup.add(shadowFloor);
 
   // Pathways / Caminhos de terra batida suave e circulação entre os setores
   const pathMat = new THREE.MeshBasicMaterial({
@@ -744,58 +815,59 @@ function buildEnvironment(scene: THREE.Scene) {
   });
 
   // Main central road between columns (corredor central)
-  const centralAisle = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 42), pathMat);
+  const centralAisleLength = Math.max(30, dimensoes.comprimento - 12);
+  const centralAisle = new THREE.Mesh(new THREE.PlaneGeometry(1.8, centralAisleLength), pathMat);
   centralAisle.rotation.x = -Math.PI / 2;
-  centralAisle.position.set(8.5, 0.005, 0);
-  scene.add(centralAisle);
+  centralAisle.position.set(8.5, 0.005, TERRENO_Z_MIN + 3 + centralAisleLength / 2);
+  envGroup.add(centralAisle);
 
   // Crossway towards composteira and water tank
   const westCrossway = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.4), pathMat);
   westCrossway.rotation.x = -Math.PI / 2;
   westCrossway.position.set(-1.5, 0.005, 0);
-  scene.add(westCrossway);
+  envGroup.add(westCrossway);
 
   // Road in front of composteira
   const compostRoad = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 38), pathMat);
   compostRoad.rotation.x = -Math.PI / 2;
   compostRoad.position.set(-4.5, 0.005, 2);
-  scene.add(compostRoad);
+  envGroup.add(compostRoad);
 
-  // Decorative agroecological perimeter fence posts
+  // Cerca Perimetral Poligonal Ecológica (mourões contornando o formato real do terreno)
   const postGeo = new THREE.CylinderGeometry(0.08, 0.09, 1.4, 6);
   const postMat = new THREE.MeshStandardMaterial({ color: '#5c4033', roughness: 0.9 });
   const fenceGroup = new THREE.Group();
 
-  for (let z = -24; z <= 36; z += 4) {
-    const postEast = new THREE.Mesh(postGeo, postMat);
-    postEast.position.set(18, 0.7, z);
-    postEast.castShadow = true;
-    fenceGroup.add(postEast);
-
-    const postWest = new THREE.Mesh(postGeo, postMat);
-    postWest.position.set(-14, 0.7, z);
-    postWest.castShadow = true;
-    fenceGroup.add(postWest);
+  for (let i = 0; i < vertices.length; i++) {
+    const p1 = vertices[i];
+    const p2 = vertices[(i + 1) % vertices.length];
+    const dx = p2.x - p1.x;
+    const dz = p2.z - p1.z;
+    const dist = Math.hypot(dx, dz);
+    const passos = Math.max(1, Math.round(dist / 3.8));
+    for (let step = 0; step < passos; step++) {
+      const t = step / passos;
+      const x = p1.x + t * dx;
+      const z = p1.z + t * dz;
+      const post = new THREE.Mesh(postGeo, postMat);
+      post.position.set(x, 0.7, z);
+      post.castShadow = true;
+      fenceGroup.add(post);
+    }
   }
+  envGroup.add(fenceGroup);
 
-  for (let x = -14; x <= 18; x += 4) {
-    const postNorth = new THREE.Mesh(postGeo, postMat);
-    postNorth.position.set(x, 0.7, -24);
-    postNorth.castShadow = true;
-    fenceGroup.add(postNorth);
+  // Trees and windbreak shrubs: SEMPRE posicionadas APÓS a cerca delimitadora (vetor normal externo)
+  createPerimeterFlora(envGroup, vertices);
 
-    const postSouth = new THREE.Mesh(postGeo, postMat);
-    postSouth.position.set(x, 0.7, 36);
-    postSouth.castShadow = true;
-    fenceGroup.add(postSouth);
-  }
-  scene.add(fenceGroup);
-
-  // Trees and windbreak shrubs along borders (representing IFPE campus greenery)
-  createPerimeterFlora(scene);
+  scene.add(envGroup);
+  return envGroup;
 }
 
-function createPerimeterFlora(scene: THREE.Scene) {
+function createPerimeterFlora(
+  parentGroup: THREE.Group,
+  vertices: Ponto2D[]
+) {
   const treeTrunkGeo = new THREE.CylinderGeometry(0.2, 0.35, 3.2, 6);
   const canopyGeos = [
     new THREE.DodecahedronGeometry(1.8, 1),
@@ -806,23 +878,38 @@ function createPerimeterFlora(scene: THREE.Scene) {
   const canopyMat = new THREE.MeshStandardMaterial({ color: '#2d6a4f', roughness: 0.85, flatShading: true });
   const ipeMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.85, flatShading: true });
 
-  const treePositions = [
-    { x: -16, z: -20, isIpe: false },
-    { x: -16, z: -10, isIpe: true },
-    { x: -16, z: 2, isIpe: false },
-    { x: -16, z: 14, isIpe: false },
-    { x: -16, z: 28, isIpe: true },
-    { x: 20, z: -20, isIpe: false },
-    { x: 21, z: -8, isIpe: false },
-    { x: 21, z: 6, isIpe: true },
-    { x: 21, z: 18, isIpe: false },
-    { x: 20, z: 30, isIpe: false },
-    { x: -8, z: -26, isIpe: false },
-    { x: 4, z: -26, isIpe: true },
-    { x: 12, z: -26, isIpe: false },
-    { x: 0, z: 38, isIpe: false },
-    { x: 10, z: 38, isIpe: false },
-  ];
+  const treePositions: Array<{ x: number; z: number; isIpe: boolean }> = [];
+  const distAfasta = 3.8;
+
+  // Percorre cada aresta do polígono e posiciona árvores do lado externo usando normal
+  vertices.forEach((p1, i) => {
+    const p2 = vertices[(i + 1) % vertices.length];
+    const dx = p2.x - p1.x;
+    const dz = p2.z - p1.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 2.0) return;
+
+    // Vetor normal apontando para fora do polígono no plano X-Z
+    const nx = dz / dist;
+    const nz = -dx / dist;
+
+    // Preserva a passagem do portão da entrada principal
+    const isEntradaSul = p1.z > 37 && p2.z > 37 && Math.abs(dx) < 14;
+    if (isEntradaSul) return;
+
+    const numArvores = Math.max(1, Math.round(dist / 11));
+    for (let j = 1; j <= numArvores; j++) {
+      const t = j / (numArvores + 1);
+      const px = p1.x + t * dx;
+      const pz = p1.z + t * dz;
+      const varOffset = j % 2 === 0 ? 0.4 : -0.2;
+      treePositions.push({
+        x: px + (distAfasta + varOffset) * nx,
+        z: pz + (distAfasta + varOffset) * nz,
+        isIpe: (i + j) % 2 === 1,
+      });
+    }
+  });
 
   treePositions.forEach((pos, idx) => {
     const treeGroup = new THREE.Group();
@@ -838,7 +925,7 @@ function createPerimeterFlora(scene: THREE.Scene) {
     treeGroup.add(canopy);
 
     treeGroup.position.set(pos.x, 0, pos.z);
-    scene.add(treeGroup);
+    parentGroup.add(treeGroup);
   });
 }
 
@@ -846,9 +933,10 @@ function buildHorticultureSectors(
   scene: THREE.Scene,
   interactiveMap: Map<string, THREE.Group>,
   hitboxMeshes: THREE.Mesh[],
+  canteirosLista: CanteiroData[],
   onWaterCreated: (waterMesh: THREE.Mesh) => void
 ) {
-  CANTEIROS_DATA.forEach((canteiro) => {
+  canteirosLista.forEach((canteiro) => {
     const group = new THREE.Group();
     group.userData = { canteiroId: canteiro.id };
 

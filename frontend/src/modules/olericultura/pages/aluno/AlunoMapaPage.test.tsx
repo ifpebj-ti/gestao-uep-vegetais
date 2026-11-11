@@ -76,6 +76,10 @@ describe('AlunoMapaPage - Dashboard do Estudante', () => {
     await waitFor(() => {
       expect(screen.getByText(/turma .* vinculada com sucesso/i)).toBeInTheDocument();
     });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: /digite o código da turma/i })).not.toBeInTheDocument();
+    }, { timeout: 2000 });
   });
 
   it('deve permitir ao aluno marcar/desmarcar tarefas práticas na lista', () => {
