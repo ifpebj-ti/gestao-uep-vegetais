@@ -98,7 +98,7 @@ interface FichaCampoOlericulturaProps {
   perfil?: 'professor' | 'aluno';
   podeEditar?: boolean;
   fichaInicial?: FichaCampoData | null;
-  onSalvar?: (ficha: FichaCampoData) => void | Promise<void>;
+  onSalvar?: (ficha: FichaCampoData) => void | FichaCampoData | Promise<void | FichaCampoData>;
   modelosCultivo?: ModeloCultivoApi[];
   onSalvarModelo?: (modelo: ModeloCultivoApi) => void | Promise<void>;
   onModeloSelecionado?: (modelo: ModeloCultivoApi | null) => void;
@@ -331,7 +331,11 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
     setSalvando(true);
     setMensagemErro('');
     try {
-      await onSalvar(fichaParaSalvar);
+      const fichaCanonica = await onSalvar(fichaParaSalvar);
+      if (fichaCanonica) {
+        setFicha(fichaCanonica);
+        setParecerInput(fichaCanonica.vistoProfessor?.parecer || '');
+      }
       setMensagemSucesso(mensagem);
       window.setTimeout(() => setMensagemSucesso(''), 4000);
     } catch (erro) {

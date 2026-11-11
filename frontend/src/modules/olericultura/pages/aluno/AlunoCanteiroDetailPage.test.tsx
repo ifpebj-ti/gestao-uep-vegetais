@@ -170,12 +170,13 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     expect(screen.getByLabelText('Cultura')).toHaveValue('Cultura editada');
     expect(screen.queryByText(/ficha salva no servidor com sucesso/i)).not.toBeInTheDocument();
 
-    vi.mocked(canteiroService.saveFicha).mockResolvedValueOnce(fichaApi({ cultura: 'Resposta confirmada' }));
+    fireEvent.change(screen.getByLabelText('Cultura'), { target: { value: 'Cultura editada ' } });
+    vi.mocked(canteiroService.saveFicha).mockResolvedValueOnce(fichaApi({ cultura: 'Cultura editada' }));
     fireEvent.click(screen.getByRole('button', { name: /salvar ficha/i }));
 
-    await waitFor(() => expect(screen.getByLabelText('Cultura')).toHaveValue('Resposta confirmada'));
+    await waitFor(() => expect(screen.getByLabelText('Cultura')).toHaveValue('Cultura editada'));
     expect(canteiroService.saveFicha).toHaveBeenCalledWith('c-01', expect.objectContaining({
-      cultura: 'Cultura editada',
+      cultura: 'Cultura editada ',
       turma: 'Turma API',
       modeloCultivoId: 'modelo-api',
       areaCanteiroM2: 8.5,

@@ -34,3 +34,12 @@ DONE — student ficha data is loaded and saved through the shared API. The API 
 - No history API fetching or unrelated page redesign was added.
 - The pre-existing untracked `docs/superpowers/plans/` content was left untouched.
 - No correctness concerns identified. The full test suite's jsdom navigation notice was non-failing.
+
+## Reviewer follow-up fix
+
+The save callback now returns the canonical server ficha to the editor, which applies it directly after a successful save. A regression test submits a culture value with trailing whitespace, returns its server-normalized form, and verifies the editor displays the normalized value. Rejected saves still do not apply a response, preserving the user's edits.
+
+- Regression test: `salva na API, mantém os edits em caso de erro e só atualiza a ficha após sucesso`.
+- Command: `npm run test:run -- src/modules/olericultura/pages/aluno/AlunoCanteiroDetailPage.test.tsx`
+- Output: `Test Files 1 passed (1); Tests 8 passed (8); Duration 7.68s`.
+- Additional verification: `npm run test:run -- src/modules/olericultura/components/FichaCampoOlericultura.test.tsx` — 1 file / 8 tests passed; `npm run typecheck` — passed.

@@ -105,7 +105,7 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
     return () => { ativo = false; };
   }, [canteiro.id]);
 
-  const handleSalvarFicha = async (ficha: FichaCampoData) => {
+  const handleSalvarFicha = async (ficha: FichaCampoData): Promise<FichaCampoData> => {
     const salva = await canteiroService.saveFicha(canteiro.id, {
       canteiroId: canteiro.id,
       grupo: ficha.grupo,
@@ -136,7 +136,8 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
     });
 
     // Só publica a resposta confirmada pelo servidor depois do PUT concluir.
-    setFichaInicial(converterFicha(salva));
+    const fichaCanonica = converterFicha(salva);
+    setFichaInicial(fichaCanonica);
 
     // Registra a atualização na linha do tempo local para acompanhamento docente.
     turmaService.registrarAcaoHistorico({
@@ -150,6 +151,7 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
     });
 
     recarregarDados();
+    return fichaCanonica;
   };
 
   // Estado das Tarefas
