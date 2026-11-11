@@ -7,6 +7,7 @@ import com.gestao.uep.domain.canteiro.HistoricoFichaCampo;
 import com.gestao.uep.domain.canteiro.HistoricoFichaCampoRepository;
 import com.gestao.uep.domain.usuario.Usuario;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -66,6 +67,7 @@ public class FichaCampoHistoricoService {
         return snapshot;
     }
 
+    @Transactional
     public void registrarDiferencas(Map<String, Object> snapshot, FichaCampo ficha, Usuario usuario) {
         Map<String, Object> atual = snapshot(ficha);
         var diferencas = snapshot.entrySet().stream()

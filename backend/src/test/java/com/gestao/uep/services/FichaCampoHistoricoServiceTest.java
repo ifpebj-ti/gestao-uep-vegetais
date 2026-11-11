@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,6 +33,16 @@ class FichaCampoHistoricoServiceTest {
 
     @Mock
     private AlteracaoFichaCampoRepository alteracaoRepository;
+
+    @Test
+    void registrarDiferencasUsaTransacaoRequired() throws NoSuchMethodException {
+        Transactional transactional = FichaCampoHistoricoService.class
+                .getMethod("registrarDiferencas", java.util.Map.class, FichaCampo.class, Usuario.class)
+                .getAnnotation(Transactional.class);
+
+        assertThat(transactional).isNotNull();
+        assertThat(transactional.propagation()).isEqualTo(Propagation.REQUIRED);
+    }
 
     @Test
     void registraDiferencaDeCulturaComAutorEValores() {
