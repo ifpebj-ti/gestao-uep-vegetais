@@ -72,8 +72,8 @@ export const HistoricoFichaTimeline: React.FC<HistoricoFichaTimelineProps> = ({
       )}
       {recentesPrimeiro.length > 0 && (
         <ol className="mt-4 space-y-4">
-          {recentesPrimeiro.map((evento, indice) => (
-            <li key={`${evento.dataHora}-${evento.autorNome}-${indice}`} className="border-l-2 border-emerald-200 pl-4">
+          {recentesPrimeiro.map((evento) => (
+            <li key={evento.id} className="border-l-2 border-emerald-200 pl-4">
               <p className="text-xs font-semibold text-slate-800">
                 {evento.autorNome} <span className="font-normal text-slate-500">({rotularPapel(evento.autorPapel)})</span>
               </p>

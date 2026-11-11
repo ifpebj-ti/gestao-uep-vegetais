@@ -94,6 +94,17 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     expect(screen.getByRole('button', { name: /adicionar tarefa/i })).toBeInTheDocument();
   });
 
+  it('não carrega nem permite editar a ficha em uma rota de canteiro inexistente', () => {
+    renderComponent('canteiro-inexistente');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Canteiro não encontrado');
+    expect(screen.queryByLabelText('Cultura')).not.toBeInTheDocument();
+    expect(canteiroService.getFicha).not.toHaveBeenCalled();
+    expect(canteiroService.getHistorico).not.toHaveBeenCalled();
+    expect(canteiroService.getModelosCultivo).not.toHaveBeenCalled();
+    expect(canteiroService.saveFicha).not.toHaveBeenCalled();
+  });
+
   it('deve permitir abrir o modal de nova tarefa e cadastrar uma atividade prática', async () => {
     renderComponent();
 
@@ -127,6 +138,7 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
 
   it('carrega e mostra alterações compartilhadas da ficha na linha do tempo', async () => {
     vi.mocked(canteiroService.getHistorico).mockResolvedValue([{
+      id: 'evento-1',
       dataHora: '2026-11-11T12:00:00Z',
       autorNome: 'Maria Silva',
       autorPapel: 'ALUNO',

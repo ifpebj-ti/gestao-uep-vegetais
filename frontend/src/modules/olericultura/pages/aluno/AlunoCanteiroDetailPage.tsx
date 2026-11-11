@@ -32,12 +32,26 @@ import {
 
 export const AlunoCanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const canteiro = CANTEIROS_DATA.find((c) => c.id === id);
+
+  if (!canteiro) {
+    return (
+      <div className="min-h-screen bg-[#f4f1e7] p-6 text-slate-800">
+        <BackButton to="/olericultura/aluno/mapa" />
+        <p role="alert" className="mt-6 text-sm font-semibold">Canteiro não encontrado</p>
+      </div>
+    );
+  }
+
+  return <AlunoCanteiroDetail canteiro={canteiro} />;
+};
+
+const AlunoCanteiroDetail: React.FC<{ canteiro: (typeof CANTEIROS_DATA)[number] }> = ({ canteiro }) => {
   const { user } = useAuth();
 
   const alunoEmail = user?.email || 'aluno@discente.ifpe.edu.br';
   const alunoNome = user?.nome || 'Estudante IFPE';
 
-  const canteiro = CANTEIROS_DATA.find((c) => c.id === id) || CANTEIROS_DATA[0];
   const turmaAtiva = turmaService.obterTurmaDoAluno(alunoEmail);
 
   const [abaAtiva, setAbaAtiva] = useState<'ficha' | 'tarefas' | 'historico'>('ficha');

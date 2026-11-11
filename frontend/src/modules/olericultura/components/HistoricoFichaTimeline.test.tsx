@@ -10,12 +10,14 @@ describe('HistoricoFichaTimeline', () => {
         erro={null}
         eventos={[
           {
+            id: 'evento-antigo',
             dataHora: '2026-11-10T10:00:00Z',
             autorNome: 'Ana Lima',
             autorPapel: 'PROFESSOR',
             alteracoes: [{ campo: 'cultura', valorAnterior: null, valorNovo: 'Alface' }],
           },
           {
+            id: 'evento-recente',
             dataHora: '2026-11-11T10:00:00Z',
             autorNome: 'João Silva',
             autorPapel: 'ALUNO',
@@ -49,6 +51,7 @@ describe('HistoricoFichaTimeline', () => {
         erro="Não foi possível carregar alterações da ficha."
         eventos={[
           {
+            id: 'evento-1',
             dataHora: '2026-11-11T10:00:00Z',
             autorNome: 'João Silva',
             autorPapel: 'ALUNO',

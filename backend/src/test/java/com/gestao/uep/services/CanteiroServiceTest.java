@@ -32,6 +32,7 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -146,6 +147,8 @@ class CanteiroServiceTest {
 
         assertThat(resultado).extracting(HistoricoFichaCampoDTO::dataHora)
                 .containsExactly(recente, anterior);
+        assertThat(resultado).extracting(HistoricoFichaCampoDTO::id)
+                .containsExactly(eventoRecente.getId(), eventoAntigo.getId());
         assertThat(resultado.getFirst().alteracoes()).singleElement()
                 .satisfies(alteracao -> {
                     assertThat(alteracao.campo()).isEqualTo("cultura");
@@ -170,6 +173,7 @@ class CanteiroServiceTest {
 
     private HistoricoFichaCampo evento(Instant instante, String valorNovo) {
         HistoricoFichaCampo evento = new HistoricoFichaCampo();
+        evento.setId(UUID.nameUUIDFromBytes((instante.toString() + valorNovo).getBytes()));
         evento.setDataHora(instante);
         evento.setAutorNome("Ana");
         evento.setAutorPapel("PROFESSOR");

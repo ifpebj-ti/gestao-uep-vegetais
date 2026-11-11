@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -41,11 +42,13 @@ class CanteiroControllerTest {
     @Test
     void retornaHistoricoNoEndpointAutorizado() throws Exception {
         when(service.buscarHistorico(org.mockito.ArgumentMatchers.eq("c-01"), any()))
-                .thenReturn(List.of(new HistoricoFichaCampoDTO(Instant.parse("2026-01-02T10:00:00Z"),
+                .thenReturn(List.of(new HistoricoFichaCampoDTO(UUID.fromString("d2719d68-9d14-4bdb-8f6a-7db28573ee71"),
+                        Instant.parse("2026-01-02T10:00:00Z"),
                         "Ana", "PROFESSOR", List.of(new AlteracaoFichaCampoDTO("cultura", "Alface", "Batata")))));
 
         mockMvc.perform(get("/api/canteiros/c-01/historico"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("d2719d68-9d14-4bdb-8f6a-7db28573ee71"))
                 .andExpect(jsonPath("$[0].dataHora").value("2026-01-02T10:00:00Z"))
                 .andExpect(jsonPath("$[0].autorNome").value("Ana"))
                 .andExpect(jsonPath("$[0].autorPapel").value("PROFESSOR"))

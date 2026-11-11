@@ -43,6 +43,7 @@ describe('canteiroService ficha API', () => {
 
   it('busca o histórico de alterações compartilhado do canteiro', async () => {
     const historico = [{
+      id: 'evento-1',
       dataHora: '2026-11-11T12:00:00Z',
       autorNome: 'Maria Silva',
       autorPapel: 'ALUNO',

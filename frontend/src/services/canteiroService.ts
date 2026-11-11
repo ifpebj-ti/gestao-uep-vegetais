@@ -71,6 +71,7 @@ export interface AlteracaoFichaCampoApi {
 }
 
 export interface HistoricoFichaCampoApi {
+  id: string;
   dataHora: string;
   autorNome: string;
   autorPapel: string;
