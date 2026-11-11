@@ -44,7 +44,7 @@ class CanteiroControllerTest {
                 .thenReturn(List.of(new HistoricoFichaCampoDTO(Instant.parse("2026-01-02T10:00:00Z"),
                         "Ana", "PROFESSOR", List.of(new AlteracaoFichaCampoDTO("cultura", "Alface", "Batata")))));
 
-        mockMvc.perform(get("/api/canteiros/c-01/ficha/historico"))
+        mockMvc.perform(get("/api/canteiros/c-01/historico"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].dataHora").value("2026-01-02T10:00:00Z"))
                 .andExpect(jsonPath("$[0].autorNome").value("Ana"))
@@ -61,7 +61,7 @@ class CanteiroControllerTest {
         when(service.buscarHistorico(org.mockito.ArgumentMatchers.eq("c-01"), any()))
                 .thenThrow(new AccessDeniedException("negado"));
 
-        mockMvc.perform(get("/api/canteiros/c-01/ficha/historico").accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/canteiros/c-01/historico").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
 
@@ -70,7 +70,7 @@ class CanteiroControllerTest {
         when(service.buscarHistorico(org.mockito.ArgumentMatchers.eq("ausente"), any()))
                 .thenThrow(new CanteiroNotFoundException("ausente"));
 
-        mockMvc.perform(get("/api/canteiros/ausente/ficha/historico"))
+        mockMvc.perform(get("/api/canteiros/ausente/historico"))
                 .andExpect(status().isNotFound());
     }
 }

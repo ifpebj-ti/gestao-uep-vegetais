@@ -51,7 +51,7 @@ public class CanteiroController {
         return service.buscarFicha(id, usuario);
     }
 
-    @GetMapping("/{id}/ficha/historico")
+    @GetMapping("/{id}/historico")
     public List<HistoricoFichaCampoDTO> buscarHistoricoFicha(
             @PathVariable String id,
             @AuthenticationPrincipal Usuario usuario
