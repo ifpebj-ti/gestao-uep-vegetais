@@ -60,17 +60,55 @@ const SEED_PROFESSORES: ProfessorCadastrado[] = [
     uep: 'fruticultura',
     criadoEm: '2026-02-15T14:30:00.000Z',
   },
+  {
+    id: 'prof-seed-3',
+    nome: 'Isabela França Lima',
+    email: 'isabela.franca.lima@belojardim.ifpe.edu.br',
+    uep: 'fruticultura',
+    criadoEm: '2026-11-10T20:00:00.000Z',
+  },
 ];
+
+// Professores semeados após a criação inicial do storage: adicionados uma única vez
+// aos navegadores que já possuem a lista salva (sem ressuscitar cadastros removidos depois).
+const SEED_MIGRATIONS_KEY = 'terrarium_admin_professores_seed_migrations';
+const SEED_MIGRATIONS: Array<{ chave: string; professor: ProfessorCadastrado }> = [
+  { chave: 'prof-seed-3', professor: SEED_PROFESSORES[2] },
+];
+
+function aplicarMigracoesSeed(lista: ProfessorCadastrado[]): ProfessorCadastrado[] {
+  try {
+    const aplicadas: string[] = JSON.parse(localStorage.getItem(SEED_MIGRATIONS_KEY) || '[]');
+    let resultado = lista;
+    let alterado = false;
+    for (const { chave, professor } of SEED_MIGRATIONS) {
+      if (aplicadas.includes(chave)) continue;
+      aplicadas.push(chave);
+      alterado = true;
+      if (!resultado.some((p) => p.email.toLowerCase() === professor.email.toLowerCase())) {
+        resultado = [...resultado, professor];
+      }
+    }
+    if (alterado) {
+      localStorage.setItem(SEED_MIGRATIONS_KEY, JSON.stringify(aplicadas));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
+    }
+    return resultado;
+  } catch {
+    return lista;
+  }
+}
 
 function lerStorage(): ProfessorCadastrado[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROFESSORES));
+      localStorage.setItem(SEED_MIGRATIONS_KEY, JSON.stringify(SEED_MIGRATIONS.map((m) => m.chave)));
       return [...SEED_PROFESSORES];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [...SEED_PROFESSORES];
+    return Array.isArray(parsed) ? aplicarMigracoesSeed(parsed) : [...SEED_PROFESSORES];
   } catch {
     return [...SEED_PROFESSORES];
   }
