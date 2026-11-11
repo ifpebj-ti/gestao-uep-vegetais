@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   calcularPlantasDoCanteiro,
@@ -69,6 +69,42 @@ describe('calcularPlantasDoCanteiro', () => {
 
     expect(screen.getByDisplayValue('Batata')).toBeInTheDocument();
     expect(screen.getByText('(Solanum tuberosum L.)')).toBeInTheDocument();
+  });
+
+  it('calcula e apresenta a previsão em kg com base na área, espaçamento e aproveitamento', () => {
+    render(
+      <FichaCampoOlericultura
+        canteiro={{ ...CANTEIROS_DATA[0], areaM2: 7.2 }}
+        podeEditar
+        modelosCultivo={[modeloBase]}
+        onSalvar={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: /modelo agron/i }), {
+      target: { value: modeloBase.id },
+    });
+
+    const secaoPrevisao = screen.getByRole('heading', { name: /previsão de colheita/i }).closest('section');
+    expect(secaoPrevisao).not.toBeNull();
+    expect(within(secaoPrevisao!).getByText('14,40 kg')).toBeInTheDocument();
+    expect(within(secaoPrevisao!).getByText(/72/)).toBeInTheDocument();
+    expect(within(secaoPrevisao!).getByText(/7,2 m²/)).toBeInTheDocument();
+  });
+
+  it('mantém apenas o traço quando não há dados suficientes para calcular a previsão', () => {
+    render(
+      <FichaCampoOlericultura
+        canteiro={CANTEIROS_DATA[0]}
+        podeEditar
+        onSalvar={vi.fn()}
+      />
+    );
+
+    const secaoPrevisao = screen.getByRole('heading', { name: /previsão de colheita/i }).closest('section');
+    expect(secaoPrevisao).not.toBeNull();
+    expect(within(secaoPrevisao!).getByText('—')).toBeInTheDocument();
+    expect(within(secaoPrevisao!).queryByText(/Plantas estimadas:/i)).not.toBeInTheDocument();
   });
 
   it('exibe a colheita única do canteiro e permite editar o peso colhido', () => {

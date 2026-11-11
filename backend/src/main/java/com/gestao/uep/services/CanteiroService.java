@@ -19,10 +19,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CanteiroService {
@@ -63,7 +66,26 @@ public class CanteiroService {
         } else {
             return List.of();
         }
-        return canteiros.stream().map(CanteiroResumoDTO::from).toList();
+        if (canteiros.isEmpty()) return List.of();
+
+        List<String> canteiroIds = canteiros.stream().map(Canteiro::getId).toList();
+        Map<String, FichaCampo> fichas = fichaRepository.findAllByCanteiroIdIn(canteiroIds).stream()
+                .collect(Collectors.toMap(ficha -> ficha.getCanteiro().getId(), ficha -> ficha));
+        Map<String, List<AlunoResumoDTO>> responsaveis = responsavelRepository
+                .findAllByCanteiroIdsWithUsuarios(canteiroIds).stream()
+                .collect(Collectors.groupingBy(
+                        vinculo -> vinculo.getCanteiro().getId(),
+                        Collectors.mapping(vinculo -> AlunoResumoDTO.from(vinculo.getUsuario()), Collectors.toList())
+                ));
+        LocalDate hoje = LocalDate.now();
+        return canteiros.stream()
+                .map(canteiro -> CanteiroResumoDTO.from(
+                        canteiro,
+                        fichas.get(canteiro.getId()),
+                        responsaveis.getOrDefault(canteiro.getId(), List.of()),
+                        hoje
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -93,6 +115,9 @@ public class CanteiroService {
         FichaCampo ficha = fichaRepository.findByCanteiroId(id)
                 .orElseGet(() -> new FichaCampo(canteiro));
         ficha.setGrupo(dados.grupo());
+        if (dados.turma() != null) {
+            ficha.setTurma(dados.turma().isBlank() ? null : dados.turma().trim());
+        }
         ficha.setCanteiroCodigo(valorOuPadrao(dados.canteiroCodigo(), canteiro.getCodigo()));
         ficha.setCultura(dados.cultura());
         ficha.setDataPlantio(dados.dataPlantio());
@@ -171,6 +196,7 @@ public class CanteiroService {
                 .map(FichaCampoDTO::from)
                 .orElseGet(() -> new FichaCampoDTO(
                         canteiro.getId(),
+                        null,
                         null,
                         canteiro.getCodigo(),
                         null,

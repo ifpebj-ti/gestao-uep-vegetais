@@ -25,6 +25,25 @@ import {
   canteiroService,
 } from '../../../../services/canteiroService';
 
+export const parseDataPlantio = (valor?: string): Date | null => {
+  if (!valor) return null;
+
+  const iso = valor.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const brasileira = valor.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const partes = iso
+    ? [Number(iso[1]), Number(iso[2]), Number(iso[3])]
+    : brasileira
+      ? [Number(brasileira[3]), Number(brasileira[2]), Number(brasileira[1])]
+      : null;
+  if (!partes) return null;
+
+  const [ano, mes, dia] = partes;
+  const data = new Date(ano, mes - 1, dia);
+  return data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia
+    ? data
+    : null;
+};
+
 export const CanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -69,6 +88,7 @@ export const CanteiroDetailPage: React.FC = () => {
 
   const converterFicha = (dados: FichaCampoApi): FichaCampoData => ({
     grupo: dados.grupo || '',
+    turma: dados.turma || '',
     canteiroCodigo: dados.canteiroCodigo || '',
     cultura: dados.cultura || '',
     variedade: dados.variedade || '',
@@ -154,6 +174,7 @@ export const CanteiroDetailPage: React.FC = () => {
     const salva = await canteiroService.saveFicha(id, {
       canteiroId: id,
       grupo: ficha.grupo,
+      turma: ficha.turma || canteiro?.turmaResponsavel || '',
       canteiroCodigo: ficha.canteiroCodigo,
       cultura: ficha.cultura,
       variedade: ficha.variedade,
@@ -223,13 +244,16 @@ export const CanteiroDetailPage: React.FC = () => {
     );
   }
 
-  const progressoCiclo = Math.min(
-    100,
-    Math.round((canteiro.diasPlantio / Math.max(canteiro.diasPrevistosColheita, 1)) * 100)
-  );
-
   const modeloDaFicha = modelosCultivo.find((modelo) => modelo.id === fichaInicial?.modeloCultivoId) || null;
   const modeloExibido = modeloSelecionado || modeloDaFicha;
+  const cicloDiasExibido = modeloExibido?.cicloDias || canteiro.diasPrevistosColheita;
+  const dataPlantioExibida = parseDataPlantio(fichaInicial?.dataPlantio);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diasPlantioExibidos = dataPlantioExibida && !Number.isNaN(dataPlantioExibida.getTime())
+    ? Math.max(0, Math.floor((hoje.getTime() - dataPlantioExibida.getTime()) / 86_400_000))
+    : canteiro.diasPlantio;
+  const progressoCiclo = Math.min(100, Math.round((diasPlantioExibidos / Math.max(cicloDiasExibido, 1)) * 100));
   const culturaExibida = modeloExibido?.cultura?.trim() || fichaInicial?.cultura?.trim() || canteiro.cultura;
   const nomeCientificoExibido = modeloExibido?.variedade?.trim() || fichaInicial?.variedade?.trim() || canteiro.variedade;
   const setorExibido = obterSetorPorCultura(culturaExibida, canteiro.setor);
@@ -339,7 +363,7 @@ export const CanteiroDetailPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-2">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-[#27633b]" />
-                <span>Ciclo Fenológico: {canteiro.diasPlantio} de {canteiro.diasPrevistosColheita} dias estimados</span>
+                <span>Ciclo Fenológico: {diasPlantioExibidos} de {cicloDiasExibido} dias estimados</span>
               </div>
               <span className="text-[#27633b] font-bold">{progressoCiclo}% completo</span>
             </div>

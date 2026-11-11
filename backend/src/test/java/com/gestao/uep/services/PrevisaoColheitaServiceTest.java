@@ -138,6 +138,7 @@ class PrevisaoColheitaServiceTest {
         String plantasPorCanteiro) {
         return new AtualizarFichaCampoDTO(
                 null,
+                null,
                 "C01",
                 null,
                 null,
