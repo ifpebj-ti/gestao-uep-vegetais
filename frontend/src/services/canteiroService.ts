@@ -6,6 +6,8 @@ export interface ModeloCultivoApi {
   id: string;
   cultura: string;
   variedade: string | null;
+  categoria?: string;
+  cicloDias?: number;
   espacamentoLinhasM: number;
   espacamentoPlantasM: number;
   produtividadeKgPorPlanta: number | null;
@@ -36,6 +38,7 @@ export interface PrevisaoColheitaApi {
 export interface FichaCampoApi {
   canteiroId: string;
   grupo: string | null;
+  turma?: string | null;
   canteiroCodigo: string | null;
   cultura: string | null;
   variedade: string | null;
@@ -75,6 +78,7 @@ export const canteiroService = {
   saveFicha(canteiroId: string, ficha: FichaCampoApi): Promise<FichaCampoApi> {
     return apiClient.put<FichaCampoApi>(`/canteiros/${canteiroId}/ficha`, {
       grupo: ficha.grupo,
+      turma: ficha.turma,
       canteiroCodigo: ficha.canteiroCodigo,
       cultura: ficha.cultura,
       dataPlantio: ficha.dataPlantio,

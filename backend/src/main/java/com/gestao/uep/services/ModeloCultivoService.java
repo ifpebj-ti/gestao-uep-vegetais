@@ -34,6 +34,7 @@ public class ModeloCultivoService {
     @Transactional
     public ModeloCultivoDTO criar(AtualizarModeloCultivoDTO dados, Usuario usuario) {
         authorizationService.exigirProfessor(usuario);
+        exigirCategoriaECiclo(dados);
         ModeloCultivo modelo = new ModeloCultivo();
         preencher(modelo, dados, usuario);
         return ModeloCultivoDTO.from(repository.save(modelo));
@@ -51,6 +52,16 @@ public class ModeloCultivoService {
     private void preencher(ModeloCultivo modelo, AtualizarModeloCultivoDTO dados, Usuario usuario) {
         modelo.setCultura(dados.cultura().trim());
         modelo.setVariedade(dados.variedade() == null ? null : dados.variedade().trim());
+        if (dados.categoria() != null) {
+            if (dados.categoria().isBlank()) {
+                throw new IllegalArgumentException("A categoria da cultura e obrigatoria");
+            }
+            modelo.setCategoria(dados.categoria().trim());
+        }
+        if (dados.cicloDias() != null) {
+            modelo.setCicloDias(dados.cicloDias());
+        }
+        exigirCategoriaECiclo(modelo);
         modelo.setEspacamentoLinhasM(dados.espacamentoLinhasM());
         modelo.setEspacamentoPlantasM(dados.espacamentoPlantasM());
         modelo.setProdutividadeKgPorPlanta(dados.produtividadeKgPorPlanta());
@@ -60,5 +71,23 @@ public class ModeloCultivoService {
         modelo.setFatorAproveitamento(dados.fatorAproveitamento());
         modelo.setAtivo(dados.ativo() == null || dados.ativo());
         modelo.setAtualizadoPor(usuario);
+    }
+
+    private void exigirCategoriaECiclo(AtualizarModeloCultivoDTO dados) {
+        if (dados.categoria() == null || dados.categoria().isBlank()) {
+            throw new IllegalArgumentException("A categoria da cultura e obrigatoria");
+        }
+        if (dados.cicloDias() == null || dados.cicloDias() < 1 || dados.cicloDias() > 730) {
+            throw new IllegalArgumentException("O ciclo da cultura deve estar entre 1 e 730 dias");
+        }
+    }
+
+    private void exigirCategoriaECiclo(ModeloCultivo modelo) {
+        if (modelo.getCategoria() == null || modelo.getCategoria().isBlank()) {
+            throw new IllegalArgumentException("A categoria da cultura e obrigatoria");
+        }
+        if (modelo.getCicloDias() == null || modelo.getCicloDias() < 1 || modelo.getCicloDias() > 730) {
+            throw new IllegalArgumentException("O ciclo da cultura deve estar entre 1 e 730 dias");
+        }
     }
 }

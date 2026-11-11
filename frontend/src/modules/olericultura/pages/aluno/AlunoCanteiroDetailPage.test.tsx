@@ -3,12 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AlunoCanteiroDetailPage } from './AlunoCanteiroDetailPage';
 import * as AuthContextModule from '../../../../contexts/AuthContext';
+import { canteiroService } from '../../../../services/canteiroService';
 
 describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante', () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
     vi.restoreAllMocks();
+    vi.spyOn(canteiroService, 'getModelosCultivo').mockResolvedValue([]);
 
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: {
@@ -80,5 +82,29 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
 
     expect(screen.getByRole('button', { name: /ficha de campo \(olericultura\)/i })).toBeInTheDocument();
     expect(screen.getByText(/ficha de campo oficial do canteiro/i)).toBeInTheDocument();
+  });
+
+  it('deve carregar e exibir os modelos agronômicos para o aluno', async () => {
+    vi.mocked(canteiroService.getModelosCultivo).mockResolvedValue([
+      {
+        id: 'modelo-cenoura',
+        cultura: 'Cenoura Baby',
+        variedade: 'Daucus carota subsp. sativus',
+        espacamentoLinhasM: 0.2,
+        espacamentoPlantasM: 0.1,
+        produtividadeKgPorPlanta: 0.1,
+        pesoMedioKgPorUnidade: null,
+        pesoMedioKgPorPlanta: 0.1,
+        unidadeProducao: 'KG',
+        fatorAproveitamento: 0.7,
+        ativo: true,
+      },
+    ]);
+
+    renderComponent('c-19');
+
+    expect(await screen.findByRole('option', { name: /cenoura baby - Daucus carota/i }))
+      .toBeInTheDocument();
+    expect(canteiroService.getModelosCultivo).toHaveBeenCalledOnce();
   });
 });

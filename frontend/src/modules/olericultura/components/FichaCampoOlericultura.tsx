@@ -24,6 +24,7 @@ import {
 
 export interface FichaCampoData {
   grupo: string;
+  turma?: string;
   canteiroCodigo: string;
   cultura: string;
   variedade: string;
@@ -114,6 +115,7 @@ export function getValoresPadrao(canteiro: CanteiroData): FichaCampoData {
   if (isVazio) {
     return {
       grupo: '',
+      turma: canteiro.turmaResponsavel || '',
       canteiroCodigo: canteiro.codigo,
       variedade: '',
       cultura: '',
@@ -152,6 +154,7 @@ export function getValoresPadrao(canteiro: CanteiroData): FichaCampoData {
 
   return {
     grupo: `${canteiro.turmaResponsavel} — Equipe Líder: ${canteiro.estudanteLider}`,
+    turma: canteiro.turmaResponsavel,
     canteiroCodigo: canteiro.codigo,
     variedade: canteiro.variedade || '',
     cultura: canteiro.cultura,
@@ -212,6 +215,25 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
   );
   const [destinoNovaColheita, setDestinoNovaColheita] = useState('Refeitório Estudantil IFPE');
   const [obsNovaColheita, setObsNovaColheita] = useState('');
+
+  const modeloPrevisao = modeloEditado
+    || modelosCultivo.find((modelo) => modelo.id === ficha.modeloCultivoId)
+    || null;
+  const areaPrevisao = ficha.areaCanteiroM2 ?? canteiro.areaM2 ?? null;
+  const plantasEstimadas = modeloPrevisao
+    ? calcularPlantasDoCanteiro(areaPrevisao, modeloPrevisao)
+    : null;
+  const pesoMedioKgPorPlanta = modeloPrevisao?.pesoMedioKgPorPlanta;
+  const fatorAproveitamento = modeloPrevisao?.fatorAproveitamento;
+  const previsaoKgCalculada = plantasEstimadas != null
+    && pesoMedioKgPorPlanta != null
+    && Number.isFinite(pesoMedioKgPorPlanta)
+    && pesoMedioKgPorPlanta > 0
+    && fatorAproveitamento != null
+    && Number.isFinite(fatorAproveitamento)
+    && fatorAproveitamento > 0
+    ? Math.round(plantasEstimadas * pesoMedioKgPorPlanta * fatorAproveitamento * 100) / 100
+    : null;
 
   useEffect(() => {
     const proximaFicha = fichaInicial || getValoresPadrao(canteiro);
@@ -588,33 +610,26 @@ export const FichaCampoOlericultura: React.FC<FichaCampoOlericulturaProps> = ({
       )}
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm print:hidden">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Previsão de colheita</h3>
             <p className="mt-1 text-xs text-slate-600">Estimativa baseada no modelo agronômico e nos dados do canteiro.</p>
           </div>
-          <span className="text-right text-2xl font-black text-amber-800">
-            {ficha.previsaoKg?.previsaoKg != null ? `${ficha.previsaoKg.previsaoKg.toLocaleString('pt-BR')} kg` : '—'}
+          <span aria-live="polite" className="ml-auto shrink-0 text-right text-2xl font-black tabular-nums text-amber-800">
+            {previsaoKgCalculada != null
+              ? `${previsaoKgCalculada.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`
+              : '—'}
           </span>
         </div>
-        {ficha.previsaoKg && (
-          <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-3">
-            <span><strong>Modelo:</strong> {ficha.previsaoKg.modeloCultivoNome || 'Não selecionado'}</span>
-            <span><strong>Plantas estimadas:</strong> {ficha.previsaoKg.plantasEstimadas?.toLocaleString('pt-BR') || '—'}</span>
-            <span><strong>Aproveitamento:</strong> {ficha.previsaoKg.fatorAproveitamento ? `${(ficha.previsaoKg.fatorAproveitamento * 100).toLocaleString('pt-BR')}%` : '—'}</span>
+        {previsaoKgCalculada != null && modeloPrevisao && plantasEstimadas != null && (
+          <div className="mt-3 grid gap-x-6 gap-y-2 border-t border-amber-200/80 pt-3 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-3">
+            <span className="min-w-0 break-words"><strong>Modelo:</strong> {modeloPrevisao.cultura}{modeloPrevisao.variedade ? ` — ${modeloPrevisao.variedade}` : ''}</span>
+            <span><strong>Plantas estimadas:</strong> {plantasEstimadas.toLocaleString('pt-BR')}</span>
+            <span><strong>Área considerada:</strong> {areaPrevisao?.toLocaleString('pt-BR')} m²</span>
+            <span><strong>Espaçamento:</strong> {formatarEspacamento(modeloPrevisao.espacamentoLinhasM, modeloPrevisao.espacamentoPlantasM)}</span>
+            <span><strong>Média por planta:</strong> {pesoMedioKgPorPlanta?.toLocaleString('pt-BR')} kg</span>
+            <span><strong>Aproveitamento:</strong> {((fatorAproveitamento ?? 0) * 100).toLocaleString('pt-BR')}%</span>
           </div>
-        )}
-        {ficha.previsaoKg && (
-          <div className="mt-2 grid gap-2 text-xs text-slate-700 sm:grid-cols-3">
-            <span><strong>Área considerada:</strong> {ficha.previsaoKg.areaCanteiroM2 != null ? `${ficha.previsaoKg.areaCanteiroM2.toLocaleString('pt-BR')} m²` : '—'}</span>
-            <span><strong>Espaçamento:</strong> {ficha.previsaoKg.espacamentoLinhasM != null && ficha.previsaoKg.espacamentoPlantasM != null ? formatarEspacamento(ficha.previsaoKg.espacamentoLinhasM, ficha.previsaoKg.espacamentoPlantasM) : '—'}</span>
-            <span><strong>Média da cultura:</strong> {ficha.previsaoKg.pesoMedioKgPorPlanta != null ? `${ficha.previsaoKg.pesoMedioKgPorPlanta} kg/planta` : '—'}</span>
-          </div>
-        )}
-        {ficha.previsaoKg?.aviso && (
-          <p className="mt-3 rounded-lg border border-amber-200 bg-white/70 p-2 text-xs font-semibold text-amber-900">
-            {ficha.previsaoKg.aviso}
-          </p>
         )}
       </section>
 

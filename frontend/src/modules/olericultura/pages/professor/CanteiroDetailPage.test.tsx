@@ -2,11 +2,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../../../../contexts/AuthContext';
-import { CanteiroDetailPage } from './CanteiroDetailPage';
+import { CanteiroDetailPage, parseDataPlantio } from './CanteiroDetailPage';
 
 describe('CanteiroDetailPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('interpreta datas de plantio ISO e brasileiras, rejeitando datas impossíveis', () => {
+    const dataIso = parseDataPlantio('2026-11-10');
+    const dataBrasileira = parseDataPlantio('10/11/2026');
+    expect(dataIso && [dataIso.getFullYear(), dataIso.getMonth() + 1, dataIso.getDate()]).toEqual([2026, 11, 10]);
+    expect(dataBrasileira && [dataBrasileira.getFullYear(), dataBrasileira.getMonth() + 1, dataBrasileira.getDate()]).toEqual([2026, 11, 10]);
+    expect(parseDataPlantio('31/02/2026')).toBeNull();
+    expect(parseDataPlantio('')).toBeNull();
   });
 
   const renderCanteiroPage = (canteiroId = 'c-01') => {

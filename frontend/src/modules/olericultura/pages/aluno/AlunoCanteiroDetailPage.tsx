@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Calendar,
@@ -22,6 +22,7 @@ import {
   TarefaAluno,
   RegistroHistoricoAluno,
 } from '../../../../services/turmaService';
+import { canteiroService, ModeloCultivoApi } from '../../../../services/canteiroService';
 
 export const AlunoCanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +35,20 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
   const turmaAtiva = turmaService.obterTurmaDoAluno(alunoEmail);
 
   const [abaAtiva, setAbaAtiva] = useState<'ficha' | 'tarefas' | 'historico'>('ficha');
+  const [modelosCultivo, setModelosCultivo] = useState<ModeloCultivoApi[]>([]);
+
+  useEffect(() => {
+    let ativo = true;
+    canteiroService.getModelosCultivo()
+      .then((modelos) => {
+        if (ativo) setModelosCultivo(modelos);
+      })
+      .catch(() => {
+        if (ativo) setModelosCultivo([]);
+      });
+
+    return () => { ativo = false; };
+  }, []);
 
   // Estado da Ficha de Campo Oficial preenchida pelo aluno
   const [fichaInicial, setFichaInicial] = useState<FichaCampoData | null>(() => {
@@ -253,6 +268,7 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
               podeEditar={true}
               fichaInicial={fichaInicial}
               onSalvar={handleSalvarFicha}
+              modelosCultivo={modelosCultivo}
             />
           </div>
         )}
