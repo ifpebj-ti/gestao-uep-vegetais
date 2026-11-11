@@ -81,6 +81,7 @@ export const canteiroService = {
       turma: ficha.turma,
       canteiroCodigo: ficha.canteiroCodigo,
       cultura: ficha.cultura,
+      variedade: ficha.variedade,
       dataPlantio: ficha.dataPlantio,
       espacamento: ficha.espacamento,
       plantasPorCanteiro: ficha.plantasPorCanteiro,

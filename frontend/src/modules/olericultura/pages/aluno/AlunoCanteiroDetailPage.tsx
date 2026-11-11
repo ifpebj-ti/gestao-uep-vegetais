@@ -22,7 +22,7 @@ import {
   TarefaAluno,
   RegistroHistoricoAluno,
 } from '../../../../services/turmaService';
-import { canteiroService, ModeloCultivoApi } from '../../../../services/canteiroService';
+import { canteiroService, FichaCampoApi, ModeloCultivoApi } from '../../../../services/canteiroService';
 
 export const AlunoCanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,36 +50,106 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
     return () => { ativo = false; };
   }, []);
 
-  // Estado da Ficha de Campo Oficial preenchida pelo aluno
-  const [fichaInicial, setFichaInicial] = useState<FichaCampoData | null>(() => {
-    try {
-      const stored = localStorage.getItem(`terrarium_ficha_${canteiro.id}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
+  const [fichaInicial, setFichaInicial] = useState<FichaCampoData | null>(null);
+  const [carregandoFicha, setCarregandoFicha] = useState(true);
+  const [erroFicha, setErroFicha] = useState<string | null>(null);
+
+  const converterFicha = (dados: FichaCampoApi): FichaCampoData => ({
+    grupo: dados.grupo || '',
+    turma: dados.turma || '',
+    canteiroCodigo: dados.canteiroCodigo || '',
+    cultura: dados.cultura || '',
+    variedade: dados.variedade || '',
+    dataPlantio: dados.dataPlantio || '',
+    espacamento: dados.espacamento || '',
+    plantasPorCanteiro: dados.plantasPorCanteiro || '',
+    previsaoColheita: dados.previsaoColheita || '',
+    adubacao: dados.adubacao || '',
+    controlePragas: dados.controlePragas || '',
+    limpaCapina: dados.limpaCapina || '',
+    obs: dados.obs || '',
+    statusEntrega: (dados.statusEntrega || 'pendente') as FichaCampoData['statusEntrega'],
+    dataEntrega: dados.dataEntrega || '',
+    vistoProfessor: {
+      assinado: dados.vistoAssinado,
+      dataVisto: dados.dataVisto || undefined,
+      parecer: dados.parecer || undefined,
+    },
+    persistida: dados.persistida,
+    updatedAt: dados.updatedAt,
+    updatedBy: dados.updatedBy,
+    modeloCultivoId: dados.modeloCultivoId,
+    areaCanteiroM2: dados.areaCanteiroM2,
+    plantasPorCanteiroValor: dados.plantasPorCanteiroValor,
+    previsaoKg: dados.previsaoKg,
   });
 
-  const handleSalvarFicha = async (ficha: FichaCampoData) => {
-    try {
-      localStorage.setItem(`terrarium_ficha_${canteiro.id}`, JSON.stringify(ficha));
-      setFichaInicial(ficha);
+  useEffect(() => {
+    let ativo = true;
+    setCarregandoFicha(true);
+    setErroFicha(null);
+    setFichaInicial(null);
 
-      // Registra a atualização na linha do tempo para acompanhamento docente
-      turmaService.registrarAcaoHistorico({
-        canteiroId: canteiro.id,
-        alunoEmail,
-        alunoNome,
-        acao: 'Ficha de Campo Preenchida',
-        detalhes: `Ficha do canteiro ${canteiro.codigo} atualizada (${ficha.cultura}${
-          ficha.variedade ? ` - ${ficha.variedade}` : ''
-        }). Status: ${ficha.statusEntrega}.`,
+    canteiroService.getFicha(canteiro.id)
+      .then((dados) => {
+        if (ativo) setFichaInicial(converterFicha(dados));
+      })
+      .catch((erro: unknown) => {
+        if (!ativo) return;
+        setErroFicha(erro instanceof Error ? erro.message : 'Não foi possível carregar a ficha do servidor.');
+      })
+      .finally(() => {
+        if (ativo) setCarregandoFicha(false);
       });
 
-      recarregarDados();
-    } catch (err) {
-      console.error('Falha ao salvar ficha de campo localmente', err);
-    }
+    return () => { ativo = false; };
+  }, [canteiro.id]);
+
+  const handleSalvarFicha = async (ficha: FichaCampoData) => {
+    const salva = await canteiroService.saveFicha(canteiro.id, {
+      canteiroId: canteiro.id,
+      grupo: ficha.grupo,
+      turma: ficha.turma || canteiro.turmaResponsavel || '',
+      canteiroCodigo: ficha.canteiroCodigo,
+      cultura: ficha.cultura,
+      variedade: ficha.variedade,
+      dataPlantio: ficha.dataPlantio,
+      espacamento: ficha.espacamento,
+      plantasPorCanteiro: ficha.plantasPorCanteiro,
+      previsaoColheita: ficha.previsaoColheita,
+      adubacao: ficha.adubacao,
+      controlePragas: ficha.controlePragas,
+      limpaCapina: ficha.limpaCapina,
+      obs: ficha.obs,
+      statusEntrega: ficha.statusEntrega,
+      dataEntrega: ficha.dataEntrega || null,
+      vistoAssinado: ficha.vistoProfessor?.assinado || false,
+      dataVisto: ficha.vistoProfessor?.dataVisto || null,
+      parecer: ficha.vistoProfessor?.parecer || null,
+      updatedAt: null,
+      updatedBy: null,
+      persistida: ficha.persistida || false,
+      modeloCultivoId: ficha.modeloCultivoId || null,
+      areaCanteiroM2: ficha.areaCanteiroM2 ?? canteiro.areaM2 ?? null,
+      plantasPorCanteiroValor: ficha.plantasPorCanteiroValor ?? null,
+      previsaoKg: ficha.previsaoKg || null,
+    });
+
+    // Só publica a resposta confirmada pelo servidor depois do PUT concluir.
+    setFichaInicial(converterFicha(salva));
+
+    // Registra a atualização na linha do tempo local para acompanhamento docente.
+    turmaService.registrarAcaoHistorico({
+      canteiroId: canteiro.id,
+      alunoEmail,
+      alunoNome,
+      acao: 'Ficha de Campo Preenchida',
+      detalhes: `Ficha do canteiro ${canteiro.codigo} atualizada (${ficha.cultura}${
+        ficha.variedade ? ` - ${ficha.variedade}` : ''
+      }). Status: ${ficha.statusEntrega}.`,
+    });
+
+    recarregarDados();
   };
 
   // Estado das Tarefas
@@ -262,14 +332,24 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
         {/* Conteúdo da Aba 1: Ficha de Campo Oficial (Preenchimento pelo Aluno) */}
         {abaAtiva === 'ficha' && (
           <div className="space-y-4">
-            <FichaCampoOlericultura
-              canteiro={canteiro}
-              perfil="aluno"
-              podeEditar={true}
-              fichaInicial={fichaInicial}
-              onSalvar={handleSalvarFicha}
-              modelosCultivo={modelosCultivo}
-            />
+            {carregandoFicha ? (
+              <p role="status" className="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-slate-500">
+                Carregando ficha de campo do servidor...
+              </p>
+            ) : erroFicha ? (
+              <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
+                Não foi possível carregar a ficha de campo: {erroFicha}
+              </div>
+            ) : fichaInicial ? (
+              <FichaCampoOlericultura
+                canteiro={canteiro}
+                perfil="aluno"
+                podeEditar={true}
+                fichaInicial={fichaInicial}
+                onSalvar={handleSalvarFicha}
+                modelosCultivo={modelosCultivo}
+              />
+            ) : null}
           </div>
         )}
 

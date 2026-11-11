@@ -3,7 +3,52 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AlunoCanteiroDetailPage } from './AlunoCanteiroDetailPage';
 import * as AuthContextModule from '../../../../contexts/AuthContext';
-import { canteiroService } from '../../../../services/canteiroService';
+import { canteiroService, FichaCampoApi } from '../../../../services/canteiroService';
+
+const fichaApi = (overrides: Partial<FichaCampoApi> = {}): FichaCampoApi => ({
+  canteiroId: 'c-01',
+  grupo: 'Grupo API',
+  turma: 'Turma API',
+  canteiroCodigo: 'API-01',
+  cultura: 'Cultura API',
+  variedade: 'Variedade API',
+  dataPlantio: '2026-10-10',
+  espacamento: '0,2 m x 0,1 m',
+  plantasPorCanteiro: '50 plantas',
+  previsaoColheita: '10/12/2026',
+  adubacao: 'Adubação API',
+  controlePragas: 'Controle API',
+  limpaCapina: 'Capina API',
+  obs: 'Observação API',
+  statusEntrega: 'entregue',
+  dataEntrega: '2026-10-11',
+  vistoAssinado: true,
+  dataVisto: '2026-10-12',
+  parecer: 'Parecer API',
+  updatedAt: '2026-10-12T12:00:00Z',
+  updatedBy: 'professor@ifpe.edu.br',
+  persistida: true,
+  modeloCultivoId: 'modelo-api',
+  areaCanteiroM2: 8.5,
+  plantasPorCanteiroValor: 50,
+  previsaoKg: {
+    modeloCultivoId: 'modelo-api',
+    modeloCultivoNome: 'Cultura API',
+    areaCanteiroM2: 8.5,
+    plantasEstimadas: 50,
+    previsaoKg: 4.25,
+    fatorAproveitamento: 0.8,
+    unidadeProducao: 'KG',
+    espacamentoLinhasM: 0.2,
+    espacamentoPlantasM: 0.1,
+    produtividadeKgPorPlanta: 0.1,
+    pesoMedioKgPorUnidade: null,
+    pesoMedioKgPorPlanta: 0.1,
+    calculadaEm: '2026-10-12T12:00:00Z',
+    aviso: null,
+  },
+  ...overrides,
+});
 
 describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante', () => {
   beforeEach(() => {
@@ -11,6 +56,8 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     sessionStorage.clear();
     vi.restoreAllMocks();
     vi.spyOn(canteiroService, 'getModelosCultivo').mockResolvedValue([]);
+    vi.spyOn(canteiroService, 'getFicha').mockResolvedValue(fichaApi());
+    vi.spyOn(canteiroService, 'saveFicha').mockImplementation(async (_id, ficha) => fichaApi(ficha));
 
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: {
@@ -77,11 +124,65 @@ describe('AlunoCanteiroDetailPage - Detalhes e Ficha Simplificada do Estudante',
     expect(screen.getByText(/diário de campo e linha do tempo/i)).toBeInTheDocument();
   });
 
-  it('deve exibir a aba de Ficha de Campo de Olericultura e permitir ao aluno preencher a ficha', () => {
+  it('deve exibir a aba de Ficha de Campo de Olericultura e carregar dados do servidor', async () => {
     renderComponent();
 
     expect(screen.getByRole('button', { name: /ficha de campo \(olericultura\)/i })).toBeInTheDocument();
-    expect(screen.getByText(/ficha de campo oficial do canteiro/i)).toBeInTheDocument();
+    expect(await screen.findByText(/ficha de campo oficial do canteiro/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Grupo API')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('10/12/2026')).toBeInTheDocument();
+    expect(screen.getByLabelText(/status da ficha/i)).toHaveValue('entregue');
+    expect(canteiroService.getFicha).toHaveBeenCalledWith('c-01');
+  });
+
+  it('não exibe valores de demonstração enquanto carrega a ficha remota', async () => {
+    let resolver!: (ficha: FichaCampoApi) => void;
+    vi.mocked(canteiroService.getFicha).mockReturnValue(new Promise((resolve) => { resolver = resolve; }));
+
+    renderComponent();
+
+    expect(screen.getByRole('status')).toHaveTextContent(/carregando ficha de campo do servidor/i);
+    expect(screen.queryByText(/ficha de campo oficial do canteiro/i)).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/alface/i)).not.toBeInTheDocument();
+
+    resolver(fichaApi());
+    expect(await screen.findByDisplayValue('Cultura API')).toBeInTheDocument();
+  });
+
+  it('mostra falha no carregamento sem representar uma ficha local como carregada', async () => {
+    vi.mocked(canteiroService.getFicha).mockRejectedValue(new Error('Servidor indisponível'));
+
+    renderComponent();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Servidor indisponível');
+    expect(screen.queryByText(/ficha de campo oficial do canteiro/i)).not.toBeInTheDocument();
+  });
+
+  it('salva na API, mantém os edits em caso de erro e só atualiza a ficha após sucesso', async () => {
+    renderComponent();
+    const cultura = await screen.findByLabelText('Cultura');
+    fireEvent.change(cultura, { target: { value: 'Cultura editada' } });
+
+    vi.mocked(canteiroService.saveFicha).mockRejectedValueOnce(new Error('Falha no servidor'));
+    fireEvent.click(screen.getByRole('button', { name: /salvar ficha/i }));
+
+    expect(await screen.findByText('Falha no servidor')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cultura')).toHaveValue('Cultura editada');
+    expect(screen.queryByText(/ficha salva no servidor com sucesso/i)).not.toBeInTheDocument();
+
+    vi.mocked(canteiroService.saveFicha).mockResolvedValueOnce(fichaApi({ cultura: 'Resposta confirmada' }));
+    fireEvent.click(screen.getByRole('button', { name: /salvar ficha/i }));
+
+    await waitFor(() => expect(screen.getByLabelText('Cultura')).toHaveValue('Resposta confirmada'));
+    expect(canteiroService.saveFicha).toHaveBeenCalledWith('c-01', expect.objectContaining({
+      cultura: 'Cultura editada',
+      turma: 'Turma API',
+      modeloCultivoId: 'modelo-api',
+      areaCanteiroM2: 8.5,
+      previsaoKg: fichaApi().previsaoKg,
+      statusEntrega: 'entregue',
+    }));
+    expect(localStorage.getItem('terrarium_ficha_c-01')).toBeNull();
   });
 
   it('deve carregar e exibir os modelos agronômicos para o aluno', async () => {
