@@ -37,9 +37,18 @@ jobs:
           cache: maven
 
       # Executa os testes unitários do backend sem depender do PostgreSQL
-      - name: Run Backend Tests
+      - name: Run Backend Tests & Coverage
         working-directory: ./backend
-        run: mvn --batch-mode test
+        run: mvn --batch-mode verify
+
+      - name: Upload Backend Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: backend-coverage
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore
+          retention-days: 14
 
       # Configura o ambiente Node.js para o frontend
       - name: Setup Node.js
@@ -64,9 +73,18 @@ jobs:
         run: npm run lint
 
       # Executa a suíte de testes automatizados com Vitest
-      - name: Run Frontend Tests
+      - name: Run Frontend Tests & Coverage
         working-directory: ./frontend
-        run: npm run test:run
+        run: npm run test:coverage
+
+      - name: Upload Frontend Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: ignore
+          retention-days: 14
 
       # Valida compilação de produção e integridade dos bundles
       - name: Validate Frontend Build

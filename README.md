@@ -216,6 +216,14 @@ docker compose up -d --build
 
 # 🧪 Executando Testes e Qualidade
 
+## Cobertura de Testes
+
+O CI mede a cobertura de linhas do backend com JaCoCo e do frontend com Vitest/V8.
+A integração é bloqueada quando a cobertura de linhas de qualquer uma das aplicações
+fica abaixo de 70%. As métricas de funções, declarações e branches também são exibidas
+no relatório para orientar a evolução da suíte. Os relatórios HTML, JSON e XML são
+publicados como artefatos das execuções do GitHub Actions.
+
 ### Frontend (`Vitest` + `TypeScript`)
 Dentro da pasta `frontend/`:
 ```bash
@@ -227,6 +235,9 @@ npm run lint
 
 # Execução da suíte de testes unitários com Vitest (19 suítes / 98 testes)
 npm run test:run
+
+# Execução dos testes com relatório e gate de cobertura
+npm run test:coverage
 
 # Build de produção e validação dos pacotes
 npm run build
