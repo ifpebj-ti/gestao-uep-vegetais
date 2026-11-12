@@ -9,6 +9,16 @@ Marque a opção que melhor descreve o objetivo deste Pull Request:
 - [ ] 🧪 Testes (`test`)
 - [ ] 🔧 Configuração / CI / Infraestrutura (`chore` / `ci`)
 
+## Tipo de Release
+Escolha o prefixo Conventional Commits no titulo da PR quando a alteracao precisar gerar release:
+
+- `fix:` para correcoes (`PATCH`);
+- `feat:` para novas funcionalidades (`MINOR`);
+- `feat!:` ou `BREAKING CHANGE:` para mudancas incompativeis (`MAJOR`);
+- `docs:` ou `chore:` para alteracoes que nao geram release.
+
+Exemplo de titulo: `feat: permitir edicao da ficha de campo`.
+
 ## O que foi feito?
 Explique de forma resumida, mas clara, as alterações realizadas neste Pull Request (este texto será utilizado nas Notas de Release).
 
