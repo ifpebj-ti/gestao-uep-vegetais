@@ -4,6 +4,13 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.2](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.1...gestao-uep-vegetais-v0.1.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* **security:** pin guava to patched version ([3cbe808](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/3cbe808dece8714585c37db588e98aff0955cc8d))
+
 ## [0.1.1](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.0...gestao-uep-vegetais-v0.1.1) (2026-11-13)
 
 
