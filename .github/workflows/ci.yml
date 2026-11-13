@@ -21,6 +21,20 @@ jobs:
   code-quality:
     name: Lint & Automated Tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gestao_uep_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gestao_uep_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     permissions:
       contents: read
     steps:
@@ -39,7 +53,7 @@ jobs:
       # Executa os testes unitários do backend sem depender do PostgreSQL
       - name: Run Backend Tests & Coverage
         working-directory: ./backend
-        run: mvn --batch-mode verify
+        run: mvn --batch-mode verify -Pintegration
 
       - name: Upload Backend Coverage Report
         if: always()
