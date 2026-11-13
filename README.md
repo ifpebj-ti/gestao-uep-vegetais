@@ -110,7 +110,7 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
   - Execução contínua da suíte de testes do Frontend (`npm run test:run`).
   - Verificação de build de produção (`npm run build`).
   - Compilação Multi-Arquitetura (`amd64` / `arm64`) com QEMU e Buildx.
-  - Varredura de segurança com **Aqua Security Trivy** (bloqueio de vulnerabilidades `CRITICAL`).
+  - Varredura de segurança com **Aqua Security Trivy** (bloqueio de vulnerabilidades corrigíveis `HIGH` e `CRITICAL`, mantendo `ignore-unfixed`).
   - Publicação automática das imagens no **GitHub Container Registry (GHCR)**.
 
 ---
