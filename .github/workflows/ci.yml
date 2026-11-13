@@ -154,7 +154,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Varredura de vulnerabilidades de seguranca com o Aqua Security Trivy
-      # Falha a pipeline (exit-code: 1) caso encontre vulnerabilidades com severidade CRITICAL
+      # Falha a pipeline (exit-code: 1) caso encontre vulnerabilidades HIGH ou CRITICAL corrigíveis
       - name: Run Trivy vulnerability scanner
         run: |
           docker run --rm \
@@ -162,7 +162,7 @@ jobs:
             -v "${{ github.workspace }}/.cache/trivy:/root/.cache/trivy" \
             aquasec/trivy:0.75.0 image \
             --format table \
-            --severity CRITICAL \
+            --severity HIGH,CRITICAL \
             --exit-code 1 \
             --ignore-unfixed \
             "${IMAGE_NAME}:temp-scan"
