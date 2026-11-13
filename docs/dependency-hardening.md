@@ -11,6 +11,7 @@
 ## Correções aplicadas
 
 - Jackson 2 foi atualizado para o BOM `2.21.7` e Jackson 3 para `3.1.7`, corrigindo vulnerabilidades transitivas reportadas no JAR do backend.
+- Guava foi fixado em `33.7.2-jre` para substituir a versão transitiva `33.1.0-jre`, corrigindo a vulnerabilidade `CVE-2026-102554` identificada pelo gate do Trivy.
 - A imagem final do backend executa `apk upgrade --no-cache` para receber correções da base Alpine, incluindo `libexpat`.
 - A imagem final do frontend já atualiza os pacotes Alpine; a reconstrução confirmou as versões corrigidas de curl, OpenSSL, expat e tiff.
 - Node foi atualizado de 20 para 22 no CI e no builder Docker, alinhando o ambiente aos requisitos atuais do Vitest e Testing Library.
