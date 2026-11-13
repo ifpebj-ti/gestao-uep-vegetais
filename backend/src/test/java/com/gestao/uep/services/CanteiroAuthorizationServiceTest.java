@@ -40,6 +40,17 @@ class CanteiroAuthorizationServiceTest {
     }
 
     @Test
+    void alunoResponsavelPodeLerSeuHistorico() {
+        Usuario aluno = usuario("aluno@discente.ifpe.edu.br", UsuarioRole.ALUNO);
+        when(responsavelRepository.existsByCanteiroIdAndUsuarioId("c-01", aluno.getId()))
+                .thenReturn(true);
+        CanteiroAuthorizationService service = new CanteiroAuthorizationService(responsavelRepository);
+
+        org.assertj.core.api.Assertions.assertThatCode(() -> service.exigirLeitura("c-01", aluno))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void alunoNaoResponsavelNaoPodeEditarNemLer() {
         Usuario aluno = usuario("aluno@discente.ifpe.edu.br", UsuarioRole.ALUNO);
         when(responsavelRepository.existsByCanteiroIdAndUsuarioId("c-01", aluno.getId()))

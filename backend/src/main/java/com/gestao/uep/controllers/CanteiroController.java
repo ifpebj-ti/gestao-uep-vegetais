@@ -5,6 +5,7 @@ import com.gestao.uep.domain.canteiro.dto.AtualizarFichaCampoDTO;
 import com.gestao.uep.domain.canteiro.dto.CanteiroDetalheDTO;
 import com.gestao.uep.domain.canteiro.dto.CanteiroResumoDTO;
 import com.gestao.uep.domain.canteiro.dto.FichaCampoDTO;
+import com.gestao.uep.domain.canteiro.dto.HistoricoFichaCampoDTO;
 import com.gestao.uep.domain.canteiro.dto.ResponsaveisDTO;
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.services.CanteiroService;
@@ -48,6 +49,14 @@ public class CanteiroController {
             @AuthenticationPrincipal Usuario usuario
     ) {
         return service.buscarFicha(id, usuario);
+    }
+
+    @GetMapping("/{id}/historico")
+    public List<HistoricoFichaCampoDTO> buscarHistoricoFicha(
+            @PathVariable String id,
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        return service.buscarHistorico(id, usuario);
     }
 
     @PutMapping("/{id}/ficha")

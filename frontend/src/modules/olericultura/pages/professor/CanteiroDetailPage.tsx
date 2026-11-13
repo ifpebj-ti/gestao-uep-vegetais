@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CANTEIROS_DATA, CanteiroData, obterSetorPorCultura } from '../../data/horticulturaData';
 import {
@@ -18,9 +18,11 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { turmaService, TarefaAluno, RegistroHistoricoAluno } from '../../../../services/turmaService';
 import { FichaCampoData, normalizarEspacamento } from '../../components/FichaCampoOlericultura';
 import { ApiError } from '../../../../services/apiClient';
+import { HistoricoFichaTimeline } from '../../components/HistoricoFichaTimeline';
 import {
   AlunoResumo,
   FichaCampoApi,
+  HistoricoFichaCampoApi,
   ModeloCultivoApi,
   canteiroService,
 } from '../../../../services/canteiroService';
@@ -75,6 +77,21 @@ export const CanteiroDetailPage: React.FC = () => {
   const [historicoAlunos, setHistoricoAlunos] = useState<RegistroHistoricoAluno[]>(() =>
     id ? turmaService.listarHistorico(id) : []
   );
+  const [eventosFicha, setEventosFicha] = useState<HistoricoFichaCampoApi[]>([]);
+  const [carregandoHistoricoFicha, setCarregandoHistoricoFicha] = useState(true);
+  const [erroHistoricoFicha, setErroHistoricoFicha] = useState<string | null>(null);
+
+  const carregarHistoricoFicha = useCallback(async (canteiroId: string) => {
+    setCarregandoHistoricoFicha(true);
+    setErroHistoricoFicha(null);
+    try {
+      setEventosFicha(await canteiroService.getHistorico(canteiroId));
+    } catch {
+      setErroHistoricoFicha('Não foi possível carregar as alterações da ficha.');
+    } finally {
+      setCarregandoHistoricoFicha(false);
+    }
+  }, []);
 
   const handleDarVisto = (tarefaId: string) => {
     turmaService.darVistoProfessor(tarefaId, user?.nome || 'Prof. George Henrique');
@@ -122,6 +139,8 @@ export const CanteiroDetailPage: React.FC = () => {
     let ativo = true;
     setCarregandoFicha(true);
     setErroFicha('');
+    setCarregandoHistoricoFicha(true);
+    setErroHistoricoFicha(null);
     canteiroService.getFicha(id)
       .then((dados) => {
         if (!ativo) return;
@@ -138,6 +157,12 @@ export const CanteiroDetailPage: React.FC = () => {
       .finally(() => {
         if (ativo) setCarregandoFicha(false);
       });
+    canteiroService.getHistorico(id)
+      .then((eventos) => { if (ativo) setEventosFicha(eventos); })
+      .catch(() => {
+        if (ativo) setErroHistoricoFicha('Não foi possível carregar as alterações da ficha.');
+      })
+      .finally(() => { if (ativo) setCarregandoHistoricoFicha(false); });
 
       canteiroService.getResponsaveis(id)
         .then((atuais) => {
@@ -200,6 +225,7 @@ export const CanteiroDetailPage: React.FC = () => {
       previsaoKg: ficha.previsaoKg || null,
     });
     setFichaInicial(converterFicha(salva));
+    await carregarHistoricoFicha(id);
   };
 
   const salvarModelo = async (modelo: ModeloCultivoApi) => {
@@ -493,6 +519,11 @@ export const CanteiroDetailPage: React.FC = () => {
           {/* Aba 3: Histórico e Tarefas dos Alunos */}
           {activeTab === 'historico' && (
             <div className="space-y-6">
+              <HistoricoFichaTimeline
+                eventos={eventosFicha}
+                carregando={carregandoHistoricoFicha}
+                erro={erroHistoricoFicha}
+              />
               {/* Tarefas e Visto do Professor */}
               <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
