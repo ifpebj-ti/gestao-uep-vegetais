@@ -279,6 +279,14 @@ npm run build
 ### Backend (`Maven` + `JUnit 5`)
 Dentro da pasta `backend/`:
 ```bash
-# Execução da suíte de testes do backend (11 suítes / 47 testes)
-mvn --batch-mode test
+# Execução da suíte de testes e da verificação de cobertura do backend
+mvn --batch-mode verify
+
+# Testes unitários + integração com PostgreSQL e migrations Flyway
+mvn --batch-mode verify -Pintegration
 ```
+
+O perfil `integration` executa os testes `*IT.java` contra um PostgreSQL real. No CI,
+o banco é criado como serviço temporário do próprio job, sem depender de dados ou
+serviços externos permanentes. O teste de integração verifica a aplicação das
+migrations Flyway e um fluxo de escrita e leitura de canteiro.
