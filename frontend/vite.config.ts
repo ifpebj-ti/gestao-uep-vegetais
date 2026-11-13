@@ -35,5 +35,13 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
     testTimeout: 15000,
     pool: 'threads',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        lines: 70,
+      },
+    },
   },
 });
