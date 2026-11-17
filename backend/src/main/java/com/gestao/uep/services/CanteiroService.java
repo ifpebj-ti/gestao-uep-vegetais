@@ -6,11 +6,13 @@ import com.gestao.uep.domain.canteiro.CanteiroResponsavel;
 import com.gestao.uep.domain.canteiro.CanteiroResponsavelRepository;
 import com.gestao.uep.domain.canteiro.FichaCampo;
 import com.gestao.uep.domain.canteiro.FichaCampoRepository;
+import com.gestao.uep.domain.canteiro.HistoricoFichaCampoRepository;
 import com.gestao.uep.domain.canteiro.dto.AlunoResumoDTO;
 import com.gestao.uep.domain.canteiro.dto.AtualizarFichaCampoDTO;
 import com.gestao.uep.domain.canteiro.dto.CanteiroDetalheDTO;
 import com.gestao.uep.domain.canteiro.dto.CanteiroResumoDTO;
 import com.gestao.uep.domain.canteiro.dto.FichaCampoDTO;
+import com.gestao.uep.domain.canteiro.dto.HistoricoFichaCampoDTO;
 import com.gestao.uep.domain.canteiro.dto.ResponsaveisDTO;
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
@@ -19,10 +21,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CanteiroService {
@@ -33,6 +38,8 @@ public class CanteiroService {
     private final UsuarioRepository usuarioRepository;
     private final CanteiroAuthorizationService authorizationService;
     private final PrevisaoColheitaService previsaoColheitaService;
+    private final FichaCampoHistoricoService historicoService;
+    private final HistoricoFichaCampoRepository historicoRepository;
 
     public CanteiroService(
             CanteiroRepository canteiroRepository,
@@ -40,7 +47,9 @@ public class CanteiroService {
             FichaCampoRepository fichaRepository,
             UsuarioRepository usuarioRepository,
             CanteiroAuthorizationService authorizationService,
-            PrevisaoColheitaService previsaoColheitaService
+            PrevisaoColheitaService previsaoColheitaService,
+            FichaCampoHistoricoService historicoService,
+            HistoricoFichaCampoRepository historicoRepository
     ) {
         this.canteiroRepository = canteiroRepository;
         this.responsavelRepository = responsavelRepository;
@@ -48,6 +57,8 @@ public class CanteiroService {
         this.usuarioRepository = usuarioRepository;
         this.authorizationService = authorizationService;
         this.previsaoColheitaService = previsaoColheitaService;
+        this.historicoService = historicoService;
+        this.historicoRepository = historicoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +74,26 @@ public class CanteiroService {
         } else {
             return List.of();
         }
-        return canteiros.stream().map(CanteiroResumoDTO::from).toList();
+        if (canteiros.isEmpty()) return List.of();
+
+        List<String> canteiroIds = canteiros.stream().map(Canteiro::getId).toList();
+        Map<String, FichaCampo> fichas = fichaRepository.findAllByCanteiroIdIn(canteiroIds).stream()
+                .collect(Collectors.toMap(ficha -> ficha.getCanteiro().getId(), ficha -> ficha));
+        Map<String, List<AlunoResumoDTO>> responsaveis = responsavelRepository
+                .findAllByCanteiroIdsWithUsuarios(canteiroIds).stream()
+                .collect(Collectors.groupingBy(
+                        vinculo -> vinculo.getCanteiro().getId(),
+                        Collectors.mapping(vinculo -> AlunoResumoDTO.from(vinculo.getUsuario()), Collectors.toList())
+                ));
+        LocalDate hoje = LocalDate.now();
+        return canteiros.stream()
+                .map(canteiro -> CanteiroResumoDTO.from(
+                        canteiro,
+                        fichas.get(canteiro.getId()),
+                        responsaveis.getOrDefault(canteiro.getId(), List.of()),
+                        hoje
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -85,14 +115,26 @@ public class CanteiroService {
         return fichaAtual(canteiro);
     }
 
+    @Transactional(readOnly = true)
+    public List<HistoricoFichaCampoDTO> buscarHistorico(String id, Usuario usuario) {
+        buscar(id);
+        authorizationService.exigirLeitura(id, usuario);
+        return historicoRepository.findAllByCanteiroIdOrderByDataHoraDesc(id).stream()
+                .map(HistoricoFichaCampoDTO::from)
+                .toList();
+    }
+
     @Transactional
     public FichaCampoDTO atualizarFicha(String id, AtualizarFichaCampoDTO dados, Usuario usuario) {
         Canteiro canteiro = buscar(id);
         authorizationService.exigirEdicao(id, usuario);
 
-        FichaCampo ficha = fichaRepository.findByCanteiroId(id)
-                .orElseGet(() -> new FichaCampo(canteiro));
+        FichaCampo ficha = fichaRepository.findByCanteiroId(id).orElseGet(() -> new FichaCampo(canteiro));
+        Map<String, Object> snapshot = historicoService.snapshot(ficha);
         ficha.setGrupo(dados.grupo());
+        if (dados.turma() != null) {
+            ficha.setTurma(dados.turma().isBlank() ? null : dados.turma().trim());
+        }
         ficha.setCanteiroCodigo(valorOuPadrao(dados.canteiroCodigo(), canteiro.getCodigo()));
         ficha.setCultura(dados.cultura());
         ficha.setDataPlantio(dados.dataPlantio());
@@ -111,7 +153,9 @@ public class CanteiroService {
         previsaoColheitaService.aplicar(ficha, dados, usuario);
         ficha.setUpdatedAt(Instant.now());
         ficha.setUpdatedBy(usuario);
-        return FichaCampoDTO.from(fichaRepository.save(ficha));
+        ficha = fichaRepository.save(ficha);
+        historicoService.registrarDiferencas(snapshot, ficha, usuario);
+        return FichaCampoDTO.from(ficha);
     }
 
     @Transactional(readOnly = true)
@@ -171,6 +215,7 @@ public class CanteiroService {
                 .map(FichaCampoDTO::from)
                 .orElseGet(() -> new FichaCampoDTO(
                         canteiro.getId(),
+                        null,
                         null,
                         canteiro.getCodigo(),
                         null,

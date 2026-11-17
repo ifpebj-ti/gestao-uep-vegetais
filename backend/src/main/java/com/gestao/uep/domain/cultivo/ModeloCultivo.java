@@ -39,6 +39,12 @@ public class ModeloCultivo {
     @Column(length = 120)
     private String variedade;
 
+    @Column(nullable = false, length = 80)
+    private String categoria;
+
+    @Column(name = "ciclo_dias", nullable = false)
+    private Integer cicloDias;
+
     @Column(name = "espacamento_linhas_m", nullable = false, precision = 8, scale = 4)
     private BigDecimal espacamentoLinhasM;
 

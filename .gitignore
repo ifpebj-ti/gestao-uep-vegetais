@@ -85,3 +85,6 @@ htmlcov/
 *.gcov
 *.gcda
 *.gcno
+
+# Artefatos Superpowers (planos, specs, relatórios e diretórios relacionados)
+**/*superpowers*

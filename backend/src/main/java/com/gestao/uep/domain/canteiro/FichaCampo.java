@@ -40,6 +40,9 @@ public class FichaCampo {
     @Column(columnDefinition = "TEXT")
     private String grupo;
 
+    @Column(length = 180)
+    private String turma;
+
     @Column(name = "canteiro_codigo", length = 32)
     private String canteiroCodigo;
 

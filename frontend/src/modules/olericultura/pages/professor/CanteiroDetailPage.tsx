@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CANTEIROS_DATA, CanteiroData, obterSetorPorCultura } from '../../data/horticulturaData';
 import {
@@ -18,12 +18,33 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { turmaService, TarefaAluno, RegistroHistoricoAluno } from '../../../../services/turmaService';
 import { FichaCampoData, normalizarEspacamento } from '../../components/FichaCampoOlericultura';
 import { ApiError } from '../../../../services/apiClient';
+import { HistoricoFichaTimeline } from '../../components/HistoricoFichaTimeline';
 import {
   AlunoResumo,
   FichaCampoApi,
+  HistoricoFichaCampoApi,
   ModeloCultivoApi,
   canteiroService,
 } from '../../../../services/canteiroService';
+
+export const parseDataPlantio = (valor?: string): Date | null => {
+  if (!valor) return null;
+
+  const iso = valor.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const brasileira = valor.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const partes = iso
+    ? [Number(iso[1]), Number(iso[2]), Number(iso[3])]
+    : brasileira
+      ? [Number(brasileira[3]), Number(brasileira[2]), Number(brasileira[1])]
+      : null;
+  if (!partes) return null;
+
+  const [ano, mes, dia] = partes;
+  const data = new Date(ano, mes - 1, dia);
+  return data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia
+    ? data
+    : null;
+};
 
 export const CanteiroDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +77,21 @@ export const CanteiroDetailPage: React.FC = () => {
   const [historicoAlunos, setHistoricoAlunos] = useState<RegistroHistoricoAluno[]>(() =>
     id ? turmaService.listarHistorico(id) : []
   );
+  const [eventosFicha, setEventosFicha] = useState<HistoricoFichaCampoApi[]>([]);
+  const [carregandoHistoricoFicha, setCarregandoHistoricoFicha] = useState(true);
+  const [erroHistoricoFicha, setErroHistoricoFicha] = useState<string | null>(null);
+
+  const carregarHistoricoFicha = useCallback(async (canteiroId: string) => {
+    setCarregandoHistoricoFicha(true);
+    setErroHistoricoFicha(null);
+    try {
+      setEventosFicha(await canteiroService.getHistorico(canteiroId));
+    } catch {
+      setErroHistoricoFicha('Não foi possível carregar as alterações da ficha.');
+    } finally {
+      setCarregandoHistoricoFicha(false);
+    }
+  }, []);
 
   const handleDarVisto = (tarefaId: string) => {
     turmaService.darVistoProfessor(tarefaId, user?.nome || 'Prof. George Henrique');
@@ -69,6 +105,7 @@ export const CanteiroDetailPage: React.FC = () => {
 
   const converterFicha = (dados: FichaCampoApi): FichaCampoData => ({
     grupo: dados.grupo || '',
+    turma: dados.turma || '',
     canteiroCodigo: dados.canteiroCodigo || '',
     cultura: dados.cultura || '',
     variedade: dados.variedade || '',
@@ -102,6 +139,8 @@ export const CanteiroDetailPage: React.FC = () => {
     let ativo = true;
     setCarregandoFicha(true);
     setErroFicha('');
+    setCarregandoHistoricoFicha(true);
+    setErroHistoricoFicha(null);
     canteiroService.getFicha(id)
       .then((dados) => {
         if (!ativo) return;
@@ -118,6 +157,12 @@ export const CanteiroDetailPage: React.FC = () => {
       .finally(() => {
         if (ativo) setCarregandoFicha(false);
       });
+    canteiroService.getHistorico(id)
+      .then((eventos) => { if (ativo) setEventosFicha(eventos); })
+      .catch(() => {
+        if (ativo) setErroHistoricoFicha('Não foi possível carregar as alterações da ficha.');
+      })
+      .finally(() => { if (ativo) setCarregandoHistoricoFicha(false); });
 
       canteiroService.getResponsaveis(id)
         .then((atuais) => {
@@ -154,6 +199,7 @@ export const CanteiroDetailPage: React.FC = () => {
     const salva = await canteiroService.saveFicha(id, {
       canteiroId: id,
       grupo: ficha.grupo,
+      turma: ficha.turma || canteiro?.turmaResponsavel || '',
       canteiroCodigo: ficha.canteiroCodigo,
       cultura: ficha.cultura,
       variedade: ficha.variedade,
@@ -179,6 +225,7 @@ export const CanteiroDetailPage: React.FC = () => {
       previsaoKg: ficha.previsaoKg || null,
     });
     setFichaInicial(converterFicha(salva));
+    await carregarHistoricoFicha(id);
   };
 
   const salvarModelo = async (modelo: ModeloCultivoApi) => {
@@ -223,13 +270,16 @@ export const CanteiroDetailPage: React.FC = () => {
     );
   }
 
-  const progressoCiclo = Math.min(
-    100,
-    Math.round((canteiro.diasPlantio / Math.max(canteiro.diasPrevistosColheita, 1)) * 100)
-  );
-
   const modeloDaFicha = modelosCultivo.find((modelo) => modelo.id === fichaInicial?.modeloCultivoId) || null;
   const modeloExibido = modeloSelecionado || modeloDaFicha;
+  const cicloDiasExibido = modeloExibido?.cicloDias || canteiro.diasPrevistosColheita;
+  const dataPlantioExibida = parseDataPlantio(fichaInicial?.dataPlantio);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const diasPlantioExibidos = dataPlantioExibida && !Number.isNaN(dataPlantioExibida.getTime())
+    ? Math.max(0, Math.floor((hoje.getTime() - dataPlantioExibida.getTime()) / 86_400_000))
+    : canteiro.diasPlantio;
+  const progressoCiclo = Math.min(100, Math.round((diasPlantioExibidos / Math.max(cicloDiasExibido, 1)) * 100));
   const culturaExibida = modeloExibido?.cultura?.trim() || fichaInicial?.cultura?.trim() || canteiro.cultura;
   const nomeCientificoExibido = modeloExibido?.variedade?.trim() || fichaInicial?.variedade?.trim() || canteiro.variedade;
   const setorExibido = obterSetorPorCultura(culturaExibida, canteiro.setor);
@@ -339,7 +389,7 @@ export const CanteiroDetailPage: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-2">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-[#27633b]" />
-                <span>Ciclo Fenológico: {canteiro.diasPlantio} de {canteiro.diasPrevistosColheita} dias estimados</span>
+                <span>Ciclo Fenológico: {diasPlantioExibidos} de {cicloDiasExibido} dias estimados</span>
               </div>
               <span className="text-[#27633b] font-bold">{progressoCiclo}% completo</span>
             </div>
@@ -469,6 +519,11 @@ export const CanteiroDetailPage: React.FC = () => {
           {/* Aba 3: Histórico e Tarefas dos Alunos */}
           {activeTab === 'historico' && (
             <div className="space-y-6">
+              <HistoricoFichaTimeline
+                eventos={eventosFicha}
+                carregando={carregandoHistoricoFicha}
+                erro={erroHistoricoFicha}
+              />
               {/* Tarefas e Visto do Professor */}
               <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">

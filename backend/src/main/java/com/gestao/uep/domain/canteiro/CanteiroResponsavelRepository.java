@@ -17,4 +17,8 @@ public interface CanteiroResponsavelRepository extends JpaRepository<CanteiroRes
 
     @Query("select cr.canteiro.id from CanteiroResponsavel cr where cr.usuario.id = :usuarioId order by cr.canteiro.codigo")
     List<String> findCanteiroIdsByUsuarioId(@Param("usuarioId") UUID usuarioId);
+
+    @Query("select cr from CanteiroResponsavel cr join fetch cr.usuario join fetch cr.canteiro "
+            + "where cr.canteiro.id in :canteiroIds order by cr.canteiro.codigo, cr.ordem")
+    List<CanteiroResponsavel> findAllByCanteiroIdsWithUsuarios(@Param("canteiroIds") List<String> canteiroIds);
 }

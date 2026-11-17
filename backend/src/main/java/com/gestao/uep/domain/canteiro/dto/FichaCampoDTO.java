@@ -9,6 +9,7 @@ import java.util.UUID;
 public record FichaCampoDTO(
         String canteiroId,
         String grupo,
+        String turma,
         String canteiroCodigo,
         String cultura,
         String variedade,
@@ -38,6 +39,7 @@ public record FichaCampoDTO(
         return new FichaCampoDTO(
                 ficha.getCanteiro().getId(),
                 ficha.getGrupo(),
+                ficha.getTurma(),
                 ficha.getCanteiroCodigo(),
                 ficha.getCultura(),
                 ficha.getModeloCultivo() == null ? null : ficha.getModeloCultivo().getVariedade(),

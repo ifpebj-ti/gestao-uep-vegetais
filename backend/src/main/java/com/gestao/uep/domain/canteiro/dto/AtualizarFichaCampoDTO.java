@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record AtualizarFichaCampoDTO(
         String grupo,
+        String turma,
         String canteiroCodigo,
         String cultura,
         String dataPlantio,
