@@ -40,15 +40,35 @@ Exclusão física, gerenciamento de alunos, redesign, importação dos dados sim
 
 Estender o modelo de usuários e o fluxo de autenticação existente, adicionando API administrativa protegida e fluxo separado para aceitar convite. Evita identidade duplicada e garante que UI, login e autorização consultem os mesmos registros.
 
-## Etapas
+## Tasks
 
-1. **Persistência e migração.** Acrescentar `ativo` e UEP a `Usuario`, métodos de estado/alteração de e-mail e migração Flyway aditiva com valor inicial apenas para PROFESSOR. **Checagem:** compilar o backend e conferir a migração aplicada sem remover ou alterar FKs de canteiro/histórico.
-2. **Convite e confirmação.** Implementar token de convite hash/expiração/uso único, serviço de convite e mensagem no `EmailService`; incluir aceitação pública que valida o token, define senha com BCrypt e confirma a conta. Reutilizar a confirmação existente para novo e-mail de conta ativada. **Checagem:** compilar backend; confirmar pelo fluxo local que token só funciona uma vez e que e-mail pendente/alterado segue bloqueado até confirmar.
-3. **API administrativa e autorização.** Criar endpoints para listar, criar, editar, reenviar convite e mudar estado; validar dados e papel/dominio; devolver UEP/status no DTO; restringir `/api/admin/**` a ADMIN. **Checagem:** chamadas com ADMIN funcionam; sem JWT e com papel diferente recebem 401/403; conflitos e IDs inexistentes retornam erro HTTP claro.
-4. **Acesso e bootstrap reais.** Rejeitar usuários inativos no login e no `SecurityFilter`; provisionar o ADMIN inicial uma única vez pelas variáveis de ambiente; incluir variáveis sem segredos no `.env.example` e orientar o Compose. Remover fallback de login local e enriquecimento de sessão vindo de dados locais; usar UEP retornada pela API. **Checagem:** `mvn -DskipTests package`; login falso deixa de entrar, credenciais provisionadas entram, JWT de professor desativado é rejeitado.
-5. **Painel conectado.** Tornar `adminService` um cliente assíncrono de API; adaptar montagem da lista, modal, busca e ações a carregamento/erro; mostrar convite pendente/ativo/inativo; incluir reenvio e reativação; preservar feedbacks em português. **Checagem:** `npm run build`; página busca os registros do backend e exibe erro de API sem fingir sucesso.
-6. **Aceite do convite.** Adicionar formulário público de senha/confirmar senha, rota para token de convite e chamada da API; definir a senha e encaminhar para login após sucesso. **Checagem:** fluxo de convite aberto pelo link do Mailpit completa e habilita login; token expirado/inválido mostra erro útil.
-7. **Integração local e documentação.** Atualizar documentação de inicialização/ADMIN; subir stack local, abrir painel, criar professor, abrir convite no Mailpit, definir senha, editar dados, desativar, verificar acesso bloqueado e reativar. **Checagem:** a sequência ponta a ponta usa banco e SMTP local e mantém canteiros/histórico.
+### Task 1: Persistência e migração
+
+Acrescentar `ativo` e UEP a `Usuario`, métodos de estado/alteração de e-mail e migração Flyway aditiva com valor inicial apenas para PROFESSOR. **Checagem:** compilar o backend e conferir a migração aplicada sem remover ou alterar FKs de canteiro/histórico.
+
+### Task 2: Convite e confirmação
+
+Implementar token de convite hash/expiração/uso único, serviço de convite e mensagem no `EmailService`; incluir aceitação pública que valida o token, define senha com BCrypt e confirma a conta. Reutilizar a confirmação existente para novo e-mail de conta ativada. **Checagem:** compilar backend; confirmar pelo fluxo local que token só funciona uma vez e que e-mail pendente/alterado segue bloqueado até confirmar.
+
+### Task 3: API administrativa e autorização
+
+Criar endpoints para listar, criar, editar, reenviar convite e mudar estado; validar dados e papel/domínio; devolver UEP/status no DTO; restringir `/api/admin/**` a ADMIN. **Checagem:** chamadas com ADMIN funcionam; sem JWT e com papel diferente recebem 401/403; conflitos e IDs inexistentes retornam erro HTTP claro.
+
+### Task 4: Acesso e bootstrap reais
+
+Rejeitar usuários inativos no login e no `SecurityFilter`; provisionar o ADMIN inicial uma única vez pelas variáveis de ambiente; incluir variáveis sem segredos no `.env.example` e orientar o Compose. Remover fallback de login local e enriquecimento de sessão vindo de dados locais; usar UEP retornada pela API. **Checagem:** `mvn -DskipTests package`; login falso deixa de entrar, credenciais provisionadas entram, JWT de professor desativado é rejeitado.
+
+### Task 5: Painel conectado
+
+Tornar `adminService` um cliente assíncrono de API; adaptar montagem da lista, modal, busca e ações a carregamento/erro; mostrar convite pendente/ativo/inativo; incluir reenvio e reativação; preservar feedbacks em português. **Checagem:** `npm run build`; página busca os registros do backend e exibe erro de API sem fingir sucesso.
+
+### Task 6: Aceite do convite
+
+Adicionar formulário público de senha/confirmar senha, rota para token de convite e chamada da API; definir a senha e encaminhar para login após sucesso. **Checagem:** fluxo de convite aberto pelo link do Mailpit completa e habilita login; token expirado/inválido mostra erro útil.
+
+### Task 7: Integração local e documentação
+
+Atualizar documentação de inicialização/ADMIN; subir stack local, abrir painel, criar professor, abrir convite no Mailpit, definir senha, editar dados, desativar, verificar acesso bloqueado e reativar. **Checagem:** a sequência ponta a ponta usa banco e SMTP local e mantém canteiros/histórico.
 
 ## Riscos e mitigação
 
