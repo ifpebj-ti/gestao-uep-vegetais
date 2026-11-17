@@ -44,7 +44,7 @@ Estender o modelo de usuários e o fluxo de autenticação existente, adicionand
 
 ### Task 1: Persistência e migração
 
-Acrescentar `ativo` e UEP a `Usuario`, métodos de estado/alteração de e-mail e migração Flyway aditiva com valor inicial apenas para PROFESSOR. **Checagem:** compilar o backend e conferir a migração aplicada sem remover ou alterar FKs de canteiro/histórico.
+Acrescentar `ativo`, UEP e data de criação a `Usuario`, métodos de estado/alteração de e-mail e migração Flyway aditiva com valor inicial apenas para PROFESSOR. Para linhas antigas, `criado_em` usa o instante da migração como aproximação. **Checagem:** compilar o backend e conferir a migração aplicada sem remover ou alterar FKs de canteiro/histórico.
 
 ### Task 2: Convite e confirmação
 
