@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '../config/constants';
 import { adminService } from './adminService';
+import { fetchApi } from './fetchApi';
 
 export interface LoginCredentials {
   email: string;
@@ -44,7 +45,7 @@ export const authService = {
 
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +88,7 @@ export const authService = {
   ): Promise<LoginResponse> {
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +136,7 @@ export const authService = {
 
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/registrar`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/registrar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ export const authService = {
   async confirmEmail(token: string): Promise<{ message: string }> {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchApi(
         `${APP_CONFIG.apiBaseUrl}/auth/confirmar-email?token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
@@ -201,7 +202,7 @@ export const authService = {
   async resendConfirmation(email: string): Promise<{ message: string }> {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchApi(
         `${APP_CONFIG.apiBaseUrl}/auth/reenviar-confirmacao`,
         {
           method: 'POST',

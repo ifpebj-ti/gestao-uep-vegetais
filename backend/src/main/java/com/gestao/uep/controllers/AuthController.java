@@ -15,12 +15,14 @@ import com.gestao.uep.services.GoogleIdentity;
 import com.gestao.uep.services.GoogleIdentityService;
 import com.gestao.uep.services.TokenService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,6 +71,13 @@ public class AuthController {
         this.verificationTokenService = verificationTokenService;
         this.emailService = emailService;
         this.googleIdentityService = googleIdentityService;
+    }
+
+    @GetMapping("/csrf")
+    public ResponseEntity<Map<String, String>> csrf(CsrfToken token) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(Map.of("headerName", token.getHeaderName(), "token", token.getToken()));
     }
 
     @PostMapping("/login")

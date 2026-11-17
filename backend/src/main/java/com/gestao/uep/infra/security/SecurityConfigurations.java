@@ -13,6 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,6 +31,7 @@ import java.util.List;
 public class SecurityConfigurations {
 
     private static final String DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://localhost";
+    private static final String CSRF_HEADER = "X-XSRF-TOKEN";
 
     private final SecurityFilter securityFilter;
 
@@ -44,12 +47,14 @@ public class SecurityConfigurations {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        var csrfTokens = new CookieCsrfTokenRepository();
+        csrfTokens.setHeaderName(CSRF_HEADER);
+        csrfTokens.setCookieCustomizer(cookie -> cookie.path("/api").sameSite("Lax"));
+
         return httpSecurity
-                // A API usa JWT no cabeçalho Authorization e não autenticação por cookie.
-                // Mantemos o filtro CSRF ativo e ignoramos os endpoints stateless da API e do actuator.
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**", "/actuator/**")
-                )
+                        .csrfTokenRepository(csrfTokens)
+                        .csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource(configuredAllowedOrigins)))
                 .headers(headers -> headers
                         .contentTypeOptions(contentTypeOptions -> { })
@@ -68,6 +73,7 @@ public class SecurityConfigurations {
                 .authorizeHttpRequests(authorize -> authorize
                         // Rotas públicas de autenticação
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/csrf", "/api/auth/confirmar-email").permitAll()
                         // Actuator health check (usado pelo Docker)
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Todas as demais rotas exigem autenticação
@@ -95,8 +101,8 @@ public class SecurityConfigurations {
                 .toList();
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
-        configuration.setAllowCredentials(false);
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", CSRF_HEADER));
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

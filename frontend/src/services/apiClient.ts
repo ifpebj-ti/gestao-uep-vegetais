@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '../config/constants';
 import { authService } from './authService';
+import { fetchApi } from './fetchApi';
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
@@ -45,7 +46,7 @@ export const apiClient = {
     }
 
     try {
-      const response = await fetch(fullUrl, {
+      const response = await fetchApi(fullUrl, {
         ...customConfig,
         headers: requestHeaders,
         signal: controller.signal,
