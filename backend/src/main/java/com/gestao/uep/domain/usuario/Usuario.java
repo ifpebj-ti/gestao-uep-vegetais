@@ -49,6 +49,10 @@ public class Usuario implements UserDetails {
     @ColumnDefault("true")
     private boolean emailVerificado;
 
+    @Column(name = "confirmacao_novo_email_pendente", nullable = false)
+    @ColumnDefault("false")
+    private boolean confirmacaoNovoEmailPendente;
+
     @Column(nullable = false)
     @ColumnDefault("true")
     private boolean ativo = true;
@@ -181,6 +185,12 @@ public class Usuario implements UserDetails {
 
     public void confirmarEmail() {
         this.emailVerificado = true;
+        this.confirmacaoNovoEmailPendente = false;
+    }
+
+    public void exigirConfirmacaoDoNovoEmail() {
+        this.emailVerificado = false;
+        this.confirmacaoNovoEmailPendente = true;
     }
 
     @PrePersist

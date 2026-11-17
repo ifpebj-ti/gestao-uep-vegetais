@@ -21,6 +21,7 @@ import org.springframework.mail.MailException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -85,6 +86,7 @@ public class AuthController {
     }
 
     @PostMapping("/login/google")
+    @Transactional
     public ResponseEntity<?> loginComGoogle(@RequestBody @Valid GoogleLoginDTO dados) {
         final GoogleIdentity identidade;
         try {
@@ -110,7 +112,7 @@ public class AuthController {
 
         Usuario usuario = usuarioRepository.findByGoogleSubject(identidade.subject());
         if (usuario == null) {
-            usuario = usuarioRepository.findByEmail(email);
+            usuario = usuarioRepository.findByEmailForUpdate(email);
         }
 
         if (usuario == null) {
@@ -124,6 +126,10 @@ public class AuthController {
             usuario.vincularContaGoogle(identidade.subject());
             usuarioRepository.save(usuario);
         } else {
+            if (!usuario.isAtivo() || usuario.isConfirmacaoNovoEmailPendente()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("erro", "Confirme o e-mail institucional ou aceite o convite antes de entrar"));
+            }
             if (usuario.getGoogleSubject() != null
                     && !usuario.getGoogleSubject().equals(identidade.subject())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -168,7 +174,7 @@ public class AuthController {
         try {
             String token = verificationTokenService.emitir(novoUsuario, false);
             emailService.enviarConfirmacao(email, token);
-        } catch (MailException exception) {
+        } catch (IllegalStateException | MailException exception) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
@@ -196,8 +202,7 @@ public class AuthController {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
         Usuario usuario = usuarioRepository.findByEmail(email);
-
-        if (usuario == null || usuario.isEnabled()) {
+        if (usuario == null || usuario.isEmailVerificado()) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
