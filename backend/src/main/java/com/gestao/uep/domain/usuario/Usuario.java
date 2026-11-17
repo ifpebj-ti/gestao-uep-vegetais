@@ -1,7 +1,6 @@
 package com.gestao.uep.domain.usuario;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +21,6 @@ import java.util.UUID;
 @Table(name = "usuarios")
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Usuario implements UserDetails {
 
@@ -50,6 +48,27 @@ public class Usuario implements UserDetails {
     @ColumnDefault("true")
     private boolean emailVerificado;
 
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    private boolean ativo = true;
+
+    @Column(length = 12)
+    private String uep;
+
+    public Usuario(
+            UUID id,
+            String nome,
+            String email,
+            String senhaCriptografada,
+            String googleSubject,
+            UsuarioRole role,
+            boolean emailVerificado
+    ) {
+        this(nome, email, senhaCriptografada, role, emailVerificado);
+        this.id = id;
+        this.googleSubject = googleSubject;
+    }
+
     public Usuario(String nome, String email, String senhaCriptografada, UsuarioRole role) {
         this(nome, email, senhaCriptografada, role, true);
     }
@@ -66,10 +85,44 @@ public class Usuario implements UserDetails {
         this.senha = senhaCriptografada;
         this.role = role;
         this.emailVerificado = emailVerificado;
+        if (role == UsuarioRole.PROFESSOR) {
+            this.uep = "olericultura";
+        }
     }
 
     public void vincularContaGoogle(String subject) {
         this.googleSubject = subject;
+    }
+
+    public void alterarNome(String nome) {
+        this.nome = nome;
+    }
+
+    public void alterarUep(String uep) {
+        if (!"olericultura".equals(uep) && !"fruticultura".equals(uep)) {
+            throw new IllegalArgumentException("UEP inválida");
+        }
+        this.uep = uep;
+    }
+
+    public void alterarEmail(String email) {
+        if (!this.email.equals(email)) {
+            this.email = email;
+            this.emailVerificado = false;
+            this.googleSubject = null;
+        }
+    }
+
+    public void alterarSenha(String senhaCriptografada) {
+        this.senha = senhaCriptografada;
+    }
+
+    public void ativar() {
+        this.ativo = true;
+    }
+
+    public void desativar() {
+        this.ativo = false;
     }
 
     /**
@@ -118,7 +171,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return emailVerificado;
+        return ativo && emailVerificado;
     }
 
     public void confirmarEmail() {
