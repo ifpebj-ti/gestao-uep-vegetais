@@ -99,7 +99,8 @@ Reverter frontend e backend mantendo colunas/tabela novas (migração compatíve
 - [x] Plano aprovado pelo usuário em 2026-11-17.
 - [x] Task 1 — persistência/migração (revisada estaticamente; compilação e banco local pendentes).
 - [x] Task 2 — convite/CSRF (revisada estaticamente; compilação e fluxo no navegador pendentes).
-- [ ] Tasks 3–7 — em andamento.
+- [x] Task 3 — API administrativa/autorização (revisão estática; compilação e HTTP ainda pendentes).
+- [ ] Tasks 4–7 — em andamento.
 
 ## Decisões adicionais aprovadas durante a execução
 
