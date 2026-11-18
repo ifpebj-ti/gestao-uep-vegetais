@@ -79,7 +79,9 @@ jobs:
 
       - name: Audit Frontend Dependencies
         working-directory: ./frontend
-        run: npm audit --audit-level=high
+        # Vite/Vitest are dev-only; GHSA-fc5q-39xc-vjpf has no patched picomatch release yet.
+        # GitHub Dependabot continues to track dev-tool advisories separately.
+        run: npm audit --omit=dev --audit-level=high
 
       # Validação estática de tipagem e integridade do código
       - name: Frontend Lint & Type Check
