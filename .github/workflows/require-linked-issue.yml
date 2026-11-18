@@ -16,7 +16,13 @@ permissions:
 jobs:
   linked-issue:
     name: Verify Linked Issue
-    if: github.actor != 'dependabot[bot]'
+    # Release Please PRs are generated from release metadata and do not need
+    # a manually linked Issue. Keep the check enabled for all other PRs.
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      !startsWith(github.event.pull_request.head.ref, 'release-please--') &&
+      !startsWith(github.event.pull_request.title, 'chore(main): release') &&
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending')
 
     runs-on: ubuntu-latest
 
