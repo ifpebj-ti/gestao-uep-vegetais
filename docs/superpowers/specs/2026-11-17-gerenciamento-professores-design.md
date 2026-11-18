@@ -106,3 +106,4 @@ Permitir que uma pessoa autenticada como administradora gerencie contas reais de
 - Manter a proteção CSRF. Integrar o SPA com um token CSRF em cookie e cabeçalho nas requisições mutáveis; disponibilizar uma forma pública de obter o token; enviar cookies com credenciais; permitir credenciais no CORS apenas para as origens explícitas configuradas. A confirmação de e-mail pelo link será acessível sem login.
 - Alterar o sujeito dos JWTs de e-mail para UUID imutável. Tokens do formato antigo não identificam o UUID e deixarão de autenticar após a mudança; as sessões atuais precisarão entrar novamente.
 - Aplicar a proteção CSRF ao login, cadastro, aceite de convite e demais operações mutáveis. Não desligar nem ignorar CSRF para `/api/**`.
+- Revogar tokens de modo durável: persistir versão de sessão no usuário, incluir a versão no JWT e compará-la no filtro. Desativação e troca de e-mail incrementam a versão; reativação/confirmação não restauram tokens antigos.
