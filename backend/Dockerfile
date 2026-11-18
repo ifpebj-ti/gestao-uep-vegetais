@@ -25,6 +25,7 @@ WORKDIR /app
 
 # Atualiza os pacotes da base Ubuntu e remove os índices para não deixá-los na imagem.
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
     && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
