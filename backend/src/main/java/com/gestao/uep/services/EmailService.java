@@ -43,7 +43,7 @@ public class EmailService {
     }
 
     public void enviarConviteProfessor(String email, String token) {
-        String link = frontendUrl + "/definir-senha?token=" + token;
+        String link = frontendUrl + "/aceitar-convite?token=" + token;
 
         SimpleMailMessage mensagem = new SimpleMailMessage();
         mensagem.setFrom(remetente);
