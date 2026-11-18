@@ -213,14 +213,13 @@ export const AdminDashboardPage: React.FC = () => {
     setOperacao({ tipo: 'uep', professorId: prof.id });
     setFeedback(null);
     try {
-      const resultado = await adminService.atualizarProfessor(prof.id, {
-        nome: prof.nome,
-        email: prof.email,
-        uep: novaUep,
+      const atualizado = await adminService.alterarUep(prof.id, novaUep);
+      atualizarNaLista(atualizado);
+      const nomeUep = atualizado.uep === 'olericultura' ? 'Olericultura' : 'Fruticultura';
+      setFeedback({
+        tipo: 'sucesso',
+        texto: `UEP de ${atualizado.nome} alterada para ${nomeUep}.`,
       });
-      const { nome, uep } = resultado.professor;
-      const nomeUep = uep === 'olericultura' ? 'Olericultura' : 'Fruticultura';
-      mostrarResultado(resultado, `UEP de ${nome} alterada para ${nomeUep}.`);
     } catch (err: unknown) {
       setFeedback({
         tipo: 'erro',

@@ -86,6 +86,13 @@ public class ProfessorAdminService {
     }
 
     @Transactional
+    public ProfessorAdminDTO alterarUep(UUID id, String uep) {
+        Usuario usuario = buscarProfessorComBloqueio(id);
+        usuario.alterarUep(uep);
+        return paraDto(usuario, convites.convitePendente(usuario));
+    }
+
+    @Transactional
     public ResultadoAlteracao reenviarConvite(UUID id) {
         Usuario usuario = buscarProfessorComBloqueio(id);
         if (!convites.convitePendente(usuario)) {

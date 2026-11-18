@@ -5,6 +5,7 @@ import com.gestao.uep.domain.usuario.dto.ProfessorAdminDTO;
 import com.gestao.uep.services.ProfessorAdminService;
 import com.gestao.uep.services.ProfessorAdminService.ResultadoAlteracao;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,11 @@ public class ProfessorAdminController {
     @PutMapping("/{id}")
     public ResponseEntity<RespostaAlteracao> atualizar(@PathVariable UUID id, @RequestBody @Valid DadosProfessorDTO dados) {
         return responderAlteracao(professores.atualizar(id, dados), HttpStatus.OK);
+    }
+
+    @PatchMapping("/{id}/uep")
+    public ProfessorAdminDTO alterarUep(@PathVariable UUID id, @RequestBody @Valid AlterarUepDTO dados) {
+        return professores.alterarUep(id, dados.uep());
     }
 
     @PostMapping("/{id}/reenviar-convite")
@@ -99,6 +105,9 @@ public class ProfessorAdminController {
                 ? "Os dados foram salvos, mas o convite não pôde ser enviado. Use Reenviar convite."
                 : "Os dados foram salvos, mas o e-mail de confirmação não pôde ser enviado. Solicite o reenvio para o novo endereço.";
         return ResponseEntity.accepted().body(new RespostaAlteracao(professor, false, mensagem));
+    }
+
+    public record AlterarUepDTO(@NotBlank(message = "Informe a UEP do professor") String uep) {
     }
 
     public record AlterarStatusDTO(@NotNull(message = "Informe se o professor deve ficar ativo") Boolean ativo) {

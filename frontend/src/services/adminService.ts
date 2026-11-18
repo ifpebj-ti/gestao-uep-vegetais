@@ -56,6 +56,13 @@ export const adminService = {
     return apiClient.put(`${PROFESSORES_ENDPOINT}/${id}`, input);
   },
 
+  alterarUep(id: string, uep: UepType): Promise<ProfessorCadastrado> {
+    return apiClient.request(`${PROFESSORES_ENDPOINT}/${id}/uep`, {
+      method: 'PATCH',
+      body: JSON.stringify({ uep }),
+    });
+  },
+
   reenviarConvite(id: string): Promise<ResultadoAlteracaoProfessor> {
     return apiClient.post(`${PROFESSORES_ENDPOINT}/${id}/reenviar-convite`);
   },
