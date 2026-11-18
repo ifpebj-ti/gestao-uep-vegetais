@@ -4,6 +4,16 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.4](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.3...gestao-uep-vegetais-v0.1.4) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ci:** ignorar validação de Issue em PRs de release ([6c5d60f](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6c5d60f3327ee722ef01797474295409d0772f68))
+* **ci:** preserve VM changes during Oracle deploy ([5354eb3](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/5354eb3db4363c3c129caa14a25a8b6c15f064fe))
+* **ci:** skip linked issue check for release PRs ([0d75ac9](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/0d75ac9435a522380bf3fb9e849b9a65d65c2a25))
+* **ci:** tornar deploy Oracle resiliente a alterações locais na VM ([6114984](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6114984c44d5d0857e2a251ff224932c1dd456c2))
+
 ## [0.1.3](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.2...gestao-uep-vegetais-v0.1.3) (2026-11-18)
 
 
