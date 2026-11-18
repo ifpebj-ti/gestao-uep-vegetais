@@ -100,3 +100,9 @@ Permitir que uma pessoa autenticada como administradora gerencie contas reais de
 - Validar estado ativo no filtro e na autenticação; não adicionar cache de usuário que permita manter JWT ativo depois da desativação.
 - Colocar variáveis de bootstrap no `.env.example`/documentação; não commitar `.env` nem credenciais.
 - Decisão do usuário: mudança de e-mail em conta ativa exige nova confirmação; convite pendente é invalidado e reemitido ao novo endereço.
+
+## Decisões adicionais aprovadas (2026-11-17)
+
+- Manter a proteção CSRF. Integrar o SPA com um token CSRF em cookie e cabeçalho nas requisições mutáveis; disponibilizar uma forma pública de obter o token; enviar cookies com credenciais; permitir credenciais no CORS apenas para as origens explícitas configuradas. A confirmação de e-mail pelo link será acessível sem login.
+- Alterar o sujeito dos JWTs de e-mail para UUID imutável. Tokens do formato antigo não identificam o UUID e deixarão de autenticar após a mudança; as sessões atuais precisarão entrar novamente.
+- Aplicar a proteção CSRF ao login, cadastro, aceite de convite e demais operações mutáveis. Não desligar nem ignorar CSRF para `/api/**`.

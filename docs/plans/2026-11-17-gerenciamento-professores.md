@@ -97,4 +97,11 @@ Reverter frontend e backend mantendo colunas/tabela novas (migração compatíve
 
 - [x] Desenho aprovado pelo usuário em 2026-11-17.
 - [x] Plano aprovado pelo usuário em 2026-11-17.
-- [ ] Implementação pendente.
+- [x] Task 1 — persistência/migração (revisada estaticamente; compilação e banco local pendentes).
+- [x] Task 2 — convite/CSRF (revisada estaticamente; compilação e fluxo no navegador pendentes).
+- [ ] Tasks 3–7 — em andamento.
+
+## Decisões adicionais aprovadas durante a execução
+
+- CSRF continua habilitado. O backend fornece token para o SPA via cookie/header; o frontend envia o token em todas as operações mutáveis e `credentials: include`; CORS permite credenciais apenas nas origens explícitas. Confirmação por e-mail fica pública para abrir o link.
+- O JWT passa a usar UUID imutável como sujeito. Tokens antigos baseados em e-mail deixam de funcionar e exigem novo login.
