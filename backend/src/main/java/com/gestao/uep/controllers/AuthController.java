@@ -2,6 +2,7 @@ package com.gestao.uep.controllers;
 
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
+import com.gestao.uep.domain.usuario.UsuarioRole;
 import com.gestao.uep.domain.usuario.dto.LoginDTO;
 import com.gestao.uep.domain.usuario.dto.LoginResponseDTO;
 import com.gestao.uep.domain.usuario.dto.GoogleLoginDTO;
@@ -207,11 +208,16 @@ public class AuthController {
             @RequestBody @Valid ReenvioConfirmacaoDTO dados
     ) {
         String email = emailInstitucionalService.normalizar(dados.email());
-        if (emailInstitucionalService.identificarPapel(email).isEmpty()) {
+        boolean dominioDeCadastroPublico = emailInstitucionalService.identificarPapel(email).isPresent();
+        if (!dominioDeCadastroPublico && !emailInstitucionalService.aceitaEmailDocenteAdministrativo(email)) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
         Usuario usuario = usuarioRepository.findByEmail(email);
         if (usuario == null || usuario.isEmailVerificado()) {
+            return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
+        }
+        if (!dominioDeCadastroPublico
+                && (usuario.getRole() != UsuarioRole.PROFESSOR || !usuario.isConfirmacaoNovoEmailPendente())) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
