@@ -14,6 +14,6 @@ export const APP_CONFIG = {
     return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
   })(),
   storageKeys: {
-    session: 'terrarium_auth_session',
+    session: 'terrarium_auth_session_v2',
   },
 } as const;

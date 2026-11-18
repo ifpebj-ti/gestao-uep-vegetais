@@ -1,5 +1,4 @@
 import { APP_CONFIG } from '../config/constants';
-import { adminService } from './adminService';
 import { fetchApi } from './fetchApi';
 
 export interface LoginCredentials {
@@ -36,13 +35,6 @@ export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
 
-    // 1. Prioriza autenticação local do Frontend para o Admin e professores cadastrados no painel Admin
-    const localSession = adminService.autenticarLocal(email, senha);
-    if (localSession) {
-      this.saveSession(localSession, rememberMe);
-      return localSession;
-    }
-
     let response: Response;
     try {
       response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
@@ -74,12 +66,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async loginWithGoogle(
@@ -119,12 +107,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async register(data: RegisterData): Promise<{ message: string }> {

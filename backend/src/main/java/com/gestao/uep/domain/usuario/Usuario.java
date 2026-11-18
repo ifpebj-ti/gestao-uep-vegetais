@@ -57,6 +57,10 @@ public class Usuario implements UserDetails {
     @ColumnDefault("true")
     private boolean ativo = true;
 
+    @Column(name = "versao_sessao", nullable = false)
+    @ColumnDefault("0")
+    private long versaoSessao;
+
     @Column(length = 12)
     private String uep;
 
@@ -116,6 +120,7 @@ public class Usuario implements UserDetails {
 
     public void alterarEmail(String email) {
         if (!this.email.equals(email)) {
+            this.versaoSessao++;
             this.email = email;
             this.emailVerificado = false;
             this.googleSubject = null;
@@ -131,6 +136,9 @@ public class Usuario implements UserDetails {
     }
 
     public void desativar() {
+        if (this.ativo) {
+            this.versaoSessao++;
+        }
         this.ativo = false;
     }
 

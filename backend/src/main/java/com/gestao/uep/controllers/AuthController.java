@@ -236,7 +236,7 @@ public class AuthController {
 
     private ResponseEntity<LoginResponseDTO> respostaLogin(Usuario usuario, String token) {
         return ResponseEntity.ok(
-                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole())
+                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole(), usuario.getUep())
         );
     }
 }

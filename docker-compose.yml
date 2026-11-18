@@ -27,6 +27,7 @@ services:
     ports:
       - "${API_PORT:-8080}:8080"
     env_file:
+      # O backend lê ADMIN_BOOTSTRAP_EMAIL e ADMIN_BOOTSTRAP_PASSWORD deste arquivo na inicialização.
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod

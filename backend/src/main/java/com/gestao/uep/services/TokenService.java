@@ -6,11 +6,13 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.gestao.uep.domain.usuario.Usuario;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Serviço responsável pela geração e validação de tokens JWT.
@@ -20,6 +22,7 @@ import java.time.ZoneOffset;
 public class TokenService {
 
     private static final String ISSUER = "gestao-uep-api";
+    private static final String VERSAO_SESSAO = "versaoSessao";
 
     @Value("${api.security.token.secret}")
     private String secret;
@@ -32,45 +35,53 @@ public class TokenService {
      * @throws RuntimeException se houver falha na criação do token
      */
     public String gerarToken(Usuario usuario) {
+        if (!usuario.isEnabled()) {
+            throw new DisabledException("A conta não está habilitada");
+        }
         try {
             Algorithm algoritmo = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer(ISSUER)
-                    .withSubject(usuario.getEmail())
+                    .withSubject(usuario.getId().toString())
+                    .withClaim(VERSAO_SESSAO, usuario.getVersaoSessao())
                     .withClaim("nome", usuario.getNome())
                     .withClaim("role", usuario.getRole().name())
-                    .withExpiresAt(gerarDataExpiracao())
+                    .withExpiresAt(Instant.now().plus(2, ChronoUnit.HOURS))
                     .sign(algoritmo);
         } catch (JWTCreationException exception) {
             throw new RuntimeException("Erro ao gerar token JWT", exception);
         }
     }
 
-    /**
-     * Valida o token JWT e extrai o subject (e-mail do usuário).
-     *
-     * @param token string do token JWT recebido
-     * @return e-mail do usuário (subject) ou string vazia se inválido
-     */
+    /** Retorna o subject autenticado (UUID) ou uma string vazia para tokens inválidos. */
     public String validarToken(String token) {
+        return validarSessao(token).map(sessao -> sessao.usuarioId().toString()).orElse("");
+    }
+
+    public Optional<Sessao> validarSessao(String token) {
         try {
             Algorithm algoritmo = Algorithm.HMAC256(secret);
-            return JWT.require(algoritmo)
+            var jwt = JWT.require(algoritmo)
                     .withIssuer(ISSUER)
+                    .withClaimPresence("sub")
+                    .withClaimPresence("exp")
+                    .withClaimPresence(VERSAO_SESSAO)
                     .build()
-                    .verify(token)
-                    .getSubject();
-        } catch (JWTVerificationException exception) {
-            return "";
+                    .verify(token);
+            String subject = jwt.getSubject();
+            Long versao = jwt.getClaim(VERSAO_SESSAO).asLong();
+            if (subject == null || versao == null) {
+                return Optional.empty();
+            }
+            UUID id = UUID.fromString(subject);
+            return id.toString().equalsIgnoreCase(subject)
+                    ? Optional.of(new Sessao(id, versao))
+                    : Optional.empty();
+        } catch (JWTVerificationException | IllegalArgumentException exception) {
+            return Optional.empty();
         }
     }
 
-    /**
-     * Define a data de expiração do token: 2 horas a partir do momento atual.
-     */
-    private Instant gerarDataExpiracao() {
-        return LocalDateTime.now()
-                .plusHours(2)
-                .toInstant(ZoneOffset.of("-03:00"));
+    public record Sessao(UUID usuarioId, long versao) {
     }
 }

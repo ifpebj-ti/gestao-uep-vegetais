@@ -22,6 +22,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     Usuario findByEmail(String email);
 
+    boolean existsByRole(UsuarioRole role);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Usuario findByGoogleSubject(String googleSubject);
 
