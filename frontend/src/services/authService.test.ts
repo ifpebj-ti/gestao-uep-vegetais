@@ -9,6 +9,17 @@ describe('authService', () => {
     email: 'maria@ifpe.edu.br',
   };
 
+  const stubPostFetch = (apiResponse: unknown) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ headerName: 'X-XSRF-TOKEN', token: 'csrf-test-token' }),
+      })
+      .mockResolvedValueOnce(apiResponse);
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  };
+
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -66,13 +77,10 @@ describe('authService', () => {
       email: 'maria@ifpe.edu.br',
     };
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      })
-    );
+    stubPostFetch({
+      ok: true,
+      json: async () => mockResponse,
+    });
 
     const response = await authService.login({
       email: 'maria@ifpe.edu.br',
@@ -84,14 +92,11 @@ describe('authService', () => {
   });
 
   it('deve lançar erro apropriado para credenciais inválidas', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        json: async () => ({ message: 'Acesso negado' }),
-      })
-    );
+    stubPostFetch({
+      ok: false,
+      status: 403,
+      json: async () => ({ message: 'Acesso negado' }),
+    });
 
     await expect(
       authService.login({
@@ -102,13 +107,10 @@ describe('authService', () => {
   });
 
   it('deve registrar usuário com sucesso', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 201,
-      })
-    );
+    stubPostFetch({
+      ok: true,
+      status: 201,
+    });
 
     const result = await authService.register({
       nome: 'Isabela',
@@ -120,14 +122,11 @@ describe('authService', () => {
   });
 
   it('deve lançar erro caso o e-mail já esteja cadastrado (409)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 409,
-        json: async () => ({ erro: 'E-mail já cadastrado' }),
-      })
-    );
+    stubPostFetch({
+      ok: false,
+      status: 409,
+      json: async () => ({ erro: 'E-mail já cadastrado' }),
+    });
 
     await expect(
       authService.register({
@@ -167,13 +166,10 @@ describe('authService', () => {
   });
 
   it('deve reenviar e-mail de confirmação com sucesso', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ message: 'Novo e-mail enviado' }),
-      })
-    );
+    stubPostFetch({
+      ok: true,
+      json: async () => ({ message: 'Novo e-mail enviado' }),
+    });
 
     const result = await authService.resendConfirmation('isabela@ifpe.edu.br');
     expect(result).toEqual({ message: 'Novo e-mail enviado' });
@@ -187,13 +183,10 @@ describe('authService', () => {
       role: 'ALUNO',
     };
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      })
-    );
+    stubPostFetch({
+      ok: true,
+      json: async () => mockResponse,
+    });
 
     const response = await authService.loginWithGoogle('id-token-google');
 
@@ -209,14 +202,11 @@ describe('authService', () => {
   });
 
   it('deve informar quando o Google rejeitar conta nao institucional', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 422,
-        json: async () => ({ erro: 'Use uma conta Google institucional' }),
-      })
-    );
+    stubPostFetch({
+      ok: false,
+      status: 422,
+      json: async () => ({ erro: 'Use uma conta Google institucional' }),
+    });
 
     await expect(authService.loginWithGoogle('id-token-pessoal')).rejects.toThrow(
       'Use uma conta Google institucional'
