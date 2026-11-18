@@ -102,7 +102,7 @@ Reverter frontend e backend mantendo colunas/tabela novas (migração compatíve
 - [x] Task 3 — API administrativa/autorização (revisão estática; compilação e HTTP ainda pendentes).
 - [x] Task 4 — JWT por UUID/revogação durável e bootstrap ADMIN (typecheck frontend; backend ainda sem runtime).
 - [x] Task 5 — painel conectado à API (inclui correção da troca rápida de UEP).
-- [ ] Task 6 — aceite do convite.
+- [x] Task 6 — aceite do convite (rota alinhada ao link do e-mail).
 - [ ] Task 7 — integração local e documentação.
 
 ## Decisões adicionais aprovadas durante a execução
