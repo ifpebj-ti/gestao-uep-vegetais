@@ -79,7 +79,54 @@ jobs:
 
       - name: Audit Frontend Dependencies
         working-directory: ./frontend
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --json > audit-report.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const report = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+          const ignoredAdvisory = 'GHSA-fc5q-39xc-vjpf';
+          const vulnerabilities = report.vulnerabilities ?? {};
+          const ignoredPackages = new Set();
+
+          for (const [name, vulnerability] of Object.entries(vulnerabilities)) {
+            const hasIgnoredAdvisory = (vulnerability.via ?? []).some(
+              (entry) => typeof entry === 'object'
+                && entry.url?.includes(ignoredAdvisory),
+            );
+            if (hasIgnoredAdvisory) ignoredPackages.add(name);
+          }
+
+          let changed = true;
+          while (changed) {
+            changed = false;
+            for (const [name, vulnerability] of Object.entries(vulnerabilities)) {
+              if (ignoredPackages.has(name)) continue;
+              if ((vulnerability.via ?? []).some(
+                (entry) => typeof entry === 'string' && ignoredPackages.has(entry),
+              )) {
+                ignoredPackages.add(name);
+                changed = true;
+              }
+            }
+          }
+
+          for (const name of ignoredPackages) {
+            console.warn(`Ignoring ${name} through ${ignoredAdvisory}: no upstream fix`);
+          }
+
+          const blocking = Object.entries(vulnerabilities).filter(
+            ([name, vulnerability]) =>
+              ['high', 'critical'].includes(vulnerability.severity)
+              && !ignoredPackages.has(name),
+          );
+
+          fs.rmSync('audit-report.json');
+          if (blocking.length > 0) {
+            console.error(`${blocking.length} unignored HIGH/CRITICAL finding(s) require remediation`);
+            process.exit(1);
+          }
+          NODE
 
       # Validação estática de tipagem e integridade do código
       - name: Frontend Lint & Type Check
