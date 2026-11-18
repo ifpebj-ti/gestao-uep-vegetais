@@ -14,7 +14,7 @@ class SecurityConfigurationsTest {
             new SecurityConfigurations(mock(SecurityFilter.class));
 
     @Test
-    void corsAceitaSomenteOrigensConfiguradasESemCredenciais() {
+    void corsRestringeOrigensEPermiteCredenciaisParaCsrf() {
         var source = configuration.corsConfigurationSource(
                 "https://app.example.edu.br, https://admin.example.edu.br");
         CorsConfiguration cors = source.getCorsConfiguration(
@@ -23,9 +23,10 @@ class SecurityConfigurationsTest {
         assertThat(cors).isNotNull();
         assertThat(cors.checkOrigin("https://app.example.edu.br")).isEqualTo("https://app.example.edu.br");
         assertThat(cors.checkOrigin("https://evil.example")).isNull();
-        assertThat(cors.getAllowCredentials()).isFalse();
+        assertThat(cors.getAllowCredentials()).isTrue();
         assertThat(cors.getAllowedMethods()).containsExactly("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
-        assertThat(cors.getAllowedHeaders()).containsExactly("Authorization", "Content-Type", "Accept", "Origin");
+        assertThat(cors.getAllowedHeaders())
+                .containsExactly("Authorization", "Content-Type", "Accept", "Origin", "X-XSRF-TOKEN");
         assertThat(cors.getMaxAge()).isEqualTo(3600L);
     }
 

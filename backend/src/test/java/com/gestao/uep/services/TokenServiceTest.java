@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +31,8 @@ class TokenServiceTest {
 
         String token = tokenService.gerarToken(usuario);
 
-        assertThat(tokenService.validarToken(token)).isEqualTo(usuario.getEmail());
+        assertThat(JWT.decode(token).getSubject()).isEqualTo(usuario.getId().toString());
+        assertThat(tokenService.validarToken(token)).isEqualTo(usuario.getId().toString());
         assertThat(JWT.decode(token).getClaim("nome").asString())
                 .isEqualTo(usuario.getNome());
         assertThat(JWT.decode(token).getClaim("role").asString())
@@ -72,10 +74,13 @@ class TokenServiceTest {
 
     private Usuario usuarioComum() {
         return new Usuario(
+                UUID.randomUUID(),
                 "Maria",
                 "maria@ifpe.edu.br",
                 "hash",
-                UsuarioRole.USUARIO
+                null,
+                UsuarioRole.USUARIO,
+                true
         );
     }
 }

@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +36,8 @@ class EmailVerificationTokenServiceTest {
     @Test
     void deveEmitirTokenHashEComValidadeDe24Horas() {
         Usuario usuario = usuarioNaoVerificado();
+        when(usuarioRepository.findByIdAndEmailForUpdate(usuario.getId(), usuario.getEmail()))
+                .thenReturn(usuario);
         when(repository.findByUsuarioAndUsadoEmIsNullAndInvalidadoEmIsNull(usuario))
                 .thenReturn(List.of());
 
@@ -62,6 +65,8 @@ class EmailVerificationTokenServiceTest {
                 Instant.now(),
                 Instant.now().plusSeconds(3600)
         );
+        when(repository.findUsuarioIdByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(usuario.getId()));
+        when(usuarioRepository.findByIdForUpdate(usuario.getId())).thenReturn(usuario);
         when(repository.findByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(token));
 
         EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
@@ -82,6 +87,8 @@ class EmailVerificationTokenServiceTest {
                 Instant.now().minusSeconds(7200),
                 Instant.now().minusSeconds(3600)
         );
+        when(repository.findUsuarioIdByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(usuario.getId()));
+        when(usuarioRepository.findByIdForUpdate(usuario.getId())).thenReturn(usuario);
         when(repository.findByTokenHash(sha256(tokenBruto))).thenReturn(Optional.of(token));
 
         EmailVerificationTokenService service = new EmailVerificationTokenService(repository, usuarioRepository);
@@ -101,6 +108,8 @@ class EmailVerificationTokenServiceTest {
                 Instant.now().minusSeconds(30),
                 Instant.now().plusSeconds(3600)
         );
+        when(usuarioRepository.findByIdAndEmailForUpdate(usuario.getId(), usuario.getEmail()))
+                .thenReturn(usuario);
         when(repository.findByUsuarioAndUsadoEmIsNullAndInvalidadoEmIsNull(usuario))
                 .thenReturn(List.of(anterior));
 
@@ -112,9 +121,11 @@ class EmailVerificationTokenServiceTest {
 
     private Usuario usuarioNaoVerificado() {
         return new Usuario(
+                UUID.randomUUID(),
                 "Maria",
                 "maria@discente.ifpe.edu.br",
                 "hash",
+                null,
                 UsuarioRole.ALUNO,
                 false
         );
