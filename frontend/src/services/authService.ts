@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config/constants';
-import { adminService } from './adminService';
+import { fetchApi } from './fetchApi';
 
 export interface LoginCredentials {
   email: string;
@@ -35,16 +35,9 @@ export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
 
-    // 1. Prioriza autenticação local do Frontend para o Admin e professores cadastrados no painel Admin
-    const localSession = adminService.autenticarLocal(email, senha);
-    if (localSession) {
-      this.saveSession(localSession, rememberMe);
-      return localSession;
-    }
-
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,12 +66,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async loginWithGoogle(
@@ -87,7 +76,7 @@ export const authService = {
   ): Promise<LoginResponse> {
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,12 +107,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async register(data: RegisterData): Promise<{ message: string }> {
@@ -135,7 +120,7 @@ export const authService = {
 
     let response: Response;
     try {
-      response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/registrar`, {
+      response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/registrar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +155,7 @@ export const authService = {
   async confirmEmail(token: string): Promise<{ message: string }> {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchApi(
         `${APP_CONFIG.apiBaseUrl}/auth/confirmar-email?token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
@@ -201,7 +186,7 @@ export const authService = {
   async resendConfirmation(email: string): Promise<{ message: string }> {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchApi(
         `${APP_CONFIG.apiBaseUrl}/auth/reenviar-confirmacao`,
         {
           method: 'POST',

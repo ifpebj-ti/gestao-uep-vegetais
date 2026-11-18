@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -7,7 +7,9 @@ import {
   UserPlus,
   Search,
   Pencil,
-  Trash2,
+  UserCheck,
+  UserX,
+  Send,
   LogOut,
   Users,
   CheckCircle2,
@@ -22,22 +24,52 @@ import { UepType } from '../../../types/uep';
 import {
   adminService,
   isEmailInstitucionalDocente,
-  ProfessorCadastrado,
+  type ProfessorCadastrado,
+  type ResultadoAlteracaoProfessor,
 } from '../../../services/adminService';
+
+type Feedback = {
+  tipo: 'sucesso' | 'erro' | 'aviso';
+  texto: string;
+};
+
+type Operacao =
+  | { tipo: 'salvar' }
+  | { tipo: 'uep' | 'convite' | 'status'; professorId: string };
+
+const estilosFeedback = {
+  sucesso: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  erro: 'border-red-200 bg-red-50 text-red-900',
+  aviso: 'border-amber-200 bg-amber-50 text-amber-900',
+};
+
+function obterStatusProfessor(professor: ProfessorCadastrado) {
+  if (professor.convitePendente) {
+    return { rotulo: 'Convite pendente', estilo: 'bg-amber-50 text-amber-800' };
+  }
+  if (!professor.ativo) {
+    return {
+      rotulo: professor.emailVerificado ? 'Inativo' : 'Inativo · Aguardando confirmação de e-mail',
+      estilo: 'bg-slate-100 text-slate-700',
+    };
+  }
+  if (!professor.emailVerificado) {
+    return { rotulo: 'Aguardando confirmação de e-mail', estilo: 'bg-amber-50 text-amber-800' };
+  }
+  return { rotulo: 'Ativo', estilo: 'bg-emerald-50 text-emerald-800' };
+}
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [professores, setProfessores] = useState<ProfessorCadastrado[]>(() =>
-    adminService.listarProfessores()
-  );
+  const [professores, setProfessores] = useState<ProfessorCadastrado[] | null>(null);
+  const [erroLista, setErroLista] = useState<string | null>(null);
+  const [tentativaLista, setTentativaLista] = useState(0);
   const [busca, setBusca] = useState('');
   const [filtroUep, setFiltroUep] = useState<'todas' | UepType>('todas');
-  const [feedback, setFeedback] = useState<{
-    tipo: 'sucesso' | 'erro';
-    texto: string;
-  } | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [operacao, setOperacao] = useState<Operacao | null>(null);
 
   // Estado do Modal (Criar / Editar)
   const [modalAberto, setModalAberto] = useState(false);
@@ -48,15 +80,62 @@ export const AdminDashboardPage: React.FC = () => {
   const [uepInput, setUepInput] = useState<UepType>('olericultura');
   const [erroModal, setErroModal] = useState<string | null>(null);
 
-  const recarregarLista = () => {
-    setProfessores(adminService.listarProfessores());
+  const carregandoLista = professores === null && erroLista === null;
+  const salvando = operacao?.tipo === 'salvar';
+  const acoesBloqueadas = operacao !== null || modalAberto;
+
+  useEffect(() => {
+    let montagemAtiva = true;
+    adminService.listarProfessores().then(
+      (lista) => {
+        if (montagemAtiva) setProfessores(lista);
+      },
+      (erro: unknown) => {
+        if (montagemAtiva) {
+          setErroLista(erro instanceof Error ? erro.message : 'Erro ao carregar professores.');
+        }
+      }
+    );
+    return () => {
+      montagemAtiva = false;
+    };
+  }, [tentativaLista]);
+
+  useEffect(() => {
+    if (feedback?.tipo !== 'sucesso') return;
+    const timer = setTimeout(() => {
+      setFeedback((atual) => (atual === feedback ? null : atual));
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  const tentarCarregarLista = () => {
+    setErroLista(null);
+    setTentativaLista((atual) => atual + 1);
   };
 
-  const mostrarFeedback = (tipo: 'sucesso' | 'erro', texto: string) => {
-    setFeedback({ tipo, texto });
-    setTimeout(() => {
-      setFeedback((atual) => (atual?.texto === texto ? null : atual));
-    }, 4000);
+  const atualizarNaLista = (professor: ProfessorCadastrado) => {
+    setProfessores((lista) => [
+      ...(lista ?? []).filter((item) => item.id !== professor.id),
+      professor,
+    ]);
+  };
+
+  const mostrarResultado = (resultado: ResultadoAlteracaoProfessor, texto: string) => {
+    atualizarNaLista(resultado.professor);
+    if (resultado.emailEnviado === false) {
+      setFeedback({
+        tipo: 'aviso',
+        texto: resultado.message ?? 'Os dados foram salvos, mas o e-mail não pôde ser enviado.',
+      });
+      return;
+    }
+    if (resultado.emailEnviado === true) {
+      texto += resultado.professor.convitePendente
+        ? ' Convite enviado. O acesso depende do aceite do professor.'
+        : ' E-mail de confirmação enviado. O acesso depende da confirmação do novo endereço.';
+    }
+    setFeedback({ tipo: 'sucesso', texto });
   };
 
   const abrirModalNovo = () => {
@@ -83,8 +162,9 @@ export const AdminDashboardPage: React.FC = () => {
     setErroModal(null);
   };
 
-  const handleSalvarProfessor = (event: React.FormEvent) => {
+  const handleSalvarProfessor = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (operacao) return;
     setErroModal(null);
 
     const nomeLimpo = nomeInput.trim();
@@ -102,63 +182,101 @@ export const AdminDashboardPage: React.FC = () => {
       return;
     }
 
+    setOperacao({ tipo: 'salvar' });
+    setFeedback(null);
     try {
-      if (professorEditando) {
-        adminService.atualizarProfessor(professorEditando.id, {
-          nome: nomeLimpo,
-          email: emailLimpo,
-          uep: uepInput,
-        });
-        mostrarFeedback(
-          'sucesso',
-          `Vínculo de ${nomeLimpo} atualizado para a UEP ${uepInput === 'olericultura' ? 'Olericultura' : 'Fruticultura'}.`
-        );
-      } else {
-        adminService.criarProfessor({
-          nome: nomeLimpo,
-          email: emailLimpo,
-          uep: uepInput,
-        });
-        mostrarFeedback(
-          'sucesso',
-          `Professor(a) ${nomeLimpo} vinculado(a) com sucesso à UEP ${uepInput === 'olericultura' ? 'Olericultura' : 'Fruticultura'}!`
-        );
-      }
+      const dados = { nome: nomeLimpo, email: emailLimpo, uep: uepInput };
+      const resultado = professorEditando
+        ? await adminService.atualizarProfessor(professorEditando.id, dados)
+        : await adminService.criarProfessor(dados);
+      const { nome, uep } = resultado.professor;
+      const nomeUep = uep === 'olericultura' ? 'Olericultura' : 'Fruticultura';
+      mostrarResultado(
+        resultado,
+        professorEditando
+          ? `Vínculo de ${nome} atualizado para a UEP ${nomeUep}.`
+          : `${nome} foi vinculado à UEP ${nomeUep}.`
+      );
 
-      recarregarLista();
       fecharModal();
     } catch (err: unknown) {
       setErroModal(
         err instanceof Error ? err.message : 'Erro ao salvar professor.'
       );
+    } finally {
+      setOperacao(null);
     }
   };
 
-  const handleTrocarUepRapido = (prof: ProfessorCadastrado, novaUep: UepType) => {
-    if (prof.uep === novaUep) return;
+  const handleTrocarUepRapido = async (prof: ProfessorCadastrado, novaUep: UepType) => {
+    if (acoesBloqueadas || prof.uep === novaUep) return;
+    setOperacao({ tipo: 'uep', professorId: prof.id });
+    setFeedback(null);
     try {
-      adminService.atualizarProfessor(prof.id, {
-        nome: prof.nome,
-        email: prof.email,
-        uep: novaUep,
+      const atualizado = await adminService.alterarUep(prof.id, novaUep);
+      atualizarNaLista(atualizado);
+      const nomeUep = atualizado.uep === 'olericultura' ? 'Olericultura' : 'Fruticultura';
+      setFeedback({
+        tipo: 'sucesso',
+        texto: `UEP de ${atualizado.nome} alterada para ${nomeUep}.`,
       });
-      recarregarLista();
-      mostrarFeedback(
-        'sucesso',
-        `UEP de ${prof.nome} alterada para ${novaUep === 'olericultura' ? 'Olericultura' : 'Fruticultura'}.`
-      );
     } catch (err: unknown) {
-      mostrarFeedback(
-        'erro',
-        err instanceof Error ? err.message : 'Erro ao alterar UEP.'
-      );
+      setFeedback({
+        tipo: 'erro',
+        texto: err instanceof Error ? err.message : 'Erro ao alterar UEP.',
+      });
+    } finally {
+      setOperacao(null);
     }
   };
 
-  const handleRemoverProfessor = (prof: ProfessorCadastrado) => {
-    adminService.removerProfessor(prof.id);
-    recarregarLista();
-    mostrarFeedback('sucesso', `Professor(a) ${prof.nome} removido(a) da lista.`);
+  const handleReenviarConvite = async (prof: ProfessorCadastrado) => {
+    if (acoesBloqueadas) return;
+    setOperacao({ tipo: 'convite', professorId: prof.id });
+    setFeedback(null);
+    try {
+      const resultado = await adminService.reenviarConvite(prof.id);
+      mostrarResultado(resultado, `Convite de ${resultado.professor.nome} renovado.`);
+    } catch (err: unknown) {
+      setFeedback({
+        tipo: 'erro',
+        texto: err instanceof Error ? err.message : 'Erro ao reenviar convite.',
+      });
+    } finally {
+      setOperacao(null);
+    }
+  };
+
+  const handleAlterarStatus = async (prof: ProfessorCadastrado) => {
+    if (acoesBloqueadas) return;
+    if (
+      prof.ativo &&
+      !window.confirm(
+        `Desativar a conta de ${prof.nome}? A desativação remove o acesso ao sistema e preserva os dados e o histórico.`
+      )
+    ) {
+      return;
+    }
+
+    setOperacao({ tipo: 'status', professorId: prof.id });
+    setFeedback(null);
+    try {
+      const atualizado = await adminService.alterarStatus(prof.id, !prof.ativo);
+      atualizarNaLista(atualizado);
+      setFeedback({
+        tipo: 'sucesso',
+        texto: atualizado.ativo
+          ? `Conta de ${atualizado.nome} reativada.`
+          : `Conta de ${atualizado.nome} desativada. Os dados e o histórico foram preservados.`,
+      });
+    } catch (err: unknown) {
+      setFeedback({
+        tipo: 'erro',
+        texto: err instanceof Error ? err.message : 'Erro ao alterar o status da conta.',
+      });
+    } finally {
+      setOperacao(null);
+    }
   };
 
   const handleLogout = () => {
@@ -167,24 +285,25 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   const professoresFiltrados = useMemo(() => {
-    return professores.filter((prof) => {
-      const correspondeUep =
-        filtroUep === 'todas' || prof.uep === filtroUep;
-      const termo = busca.trim().toLowerCase();
-      const correspondeBusca =
-        !termo ||
-        prof.nome.toLowerCase().includes(termo) ||
-        prof.email.toLowerCase().includes(termo);
-      return correspondeUep && correspondeBusca;
-    });
+    const termo = busca.trim().toLowerCase();
+    return (professores ?? [])
+      .filter((prof) => {
+        const correspondeUep = filtroUep === 'todas' || prof.uep === filtroUep;
+        const correspondeBusca =
+          !termo ||
+          prof.nome.toLowerCase().includes(termo) ||
+          prof.email.toLowerCase().includes(termo);
+        return correspondeUep && correspondeBusca;
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   }, [professores, filtroUep, busca]);
 
   const totalOlericultura = useMemo(
-    () => professores.filter((p) => p.uep === 'olericultura').length,
+    () => professores?.filter((p) => p.uep === 'olericultura').length ?? '—',
     [professores]
   );
   const totalFruticultura = useMemo(
-    () => professores.filter((p) => p.uep === 'fruticultura').length,
+    () => professores?.filter((p) => p.uep === 'fruticultura').length ?? '—',
     [professores]
   );
 
@@ -229,7 +348,7 @@ export const AdminDashboardPage: React.FC = () => {
                 Total de Professores
               </p>
               <p className="mt-1 text-3xl font-extrabold text-slate-900">
-                {professores.length}
+                {professores?.length ?? '—'}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 Docentes vinculados às UEPs
@@ -278,18 +397,16 @@ export const AdminDashboardPage: React.FC = () => {
         {/* Mensagem de Feedback */}
         {feedback && (
           <div
-            role="status"
+            role={feedback.tipo === 'sucesso' ? 'status' : 'alert'}
             className={`mt-6 flex items-center justify-between rounded-2xl border p-4 text-sm font-medium shadow-xs ${
-              feedback.tipo === 'sucesso'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-                : 'border-red-200 bg-red-50 text-red-900'
+              estilosFeedback[feedback.tipo]
             }`}
           >
             <div className="flex items-center gap-3">
               {feedback.tipo === 'sucesso' ? (
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+                <AlertCircle className="h-5 w-5 shrink-0" />
               )}
               <span>{feedback.texto}</span>
             </div>
@@ -330,7 +447,7 @@ export const AdminDashboardPage: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Todas ({professores.length})
+                Todas ({professores?.length ?? '—'})
               </button>
               <button
                 type="button"
@@ -362,6 +479,7 @@ export const AdminDashboardPage: React.FC = () => {
             variant="primary"
             size="md"
             onClick={abrirModalNovo}
+            disabled={professores === null || acoesBloqueadas}
             leftIcon={<UserPlus className="h-4 w-4" />}
           >
             Cadastrar Professor
@@ -370,7 +488,21 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Lista de Professores */}
         <section className="mt-6 overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-sm">
-          {professoresFiltrados.length === 0 ? (
+          {carregandoLista ? (
+            <p role="status" className="p-12 text-center text-sm text-slate-600">
+              Carregando professores...
+            </p>
+          ) : erroLista !== null ? (
+            <div className="p-8 text-center">
+              <div role="alert">
+                <p className="font-semibold text-red-900">Não foi possível carregar os professores.</p>
+                <p className="mt-1 text-sm text-red-800">{erroLista}</p>
+              </div>
+              <Button type="button" variant="secondary" size="sm" className="mt-4" onClick={tentarCarregarLista}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : professoresFiltrados.length === 0 ? (
             <div className="p-12 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100 text-slate-400">
                 <Users className="h-7 w-7" />
@@ -386,6 +518,11 @@ export const AdminDashboardPage: React.FC = () => {
             <div className="divide-y divide-slate-100">
               {professoresFiltrados.map((prof) => {
                 const isFruticultura = prof.uep === 'fruticultura';
+                const status = obterStatusProfessor(prof);
+                const operacaoNaLinha =
+                  operacao?.tipo !== 'salvar' && operacao?.professorId === prof.id
+                    ? operacao.tipo
+                    : null;
                 return (
                   <div
                     key={prof.id}
@@ -420,6 +557,9 @@ export const AdminDashboardPage: React.FC = () => {
                           >
                             {isFruticultura ? 'Fruticultura' : 'Olericultura'}
                           </span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${status.estilo}`}>
+                            {status.rotulo}
+                          </span>
                         </div>
                         <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
                           <Mail className="h-3.5 w-3.5 text-slate-400" />
@@ -433,38 +573,62 @@ export const AdminDashboardPage: React.FC = () => {
                       <select
                         aria-label={`UEP de ${prof.nome}`}
                         value={prof.uep}
+                        disabled={acoesBloqueadas}
                         onChange={(e) =>
                           handleTrocarUepRapido(
                             prof,
                             e.target.value as UepType
                           )
                         }
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#27633b] focus:outline-hidden cursor-pointer"
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#27633b] focus:outline-hidden cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <option value="olericultura">UEP: Olericultura</option>
                         <option value="fruticultura">UEP: Fruticultura</option>
                       </select>
+                      {operacaoNaLinha === 'uep' && (
+                        <span role="status" className="text-xs text-slate-600">Alterando UEP...</span>
+                      )}
 
                       <Button
                         type="button"
                         variant="secondary"
                         size="sm"
                         onClick={() => abrirModalEdicao(prof)}
+                        disabled={acoesBloqueadas}
                         leftIcon={<Pencil className="h-3.5 w-3.5 text-slate-500" />}
                       >
                         Editar
                       </Button>
 
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleRemoverProfessor(prof)}
-                        aria-label={`Remover ${prof.nome}`}
-                        leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-                      >
-                        Remover
-                      </Button>
+                      {prof.convitePendente ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleReenviarConvite(prof)}
+                          disabled={acoesBloqueadas}
+                          isLoading={operacaoNaLinha === 'convite'}
+                          aria-label={`Reenviar convite de ${prof.nome}`}
+                          leftIcon={<Send className="h-3.5 w-3.5" />}
+                        >
+                          Reenviar convite
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant={prof.ativo ? 'danger' : 'secondary'}
+                          size="sm"
+                          onClick={() => handleAlterarStatus(prof)}
+                          disabled={acoesBloqueadas}
+                          isLoading={operacaoNaLinha === 'status'}
+                          aria-label={`${prof.ativo ? 'Desativar' : 'Reativar'} ${prof.nome}`}
+                          leftIcon={prof.ativo
+                            ? <UserX className="h-3.5 w-3.5" />
+                            : <UserCheck className="h-3.5 w-3.5" />}
+                        >
+                          {prof.ativo ? 'Desativar' : 'Reativar'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -502,6 +666,7 @@ export const AdminDashboardPage: React.FC = () => {
                 variant="ghost"
                 size="icon"
                 onClick={fecharModal}
+                disabled={salvando}
                 aria-label="Fechar modal"
               >
                 <X className="h-5 w-5" />
@@ -530,6 +695,7 @@ export const AdminDashboardPage: React.FC = () => {
                   id="prof-nome"
                   type="text"
                   value={nomeInput}
+                  disabled={salvando}
                   onChange={(e) => setNomeInput(e.target.value)}
                   placeholder="Ex: Prof. Roberto Almeida"
                   className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-900 focus:border-[#27633b] focus:bg-white focus:outline-hidden"
@@ -547,6 +713,7 @@ export const AdminDashboardPage: React.FC = () => {
                   id="prof-email"
                   type="email"
                   value={emailInput}
+                  disabled={salvando}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="professor@belojardim.ifpe.edu.br"
                   className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-2.5 text-sm text-slate-900 focus:border-[#27633b] focus:bg-white focus:outline-hidden"
@@ -562,6 +729,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setUepInput('olericultura')}
+                    disabled={salvando}
                     className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition cursor-pointer ${
                       uepInput === 'olericultura'
                         ? 'border-emerald-600 bg-emerald-50/70 ring-2 ring-emerald-600/20'
@@ -584,6 +752,7 @@ export const AdminDashboardPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setUepInput('fruticultura')}
+                    disabled={salvando}
                     className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition cursor-pointer ${
                       uepInput === 'fruticultura'
                         ? 'border-amber-600 bg-amber-50/70 ring-2 ring-amber-600/20'
@@ -611,10 +780,11 @@ export const AdminDashboardPage: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   onClick={fecharModal}
+                  disabled={salvando}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="primary" size="sm">
+                <Button type="submit" variant="primary" size="sm" isLoading={salvando}>
                   {professorEditando
                     ? 'Salvar Alterações'
                     : 'Vincular Professor'}

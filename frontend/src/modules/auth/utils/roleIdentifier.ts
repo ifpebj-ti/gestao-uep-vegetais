@@ -7,8 +7,9 @@ export const ACADEMIC_DOMAINS = {
 } as const;
 
 export function identifyRoleByEmail(email: string, defaultRole?: string): UserRole {
-  if (defaultRole && defaultRole.toUpperCase() === 'ADMIN') {
-    return 'ADMIN';
+  const role = defaultRole?.toUpperCase();
+  if (role === 'ADMIN' || role === 'PROFESSOR' || role === 'ALUNO') {
+    return role;
   }
 
   if (!email || !email.includes('@')) {
@@ -16,13 +17,6 @@ export function identifyRoleByEmail(email: string, defaultRole?: string): UserRo
   }
 
   const normalized = email.toLowerCase().trim();
-
-  if (
-    normalized === 'admin@belojardim.ifpe.edu.br' ||
-    normalized === 'admin@ifpe.edu.br'
-  ) {
-    return 'ADMIN';
-  }
 
   // Exceção autorizada para demonstração: usuário com papel docente
   if (normalized === 'ifl1@discente.ifpe.edu.br') {

@@ -41,4 +41,21 @@ public class EmailService {
 
         mailSender.send(mensagem);
     }
+
+    public void enviarConviteProfessor(String email, String token) {
+        String link = frontendUrl + "/aceitar-convite?token=" + token;
+
+        SimpleMailMessage mensagem = new SimpleMailMessage();
+        mensagem.setFrom(remetente);
+        mensagem.setTo(email);
+        mensagem.setSubject("Convite para acessar o Terrarium");
+        mensagem.setText("Olá!\n\n"
+                + "Você recebeu um convite para acessar o Terrarium como professor. "
+                + "Defina sua senha para confirmar seu e-mail e ativar sua conta:\n\n"
+                + link + "\n\n"
+                + "Este link expira em 24 horas e só pode ser usado uma vez.\n\n"
+                + "Se você não esperava este convite, ignore esta mensagem.");
+
+        mailSender.send(mensagem);
+    }
 }

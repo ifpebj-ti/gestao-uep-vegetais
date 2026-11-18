@@ -43,6 +43,7 @@ services:
     container_name: gestao-uep-backend
     restart: unless-stopped
     env_file:
+      # O backend lê ADMIN_BOOTSTRAP_EMAIL e ADMIN_BOOTSTRAP_PASSWORD deste arquivo na inicialização.
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
