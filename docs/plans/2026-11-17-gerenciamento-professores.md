@@ -101,7 +101,7 @@ Reverter frontend e backend mantendo colunas/tabela novas (migração compatíve
 - [x] Task 2 — convite/CSRF (revisada estaticamente; compilação e fluxo no navegador pendentes).
 - [x] Task 3 — API administrativa/autorização (revisão estática; compilação e HTTP ainda pendentes).
 - [x] Task 4 — JWT por UUID/revogação durável e bootstrap ADMIN (typecheck frontend; backend ainda sem runtime).
-- [ ] Tasks 5–7 — em andamento.
+- [x] Task 5 — painel conectado à API (inclui correção da troca rápida de UEP).`n- [ ] Tasks 6–7 — em andamento.
 
 ## Decisões adicionais aprovadas durante a execução
 
