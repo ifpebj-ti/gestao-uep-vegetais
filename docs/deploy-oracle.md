@@ -22,12 +22,16 @@ pelo `.gitignore`.
 
 Na VM, o workflow executa, nesta ordem:
 
-1. `git pull --ff-only origin main`;
-2. `docker compose config --quiet`;
-3. `docker compose up -d --build --remove-orphans`;
-4. `docker compose ps`.
+1. Se houver alterações locais, cria um backup em
+   `/home/opc/gestao-uep-vegetais-deploy-backups/<timestamp>` e um `git stash`;
+2. `git pull --ff-only origin main`;
+3. `docker compose config --quiet`;
+4. `docker compose up -d --build --remove-orphans`;
+5. `docker compose ps`.
 
-O `--ff-only` evita sobrescrever alterações locais. A validação interrompe o
+O backup fica em `/home/opc/gestao-uep-vegetais-deploy-backups/<timestamp>` e evita
+perder alterações feitas manualmente na VM. O `--ff-only` mantém
+a atualização previsível, sem criar merge automático. A validação interrompe o
 deploy antes da recriação dos serviços se a configuração for inválida. O
 `docker compose up` não remove volumes nomeados, preservando `pgdata`,
 `caddy_data` e `caddy_config`.
