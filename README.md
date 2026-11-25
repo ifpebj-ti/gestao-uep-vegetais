@@ -95,6 +95,7 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 - **Persistência de Dados:** Spring Data JPA, Hibernate ORM e migrações versionadas com Flyway
 - **Banco de Dados:** PostgreSQL 16
 - **Segurança & Autenticação:** Spring Security 6 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)), OAuth 2.0 Google Institucional e criptografia BCrypt
+- **Scans de Segurança no CI:** Semgrep (SAST) e OWASP ZAP (DAST), com gates e relatórios documentados em [docs/security-scanning.md](docs/security-scanning.md)
 - **Métricas e Diagnóstico:** Spring Boot Actuator
 - **Testes Automatizados:** JUnit 5 e Spring MockMvc (**47 testes automatizados em 11 suítes**)
 - **Produtividade:** Project Lombok
