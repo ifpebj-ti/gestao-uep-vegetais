@@ -48,14 +48,14 @@ export const IMAGEM_LARGURA_PX = 905;
 export const IMAGEM_ALTURA_PX = 745;
 
 export const CORES_FRUTEIRAS: Record<TipoFruteira, { copa: string; tronco: string; label: string }> = {
-  goiaba: { copa: '#7cb342', tronco: '#6d4c41', label: '#558b2f' },
-  banana: { copa: '#9ccc3c', tronco: '#8bc34a', label: '#689f38' },
-  manga: { copa: '#2e7d32', tronco: '#5d4037', label: '#2e7d32' },
-  coco: { copa: '#43a047', tronco: '#a1887f', label: '#388e3c' },
-  uva: { copa: '#7b1fa2', tronco: '#5d4037', label: '#7b1fa2' },
-  citros: { copa: '#f9a825', tronco: '#6d4c41', label: '#ef8f00' },
-  graviola: { copa: '#558b2f', tronco: '#5d4037', label: '#33691e' },
-  pitaya: { copa: '#d81b60', tronco: '#6a994e', label: '#c2185b' },
+  goiaba: { copa: '#386641', tronco: '#6d4c41', label: '#2d6a4f' },
+  banana: { copa: '#588157', tronco: '#7f5539', label: '#3a5a40' },
+  manga: { copa: '#2d6a4f', tronco: '#5d4037', label: '#1b4332' },
+  coco: { copa: '#40916c', tronco: '#8d6e63', label: '#2d6a4f' },
+  uva: { copa: '#52796f', tronco: '#5d4037', label: '#354f52' },
+  citros: { copa: '#606c38', tronco: '#6d4c41', label: '#283618' },
+  graviola: { copa: '#4f772d', tronco: '#5d4037', label: '#31572c' },
+  pitaya: { copa: '#6b9080', tronco: '#78909c', label: '#4f772d' },
   equipamento: { copa: '#90a4ae', tronco: '#607d8b', label: '#546e7a' },
 };
 

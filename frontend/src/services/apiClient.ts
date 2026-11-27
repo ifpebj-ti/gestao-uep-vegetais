@@ -18,6 +18,26 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Determina se uma URL corresponde estritamente ao endpoint /auth/me ou /api/auth/me.
+ * Utiliza o pathname exato da URL, suportando caminhos relativos, URLs absolutas,
+ * query parameters e fragmentos, prevenindo correspondência espúria de substring
+ * em rotas de negócio como /api/auth/mensagens, /api/auth/metas, etc.
+ */
+export function isAuthMeEndpoint(url: string): boolean {
+  try {
+    const base = typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost';
+    const parsed = new URL(url, base);
+    const pathname = parsed.pathname.replace(/\/+$/, '');
+    return pathname === '/api/auth/me' || pathname === '/auth/me';
+  } catch {
+    const cleanPath = url.split(/[?#]/)[0].replace(/\/+$/, '');
+    return cleanPath.endsWith('/api/auth/me') || cleanPath.endsWith('/auth/me');
+  }
+}
+
 export const apiClient = {
   baseUrl: APP_CONFIG.apiBaseUrl,
 
@@ -51,13 +71,33 @@ export const apiClient = {
         signal: controller.signal,
       });
 
-      // Interceptor de 401 (Sessão Expirada / Token Inválido)
+      // 401 Unauthorized: token expirado, ausente ou inválido -> encerra sessão
       if (response.status === 401 && !skipAuth) {
         authService.logout();
         if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
           window.location.href = '/login?expired=true';
         }
         throw new ApiError('Sessão expirada. Por favor, autentique-se novamente.', 401);
+      }
+
+      // 403 Forbidden: 
+      // Exceção: no endpoint /auth/me, 403 significa rejeição da autenticação/assinatura pelo Spring Security
+      if (response.status === 403 && !skipAuth) {
+        if (isAuthMeEndpoint(fullUrl)) {
+          authService.logout();
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            window.location.href = '/login?expired=true';
+          }
+          throw new ApiError('Sessão inválida ou rejeitada. Por favor, autentique-se novamente.', 403);
+        }
+
+        // Para operações de negócio comuns, lança ApiError preservando a sessão do usuário
+        const errorData = await response.json().catch(() => null);
+        const errorMessage =
+          errorData?.message ||
+          errorData?.erro ||
+          'Acesso negado: você não tem permissão para realizar esta operação.';
+        throw new ApiError(errorMessage, 403, errorData);
       }
 
       if (!response.ok) {

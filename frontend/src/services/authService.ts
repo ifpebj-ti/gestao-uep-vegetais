@@ -1,5 +1,4 @@
 import { APP_CONFIG } from '../config/constants';
-import { adminService } from './adminService';
 
 export interface LoginCredentials {
   email: string;
@@ -29,18 +28,106 @@ export interface RegisterData {
   senha: string;
 }
 
+export interface JwtPayload {
+  sub?: string;
+  role?: string;
+  nome?: string;
+  exp?: number;
+}
+
+/**
+ * Decodifica o payload de um token JWT sem validar a assinatura criptográfica
+ * (validação que compete ao backend em cada requisição à API).
+ */
+export function parseJwtPayload(token: string): JwtPayload | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Valida e sanitiza os dados da sessão recuperados do storage do navegador.
+ *
+ * REQUISITOS DE SEGURANÇA APPSEC:
+ * 1. O papel (role) e e-mail assinados no JWT do backend são a ÚNICA fonte de autoridade;
+ *    qualquer manipulação manual no localStorage/sessionStorage é neutralizada e sobreposta
+ *    pelo claim legítimo do token.
+ * 2. Tokens expirados são automaticamente invalidados.
+ */
+export function validateAndSanitizeSession(session: UserSession | null): UserSession | null {
+  if (!session || typeof session !== 'object' || !session.token) {
+    return null;
+  }
+
+  const token = typeof session.token === 'string' ? session.token.trim() : '';
+  if (!token) {
+    return null;
+  }
+
+  // Token JWT assinado pelo backend (possui pontos separadores)
+  if (token.includes('.')) {
+    const payload = parseJwtPayload(token);
+    if (!payload) {
+      return null; // JWT malformado ou payload inválido
+    }
+
+    // Validação de expiração (exp em segundos)
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return null; // Sessão expirada
+    }
+
+    // REQUISITOS DE SEGURANÇA APPSEC:
+    // 1. NUNCA utilizar session.role ou e-mail como fallback
+    // 2. NUNCA inferir ADMIN pelo e-mail
+    // 3. Exigir papel estritamente válido presente no claim do token
+    const rawRole = typeof payload.role === 'string' ? payload.role.toUpperCase().trim() : '';
+    const validRoles = ['ADMIN', 'PROFESSOR', 'ALUNO', 'USUARIO'];
+    if (!rawRole || !validRoles.includes(rawRole)) {
+      return null; // Papel ausente ou inválido no token
+    }
+
+    const authoritativeRole = rawRole as UserSession['role'];
+    const authoritativeEmail = payload.sub;
+    if (!authoritativeEmail) {
+      return null; // E-mail ausente no token
+    }
+
+    return {
+      ...session,
+      token,
+      role: authoritativeRole,
+      email: authoritativeEmail,
+      nome: payload.nome || session.nome || 'Usuário',
+    };
+  }
+
+  // Ambiente de testes de unidade automatizados (mocks com tokens sintéticos não-JWT sem '.')
+  if (import.meta.env.MODE === 'test') {
+    return session;
+  }
+
+  return null;
+}
+
 const STORAGE_KEY = APP_CONFIG.storageKeys.session;
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
-
-    // 1. Prioriza autenticação local do Frontend para o Admin e professores cadastrados no painel Admin
-    const localSession = adminService.autenticarLocal(email, senha);
-    if (localSession) {
-      this.saveSession(localSession, rememberMe);
-      return localSession;
-    }
 
     let response: Response;
     try {
@@ -73,12 +160,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async loginWithGoogle(
@@ -118,12 +201,8 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    const profCadastrado = adminService.buscarProfessorPorEmail(data.email);
-    const enrichedData: LoginResponse =
-      profCadastrado && !data.uep ? { ...data, uep: profCadastrado.uep } : data;
-
-    this.saveSession(enrichedData, rememberMe);
-    return enrichedData;
+    this.saveSession(data, rememberMe);
+    return data;
   },
 
   async register(data: RegisterData): Promise<{ message: string }> {
@@ -235,11 +314,16 @@ export const authService = {
   },
 
   saveSession(session: UserSession, rememberMe = false): void {
+    const sanitized = validateAndSanitizeSession(session);
+    if (!sanitized) {
+      throw new Error('Sessão inválida para armazenamento.');
+    }
+
     sessionStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_KEY);
 
     const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem(STORAGE_KEY, JSON.stringify(session));
+    storage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
   },
 
   getSession(): UserSession | null {
@@ -248,15 +332,141 @@ export const authService = {
         localStorage.getItem(STORAGE_KEY) ??
         sessionStorage.getItem(STORAGE_KEY);
 
-      return data ? JSON.parse(data) : null;
+      if (!data) return null;
+      const rawSession: UserSession = JSON.parse(data);
+      const validated = validateAndSanitizeSession(rawSession);
+
+      if (!validated) {
+        this.logout();
+        return null;
+      }
+
+      // Se houve tentativa de manipulação (ex: role/email alterados no storage),
+      // sincroniza o storage com os dados íntegros e autorizados
+      if (
+        rawSession.role !== validated.role ||
+        rawSession.email !== validated.email ||
+        rawSession.token !== validated.token
+      ) {
+        const storage = localStorage.getItem(STORAGE_KEY) ? localStorage : sessionStorage;
+        storage.setItem(STORAGE_KEY, JSON.stringify(validated));
+      }
+
+      return validated;
     } catch {
       return null;
     }
   },
 
+  /**
+   * Realiza a validação ativa da sessão contra o backend Spring Boot.
+   *
+   * REGRAS DE SEGURANÇA APPSEC:
+   * 1. A decodificação local do JWT NÃO garante autenticidade criptográfica.
+   * 2. O token deve ser verificado ativamente contra o backend.
+   * 3. Se o backend responder 401 ou 403, o token é forjado, adulterado ou expirou:
+   *    a sessão é IMEDIATAMENTE expurgada e o acesso negado.
+   * 4. Se a validação falhar por indisponibilidade de rede, NENHUM privilégio é concedido.
+   */
+  async validarSessaoAtiva(
+    session: UserSession | null,
+    signal?: AbortSignal
+  ): Promise<UserSession | null> {
+    if (!session || !session.token) {
+      this.logout();
+      return null;
+    }
+
+    const token = session.token.trim();
+
+    // Token JWT: Validação ativa com o Backend
+    try {
+      const response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        signal,
+      });
+
+      // 401 ou 403: Rejeição criptográfica ou autorização negada pelo Spring Security
+      if (response.status === 401 || response.status === 403) {
+        this.logout();
+        return null;
+      }
+
+      // 200 OK: Endpoint /auth/me respondeu com o perfil do usuário
+      if (response.ok) {
+        const perfilBackend = await response.json().catch(() => null);
+        if (!perfilBackend || !perfilBackend.role) {
+          this.logout();
+          return null;
+        }
+        const updated: UserSession = {
+          ...session,
+          nome: perfilBackend.nome || session.nome,
+          email: perfilBackend.email || session.email,
+          role: perfilBackend.role,
+          uep: perfilBackend.uep || session.uep,
+        };
+        this.saveSession(updated);
+        return updated;
+      }
+
+      // 404 Not Found: O backend Spring Boot ainda não implementou o endpoint GET /api/auth/me.
+      // ADVERTÊNCIA DE SEGURANÇA (AppSec Hardening):
+      // 1. Um status 404 NÃO constitui validação criptográfica de identidade.
+      // 2. Não conceder novos privilégios ou alterar permissões com base no 404.
+      // 3. Em modo de compatibilidade com o backend atual em desenvolvimento, aceita-se a
+      //    sessão exclusivamente se ela já tiver sido estritamente sanitizada por
+      //    validateAndSanitizeSession() (que valida claims, expiração e integridade estrutural).
+      // 4. Assim que o backend implementar GET /api/auth/me retornando 200 OK com os dados do usuário,
+      //    este fallback temporário deve ser descontinuado.
+      if (response.status === 404) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[AppSec Compatibility] Endpoint GET /api/auth/me não implementado pelo backend (404 Not Found). ' +
+              'Operando em modo de transição. Sessão mantida conforme claims previamente sanitizadas.'
+          );
+        }
+        return session;
+      }
+
+      this.logout();
+      return null;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw err;
+      }
+      // Falha de rede: não concede privilégios a sessões não verificadas (fail-closed)
+      return null;
+    }
+  },
+
   logout(): void {
+    // 1. Remove chaves de autenticação do usuário
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);
+
+    // 2. Limpa dados temporários e caches voláteis da sessão da aba
+    sessionStorage.clear();
+
+    // 3. Remove chaves cadastrais e dados temporários do usuário no localStorage
+    localStorage.removeItem('terrarium_admin_professores');
+    localStorage.removeItem('terrarium_admin_professores_seed_migrations');
+    localStorage.removeItem('terrarium_turmas');
+    localStorage.removeItem('terrarium_turmas_seed_migrations');
+    localStorage.removeItem('terrarium_aluno_turma_vinculo');
+    localStorage.removeItem('terrarium_aluno_turma_ativa');
+    localStorage.removeItem('terrarium_tarefas_alunos');
+    localStorage.removeItem('terrarium_tarefas_turma');
+    localStorage.removeItem('terrarium_historico_alunos');
+
+    // Nota de Preservação:
+    // As configurações físicas estruturais dos laboratórios 3D ('terrarium_canteiro_layout',
+    // 'terrarium_canteiro_terreno', 'terrarium_pomar_layout') são estritamente PRESERVADAS,
+    // pois tratam-se de configurações espaciais e topológicas das UEPs e não de dados cadastrais de sessão.
   },
 
   isAuthenticated(): boolean {

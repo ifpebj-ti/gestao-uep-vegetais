@@ -135,4 +135,48 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
   });
+
+  it('SEGURANÇA: deve bloquear acesso com tela 403 quando um Aluno tentar acessar rota exclusiva de ADMIN', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-valido',
+        nome: 'Aluno Teste',
+        email: 'aluno@discente.ifpe.edu.br',
+        role: 'ALUNO',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithRouter('/protegida', ['ADMIN']);
+
+    expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText('ALUNO')).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve bloquear Aluno tentando burlar rota ADMIN alterando seu e-mail para admin@belojardim.ifpe.edu.br', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-valido',
+        nome: 'Aluno Invasor',
+        email: 'admin@belojardim.ifpe.edu.br', // e-mail manipulado no cliente
+        role: 'ALUNO', // role real validada
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithRouter('/protegida', ['ADMIN']);
+
+    expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText('ALUNO')).toBeInTheDocument();
+  });
 });

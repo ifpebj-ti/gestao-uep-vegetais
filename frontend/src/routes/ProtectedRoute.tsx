@@ -5,7 +5,7 @@ import { UserRole } from '../types/auth';
 import { identifyRoleByEmail } from '../modules/auth/utils/roleIdentifier';
 import { UnauthorizedAccess } from '../components/UnauthorizedAccess';
 
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
   /** Lista de papéis permitidos a acessar a rota protegida */
   allowedRoles?: UserRole[];
   children?: React.ReactNode;

@@ -8,22 +8,23 @@ import {
   Sprout,
   LogOut,
   ShieldCheck,
-  TreeDeciduous,
+  Settings,
+  Wrench,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../../config/constants';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUep } from '../../../contexts/UepContext';
 import { identifyRoleByEmail } from '../../auth/utils/roleIdentifier';
-import { QuadraPomar, CORES_FRUTEIRAS, isQuadraEquipamento, totalPlantas } from '../data/pomarData';
+import { QuadraPomar } from '../data/pomarData';
 
 export interface PomarMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  quadras: QuadraPomar[];
-  onFocusQuadra: (quadraId: string) => void;
+  quadras?: QuadraPomar[];
+  onFocusQuadra?: (quadraId: string) => void;
 }
 
-export const PomarMenu: React.FC<PomarMenuProps> = ({ isOpen, onClose, quadras, onFocusQuadra }) => {
+export const PomarMenu: React.FC<PomarMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { setSelectedUep } = useUep();
@@ -39,11 +40,6 @@ export const PomarMenu: React.FC<PomarMenuProps> = ({ isOpen, onClose, quadras, 
   const handleNavigate = (path: string) => {
     onClose();
     navigate(path);
-  };
-
-  const handleFocus = (id: string) => {
-    onClose();
-    onFocusQuadra(id);
   };
 
   const handleSwitchToOlericultura = () => {
@@ -112,51 +108,55 @@ export const PomarMenu: React.FC<PomarMenuProps> = ({ isOpen, onClose, quadras, 
             Módulos do Pomar
           </div>
 
-          <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3.5 py-3 font-bold text-[#27633b]">
+          <button
+            onClick={() => handleNavigate(isAluno ? '/fruticultura/aluno/pomar' : '/fruticultura/professor/pomar')}
+            className="flex w-full items-center justify-between rounded-xl bg-emerald-50 px-3.5 py-3 font-bold text-[#27633b] cursor-pointer"
+          >
             <div className="flex items-center gap-3">
               <Compass className="h-4 w-4" />
               <span>{isAluno ? 'Minhas Quadras & Mapa' : 'Mapa do Pomar'}</span>
             </div>
             <span className="h-2 w-2 rounded-full bg-[#27633b]" />
-          </div>
+          </button>
 
-          <div className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3">
-            Quadras
-          </div>
-
-          {quadras.map((q) => {
-            const equip = isQuadraEquipamento(q);
-            return (
-              <button
-                key={q.id}
-                onClick={() => handleFocus(q.id)}
-                className="flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <TreeDeciduous
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: CORES_FRUTEIRAS[q.tipoFruteira].label }}
-                  />
-                  <span className="truncate">{q.nome}</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400 shrink-0">
-                  {equip ? 'Infra' : `${totalPlantas(q)} plantas`}
-                </span>
-              </button>
-            );
-          })}
+          <button
+            onClick={() =>
+              handleNavigate(
+                isAluno ? '/fruticultura/aluno/equipamentos' : '/fruticultura/professor/equipamentos'
+              )
+            }
+            className="flex w-full items-center justify-between rounded-xl px-3.5 py-3 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <Wrench className="h-4 w-4 text-emerald-700" />
+              <span>Materiais & Equipamentos</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          </button>
 
           <div className="pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-3">
             Sistema
           </div>
 
-          <button
-            onClick={handleSwitchToOlericultura}
-            className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-          >
-            <Sprout className="h-4 w-4 text-emerald-700" />
-            <span>Acessar Olericultura</span>
-          </button>
+          {!isAluno && (
+            <button
+              onClick={() => handleNavigate('/fruticultura/professor/configuracoes')}
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <Settings className="h-4 w-4 text-[#27633b]" />
+              <span>Configurações & Layout 3D</span>
+            </button>
+          )}
+
+          {isAdmin && (
+            <button
+              onClick={handleSwitchToOlericultura}
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            >
+              <Sprout className="h-4 w-4 text-emerald-700" />
+              <span>Acessar Olericultura</span>
+            </button>
+          )}
 
           <button
             onClick={() => {

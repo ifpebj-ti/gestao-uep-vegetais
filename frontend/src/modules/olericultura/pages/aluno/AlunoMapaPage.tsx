@@ -28,8 +28,8 @@ export const AlunoMapaPage: React.FC = () => {
   const [modalEntrarTurmaAberto, setModalEntrarTurmaAberto] = useState(false);
   const [modoVisualizacao, setModoVisualizacao] = useState<'meus_canteiros' | 'mapa_geral'>('meus_canteiros');
 
-  const alunoEmail = user?.email || 'aluno@discente.ifpe.edu.br';
-  const alunoNome = user?.nome || 'Estudante IFPE';
+  const alunoEmail = user?.email || '';
+  const alunoNome = user?.nome || 'Aluno';
 
   const handleLogout = () => {
     logout();

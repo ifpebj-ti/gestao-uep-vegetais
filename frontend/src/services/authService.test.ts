@@ -222,5 +222,95 @@ describe('authService', () => {
       'Use uma conta Google institucional'
     );
   });
+
+  describe('Auditoria de Segurança — Correções Críticas', () => {
+    // Função auxiliar para gerar JWT mock assinado estruturado
+    const buildMockJwt = (sub: string, role: string, expOffsetSec = 3600) => {
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(
+        JSON.stringify({
+          sub,
+          role,
+          nome: 'Usuario Teste',
+          exp: Math.floor(Date.now() / 1000) + expOffsetSec,
+        })
+      );
+      return `${header}.${payload}.assinatura-simulada`;
+    };
+
+    it('SEGURANÇA: deve usar exclusivamente o backend para autenticar', async () => {
+
+      const mockBackendResponse = {
+        token: buildMockJwt('admin.backend@ifpe.edu.br', 'ADMIN'),
+        nome: 'Admin Real',
+        email: 'admin.backend@ifpe.edu.br',
+        role: 'ADMIN',
+      };
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockBackendResponse,
+      });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      const session = await authService.login({
+        email: 'admin.backend@ifpe.edu.br',
+        senha: 'qualquer-senha',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${APP_CONFIG.apiBaseUrl}/auth/login`,
+        expect.any(Object)
+      );
+      expect(session.role).toBe('ADMIN');
+      expect(session.token).toBe(mockBackendResponse.token);
+    });
+
+    it('SEGURANÇA: deve impedir escalonamento de privilégios quando usuário altera role no localStorage', () => {
+      // Usuário autenticado como ALUNO via JWT legítimo do backend
+      const studentJwt = buildMockJwt('aluno.teste@discente.ifpe.edu.br', 'ALUNO');
+      const legitimateSession: UserSession = {
+        token: studentJwt,
+        nome: 'Aluno Teste',
+        email: 'aluno.teste@discente.ifpe.edu.br',
+        role: 'ALUNO',
+      };
+
+      authService.saveSession(legitimateSession);
+
+      // Invasor altera manualmente o localStorage para se passar por ADMIN
+      const tamperedSession = {
+        token: studentJwt,
+        nome: 'Aluno Teste',
+        email: 'admin.teste@ifpe.edu.br',
+        role: 'ADMIN',
+      };
+      sessionStorage.setItem(APP_CONFIG.storageKeys.session, JSON.stringify(tamperedSession));
+
+      // Ao recuperar a sessão, a integridade do JWT prevalece sobre a adulteração do storage
+      const activeSession = authService.getSession();
+      expect(activeSession).not.toBeNull();
+      expect(activeSession?.role).toBe('ALUNO');
+      expect(activeSession?.email).toBe('aluno.teste@discente.ifpe.edu.br');
+    });
+
+    it('SEGURANÇA: deve invalidar sessão se o token JWT estiver expirado', () => {
+      // JWT expirado há 10 segundos
+      const expiredJwt = buildMockJwt('aluno.teste@discente.ifpe.edu.br', 'ALUNO', -10);
+      sessionStorage.setItem(
+        APP_CONFIG.storageKeys.session,
+        JSON.stringify({
+          token: expiredJwt,
+          nome: 'Aluno Expirado',
+          email: 'aluno.teste@discente.ifpe.edu.br',
+          role: 'ALUNO',
+        })
+      );
+
+      const session = authService.getSession();
+      expect(session).toBeNull();
+    });
+
+  });
 });
 

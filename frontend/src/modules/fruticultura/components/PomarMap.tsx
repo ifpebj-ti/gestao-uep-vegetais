@@ -28,8 +28,9 @@ export interface PomarMapProps {
 // Material invisível compartilhado para hitboxes de raycast (mesmo padrão do Terrarium da olericultura)
 const HITBOX_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
 
-const DEFAULT_CAM_POS = new THREE.Vector3(30, 95, 105);
-const DEFAULT_CAM_TARGET = new THREE.Vector3(0, 0, 0);
+// Enquadramento refinado da câmera - alinhado com a perspectiva e proporção da horta (Terrarium)
+const DEFAULT_CAM_POS = new THREE.Vector3(20, 75, 85);
+const DEFAULT_CAM_TARGET = new THREE.Vector3(2, 0, -2);
 
 export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
   ({ selectedQuadraId, onSelectQuadra, quadras }, ref) => {
@@ -76,9 +77,9 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
 
     const focusOn = (quadra: QuadraPomar) => {
       const geo = calcularGeometriaQuadra(quadra);
-      const s = Math.max(geo.largura, geo.profundidade) * 0.8 + 14;
+      const s = Math.max(geo.largura, geo.profundidade) * 0.7 + 10;
       flyTo(
-        new THREE.Vector3(geo.centro.x + s * 0.35, s * 0.85, geo.centro.z + s * 0.75),
+        new THREE.Vector3(geo.centro.x + s * 0.4, s * 0.75, geo.centro.z + s * 0.65),
         new THREE.Vector3(geo.centro.x, 0.6, geo.centro.z),
         1.0,
         'power2.inOut'
@@ -90,10 +91,14 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
         let pos = DEFAULT_CAM_POS.clone();
         let target = DEFAULT_CAM_TARGET.clone();
         if (preset === 'topdown') {
-          pos = new THREE.Vector3(0, 150, 1);
+          pos = new THREE.Vector3(0, 115, 0.1);
+          target = new THREE.Vector3(0, 0, 0);
         } else if (preset === 'ground') {
-          pos = new THREE.Vector3(0, 3, -100);
-          target = new THREE.Vector3(0, 2, 0);
+          pos = new THREE.Vector3(0, 2.4, 75);
+          target = new THREE.Vector3(0, 1.8, -10);
+        } else if (preset === 'isometric') {
+          pos = new THREE.Vector3(26, 70, 78);
+          target = new THREE.Vector3(2, 0, -2);
         }
         flyTo(pos, target, 1.2, 'power3.inOut');
       },
@@ -103,7 +108,7 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
         if (!item) return;
         focusOn(item);
         const group = interactiveMeshesRef.current.get(quadraId);
-        if (group && !isQuadraEquipamento(item)) {
+        if (group) {
           if (selectedGroupRef.current && selectedGroupRef.current !== group) {
             applyVisualState(selectedGroupRef.current, 'normal', markShadowDirty);
           }
@@ -133,7 +138,7 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
       scene.background = new THREE.Color('#f4f1e7');
       sceneRef.current = scene;
 
-      const camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 800);
+      const camera = new THREE.PerspectiveCamera(40, width / height, 0.5, 600);
       camera.position.copy(DEFAULT_CAM_POS);
       cameraRef.current = camera;
 
@@ -161,26 +166,27 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
       controls.zoomSpeed = 1.0;
       controls.panSpeed = 0.85;
       controls.maxPolarAngle = Math.PI / 2.08;
-      controls.minDistance = 8;
-      controls.maxDistance = 260;
+      controls.minDistance = 6;
+      controls.maxDistance = 220;
       controls.target.copy(DEFAULT_CAM_TARGET);
       controls.update();
       controlsRef.current = controls;
 
+      // Iluminação idêntica à olericultura (clara, quente, natural)
       scene.add(new THREE.AmbientLight('#ffffff', 1.15));
       const hemiLight = new THREE.HemisphereLight('#ffffff', '#f4f1e7', 0.55);
-      hemiLight.position.set(0, 80, 0);
+      hemiLight.position.set(0, 60, 0);
       scene.add(hemiLight);
 
       const sunLight = new THREE.DirectionalLight('#fffdf7', 1.35);
-      sunLight.position.set(60, 100, 50);
+      sunLight.position.set(45, 80, 40);
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 2048;
       sunLight.shadow.mapSize.height = 2048;
       sunLight.shadow.camera.near = 0.5;
-      sunLight.shadow.camera.far = 300;
+      sunLight.shadow.camera.far = 240;
       sunLight.shadow.bias = -0.0005;
-      const d = 100;
+      const d = 80;
       sunLight.shadow.camera.left = -d;
       sunLight.shadow.camera.right = d;
       sunLight.shadow.camera.top = d;
@@ -267,13 +273,13 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
               setHovered(quadra);
             }
 
-            setCursor(quadra && isQuadraEquipamento(quadra) ? 'default' : 'pointer');
+            setCursor('pointer');
 
             if (hoveredGroupRef.current !== rootGroup) {
               if (hoveredGroupRef.current && hoveredGroupRef.current !== selectedGroupRef.current) {
                 applyVisualState(hoveredGroupRef.current, 'normal', markShadowDirty);
               }
-              if (rootGroup !== selectedGroupRef.current && quadra && !isQuadraEquipamento(quadra)) {
+              if (rootGroup !== selectedGroupRef.current) {
                 applyVisualState(rootGroup, 'hover', markShadowDirty);
               }
               hoveredGroupRef.current = rootGroup;
@@ -311,8 +317,7 @@ export const PomarMap = forwardRef<PomarMapRef, PomarMapProps>(
         if (!foundId || !clickedGroup) return;
 
         const quadra = quadrasRef.current.find((q) => q.id === foundId);
-        // Infraestrutura (sala de equipamento) exibe apenas o tooltip, sem seleção
-        if (!quadra || isQuadraEquipamento(quadra)) return;
+        if (!quadra) return;
 
         focusOn(quadra);
 
@@ -466,10 +471,11 @@ function applyVisualState(
 ) {
   const plateMat = group.userData.borderMat as THREE.MeshStandardMaterial | undefined;
   const ringMesh = group.userData.ringMesh as THREE.Mesh | undefined;
-  const originalColorHex = (group.userData.originalColorHex as string) || '#d8ccae';
+  const labelSprite = group.userData.labelSprite as THREE.Sprite | undefined;
+  const originalColorHex = (group.userData.originalColorHex as string) || '#5c4033';
 
   gsap.killTweensOf(group.position);
-  const y = state === 'normal' ? 0 : state === 'hover' ? 0.3 : 0.5;
+  const y = state === 'normal' ? 0 : state === 'hover' ? 0.2 : 0.35;
   gsap.to(group.position, { y, duration: 0.25, ease: 'power2.out', onComplete: onShadowDirty });
 
   if (state === 'normal') {
@@ -477,38 +483,46 @@ function applyVisualState(
     plateMat?.emissive.set(0x000000);
     if (plateMat) plateMat.emissiveIntensity = 0;
     if (ringMesh) ringMesh.visible = false;
+    if (labelSprite) {
+      (labelSprite.material as THREE.SpriteMaterial).opacity = 0.88;
+      labelSprite.scale.set(7.5, 2.0, 1);
+    }
     return;
   }
 
   const selected = state === 'selected';
   if (plateMat) {
-    plateMat.color.set(selected ? '#a5d6a7' : '#c8e6c9');
-    plateMat.emissive.set(selected ? '#22c55e' : '#4caf50');
-    plateMat.emissiveIntensity = selected ? 0.5 : 0.3;
+    plateMat.color.set(selected ? '#2e7d32' : '#388e3c');
+    plateMat.emissive.set(selected ? '#4caf50' : '#81c784');
+    plateMat.emissiveIntensity = selected ? 0.45 : 0.25;
   }
   if (ringMesh) {
     ringMesh.visible = true;
     const rMat = ringMesh.material as THREE.MeshStandardMaterial;
     rMat.color.set(selected ? '#22c55e' : '#4caf50');
     rMat.emissive.set(selected ? '#22c55e' : '#4caf50');
-    rMat.emissiveIntensity = selected ? 0.95 : 0.6;
+    rMat.emissiveIntensity = selected ? 0.85 : 0.55;
+  }
+  if (labelSprite) {
+    (labelSprite.material as THREE.SpriteMaterial).opacity = 1.0;
+    labelSprite.scale.set(8.5, 2.3, 1);
   }
 }
 
 // ==========================================
-// CONSTRUÇÃO DA CENA 3D
+// CONSTRUÇÃO DA CENA 3D (MEIO AMBIENTE & CAMINHOS)
 // ==========================================
 
 function buildEnvironment(scene: THREE.Scene) {
   const envGroup = new THREE.Group();
   envGroup.name = 'pomar-environment-group';
 
-  const largura = IMAGEM_LARGURA_PX * PX_PARA_METRO + 14;
-  const comprimento = IMAGEM_ALTURA_PX * PX_PARA_METRO + 14;
+  const largura = IMAGEM_LARGURA_PX * PX_PARA_METRO + 20; // ~165m
+  const comprimento = IMAGEM_ALTURA_PX * PX_PARA_METRO + 20; // ~139m
 
-  // Receptor de sombras sem laje cinza sobre o fundo creme
+  // 1. Receptor de sombras sem laje cinza sobre o fundo creme
   const shadowFloor = new THREE.Mesh(
-    new THREE.PlaneGeometry(600, 600),
+    new THREE.PlaneGeometry(500, 500),
     new THREE.ShadowMaterial({ opacity: 0.12 })
   );
   shadowFloor.rotation.x = -Math.PI / 2;
@@ -516,17 +530,56 @@ function buildEnvironment(scene: THREE.Scene) {
   shadowFloor.receiveShadow = true;
   envGroup.add(shadowFloor);
 
-  // Terreno do pomar (terra batida suave)
+  // 2. Terreno do pomar (cor de solo suave idêntica à da horta)
   const terreno = new THREE.Mesh(
     new THREE.PlaneGeometry(largura, comprimento),
-    new THREE.MeshBasicMaterial({ color: '#ebe5cf' })
+    new THREE.MeshBasicMaterial({ color: '#f0ece1' })
   );
   terreno.rotation.x = -Math.PI / 2;
   terreno.position.y = -0.005;
   envGroup.add(terreno);
 
-  // Cerca perimetral (mourões)
-  const postGeo = new THREE.CylinderGeometry(0.1, 0.11, 1.5, 6);
+  // 3. Caminhos de terra batida / circulação entre os setores (padrão '#e6dec8' da olericultura)
+  const pathMat = new THREE.MeshBasicMaterial({ color: '#e6dec8' });
+
+  // 3.1. Avenida Central (divide pomar oeste e leste)
+  const centralAvenue = new THREE.Mesh(new THREE.PlaneGeometry(3.2, comprimento - 12), pathMat);
+  centralAvenue.rotation.x = -Math.PI / 2;
+  centralAvenue.position.set(3, 0.005, 0);
+  envGroup.add(centralAvenue);
+
+  // 3.2. Alameda Norte (em frente a Goiaba e Banana)
+  const northRoad = new THREE.Mesh(new THREE.PlaneGeometry(largura - 24, 2.4), pathMat);
+  northRoad.rotation.x = -Math.PI / 2;
+  northRoad.position.set(0, 0.006, -36);
+  envGroup.add(northRoad);
+
+  // 3.3. Alameda Central Transversal (entre Banana/Manga e Uva/Citros)
+  const midCrossroad = new THREE.Mesh(new THREE.PlaneGeometry(largura - 20, 2.4), pathMat);
+  midCrossroad.rotation.x = -Math.PI / 2;
+  midCrossroad.position.set(0, 0.006, -2);
+  envGroup.add(midCrossroad);
+
+  // 3.4. Alameda Sul Transversal (acesso a Pitayas e Graviola)
+  const southCrossroad = new THREE.Mesh(new THREE.PlaneGeometry(largura - 30, 2.2), pathMat);
+  southCrossroad.rotation.x = -Math.PI / 2;
+  southCrossroad.position.set(0, 0.006, 26);
+  envGroup.add(southCrossroad);
+
+  // 3.5. Caminho lateral Oeste (entre Uva e Citros/Caju)
+  const westAisle = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 48), pathMat);
+  westAisle.rotation.x = -Math.PI / 2;
+  westAisle.position.set(-36, 0.006, 12);
+  envGroup.add(westAisle);
+
+  // 3.6. Caminho das Pitayas (corredor leste)
+  const pitayaAisle = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 56), pathMat);
+  pitayaAisle.rotation.x = -Math.PI / 2;
+  pitayaAisle.position.set(36, 0.006, 26);
+  envGroup.add(pitayaAisle);
+
+  // 4. Cerca perimetral com mourões de madeira
+  const postGeo = new THREE.CylinderGeometry(0.09, 0.1, 1.4, 6);
   const postMat = new THREE.MeshStandardMaterial({ color: '#5c4033', roughness: 0.9 });
   const hw = largura / 2;
   const hd = comprimento / 2;
@@ -540,20 +593,75 @@ function buildEnvironment(scene: THREE.Scene) {
     const p2 = corners[(i + 1) % corners.length];
     const dx = p2.x - p1.x;
     const dz = p2.z - p1.z;
-    const passos = Math.max(1, Math.round(Math.hypot(dx, dz) / 5));
+    const dist = Math.hypot(dx, dz);
+    const passos = Math.max(1, Math.round(dist / 4.2));
     for (let s = 0; s < passos; s++) {
+      // Deixa portão aberto no sul (centro)
+      const x = p1.x + (s / passos) * dx;
+      const z = p1.z + (s / passos) * dz;
+      if (Math.abs(z - hd) < 0.5 && Math.abs(x) < 5) continue;
+
       const post = new THREE.Mesh(postGeo, postMat);
-      post.position.set(p1.x + (s / passos) * dx, 0.75, p1.z + (s / passos) * dz);
+      post.position.set(x, 0.7, z);
       post.castShadow = true;
       envGroup.add(post);
     }
   });
 
+  // 5. Flora perimetral decorativa (árvores low-poly contornando a cerca externa, como na horta)
+  createPerimeterFlora(envGroup, hw, hd);
+
   scene.add(envGroup);
   return envGroup;
 }
 
-const UNIT_SPHERE = new THREE.SphereGeometry(1, 12, 9);
+function createPerimeterFlora(parent: THREE.Group, hw: number, hd: number) {
+  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 2.6, 6);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: '#4a3525', roughness: 0.9 });
+  const canopyGeos = [
+    new THREE.DodecahedronGeometry(1.6, 1),
+    new THREE.DodecahedronGeometry(1.9, 1),
+  ];
+  const canopyMats = [
+    new THREE.MeshStandardMaterial({ color: '#2d6a4f', roughness: 0.85, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: '#40916c', roughness: 0.85, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: '#d4a373', roughness: 0.85, flatShading: true }), // Ipê suave
+  ];
+
+  const positions: Array<{ x: number; z: number }> = [];
+  const spacing = 12;
+
+  // Lado norte e sul
+  for (let x = -hw + 8; x <= hw - 8; x += spacing) {
+    positions.push({ x, z: -hd - 4.5 });
+    if (Math.abs(x) > 8) positions.push({ x, z: hd + 4.5 });
+  }
+  // Lado leste e oeste
+  for (let z = -hd + 8; z <= hd - 8; z += spacing) {
+    positions.push({ x: -hw - 4.5, z });
+    positions.push({ x: hw + 4.5, z });
+  }
+
+  positions.forEach((pos, idx) => {
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 1.3;
+    trunk.castShadow = true;
+    tree.add(trunk);
+
+    const canopy = new THREE.Mesh(canopyGeos[idx % canopyGeos.length], canopyMats[idx % canopyMats.length]);
+    canopy.position.y = 3.0;
+    canopy.castShadow = true;
+    canopy.receiveShadow = true;
+    tree.add(canopy);
+
+    tree.position.set(pos.x, 0, pos.z);
+    parent.add(tree);
+  });
+}
+
+// Geometrias reutilizáveis de modelos low-poly
+const UNIT_SPHERE = new THREE.DodecahedronGeometry(1, 1);
 const UNIT_CYLINDER = new THREE.CylinderGeometry(1, 1, 1, 7);
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 
@@ -563,32 +671,53 @@ interface MateriaisFruteira {
   extra: THREE.MeshStandardMaterial;
 }
 
+/**
+ * Cria sprite de etiqueta harmoniosa:
+ * - Proporção menor e elegante
+ * - Fundo branco translúcido com cantos arredondados
+ * - Não oclui a visão do pomar
+ */
 function criarLabelSprite(texto: string, subtexto: string, cor: string): THREE.Sprite {
   const canvas = document.createElement('canvas');
-  canvas.width = 640;
-  canvas.height = 160;
+  canvas.width = 512;
+  canvas.height = 136;
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+
+    // Pill arredondada translúcida
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
     ctx.beginPath();
-    ctx.roundRect(8, 8, canvas.width - 16, canvas.height - 16, 36);
+    ctx.roundRect(6, 6, canvas.width - 12, canvas.height - 12, 28);
     ctx.fill();
+
+    // Borda sutil na cor da cultura
     ctx.strokeStyle = cor;
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 4;
     ctx.stroke();
+
+    // Texto principal
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 56px sans-serif';
-    ctx.fillText(texto, canvas.width / 2, 78);
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText(texto, canvas.width / 2, 62);
+
+    // Subtítulo
     ctx.fillStyle = cor;
-    ctx.font = '600 34px sans-serif';
-    ctx.fillText(subtexto, canvas.width / 2, 124);
+    ctx.font = '600 26px sans-serif';
+    ctx.fillText(subtexto, canvas.width / 2, 102);
   }
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true }));
-  sprite.scale.set(16, 4, 1);
+  const spriteMat = new THREE.SpriteMaterial({
+    map: texture,
+    depthTest: false,
+    transparent: true,
+    opacity: 0.88,
+  });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(7.5, 2.0, 1);
   sprite.renderOrder = 10;
   return sprite;
 }
@@ -605,7 +734,7 @@ function buildQuadras(
     if (!mats) {
       const cores = CORES_FRUTEIRAS[quadra.tipoFruteira];
       mats = {
-        copa: new THREE.MeshStandardMaterial({ color: cores.copa, roughness: 0.85, flatShading: true }),
+        copa: new THREE.MeshStandardMaterial({ color: cores.copa, roughness: 0.82, flatShading: true }),
         tronco: new THREE.MeshStandardMaterial({ color: cores.tronco, roughness: 0.9 }),
         extra: new THREE.MeshStandardMaterial({ color: '#d81b60', roughness: 0.7 }),
       };
@@ -620,38 +749,65 @@ function buildQuadras(
     group.userData = { quadraId: quadra.id };
     const equipamento = isQuadraEquipamento(quadra);
 
-    // Base (canteiro) da quadra - recebe o destaque de hover/seleção
-    const plateColor = equipamento ? '#cfd8dc' : '#d8ccae';
-    const plateMat = new THREE.MeshStandardMaterial({ color: plateColor, roughness: 0.95 });
-    group.userData.borderMat = plateMat;
-    group.userData.originalColorHex = plateColor;
-    const plate = new THREE.Mesh(UNIT_BOX, plateMat);
-    plate.scale.set(geo.largura + 1.2, 0.12, geo.profundidade + 1.2);
-    plate.position.y = 0.06;
+    // Canteiro/placa base com acabamento idêntico ao canteiro elevado de madeira da horta
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: equipamento ? '#eceff1' : '#5c4033',
+      roughness: 0.88,
+      metalness: 0.05,
+    });
+    group.userData.borderMat = baseMat;
+    group.userData.originalColorHex = equipamento ? '#eceff1' : '#5c4033';
+
+    const plate = new THREE.Mesh(UNIT_BOX, baseMat);
+    plate.scale.set(geo.largura + 1.0, 0.2, geo.profundidade + 1.0);
+    plate.position.y = 0.1;
     plate.receiveShadow = true;
+    plate.castShadow = true;
     group.add(plate);
 
-    const ringMat = new THREE.MeshStandardMaterial({ color: '#4caf50', emissive: '#4caf50', emissiveIntensity: 0.6 });
+    // Terra interna do canteiro
+    if (!equipamento) {
+      const soilMat = new THREE.MeshStandardMaterial({
+        color: '#2a1d15',
+        roughness: 0.96,
+        metalness: 0.02,
+      });
+      const soil = new THREE.Mesh(UNIT_BOX, soilMat);
+      soil.scale.set(geo.largura + 0.6, 0.08, geo.profundidade + 0.6);
+      soil.position.y = 0.22;
+      soil.receiveShadow = true;
+      group.add(soil);
+    }
+
+    // Anel verde de destaque para seleção/hover
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: '#4caf50',
+      emissive: '#4caf50',
+      emissiveIntensity: 0.6,
+    });
     const ring = new THREE.Mesh(UNIT_BOX, ringMat);
-    ring.scale.set(geo.largura + 2.4, 0.06, geo.profundidade + 2.4);
+    ring.scale.set(geo.largura + 1.8, 0.06, geo.profundidade + 1.8);
     ring.position.y = 0.03;
     ring.visible = false;
     group.add(ring);
     group.userData.ringMesh = ring;
 
-    let alturaTotal = 4.5;
+    let alturaTotal = 4.2;
+
     if (equipamento) {
-      alturaTotal = 4;
-      const wallMat = new THREE.MeshStandardMaterial({ color: '#eceff1', roughness: 0.8 });
-      const roofMat = new THREE.MeshStandardMaterial({ color: '#78909c', roughness: 0.7 });
+      alturaTotal = 4.0;
+      // Galpão/sala de equipamentos com acabamento em tons terrosos da horta
+      const wallMat = new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.85 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.7 });
       const walls = new THREE.Mesh(UNIT_BOX, wallMat);
       walls.scale.set(geo.largura * 0.92, 2.6, geo.profundidade * 0.92);
       walls.position.y = 1.4;
       walls.castShadow = true;
       walls.receiveShadow = true;
       group.add(walls);
+
       const roof = new THREE.Mesh(UNIT_BOX, roofMat);
-      roof.scale.set(geo.largura, 0.3, geo.profundidade);
+      roof.scale.set(geo.largura, 0.35, geo.profundidade);
       roof.position.y = 2.85;
       roof.castShadow = true;
       group.add(roof);
@@ -659,19 +815,20 @@ function buildQuadras(
       const mats = obterMateriais(quadra);
       geo.plantas.forEach((p) => {
         const planta = criarPlanta(quadra, p, mats);
-        planta.position.set(p.x, 0.12, p.z);
+        planta.position.set(p.x, 0.22, p.z);
         group.add(planta);
       });
     }
 
-    // Rótulo flutuante com o nome da quadra
+    // Rótulo flutuante estilizado
     const cor = CORES_FRUTEIRAS[quadra.tipoFruteira].label;
     const sub = equipamento ? 'Infraestrutura' : `${quadra.culturas.join(' • ')}`;
     const label = criarLabelSprite(quadra.nome, sub, cor);
-    label.position.set(0, alturaTotal + 3, 0);
+    label.position.set(0, alturaTotal + 1.8, 0);
     group.add(label);
+    group.userData.labelSprite = label;
 
-    // Hitbox única por quadra (raycast O(1))
+    // Hitbox única por quadra (raycast ultra rápido O(1))
     const hitbox = new THREE.Mesh(
       new THREE.BoxGeometry(geo.largura + 1.2, alturaTotal, geo.profundidade + 1.2),
       HITBOX_MATERIAL
@@ -689,6 +846,12 @@ function buildQuadras(
   });
 }
 
+/**
+ * Cria modelos low-poly harmonizados com a proporção da horta:
+ * - Árvores com proporção adequada (2.5 a 4m de altura)
+ * - Copa facetada em Dodecahedron para combinar com os repolhos e copas do Terrarium
+ * - Espaçamento equilibrado
+ */
 function criarPlanta(
   quadra: QuadraPomar,
   p: { w: number; d: number },
@@ -706,73 +869,83 @@ function criarPlanta(
 
   switch (quadra.tipoFruteira) {
     case 'uva': {
-      // Latada: mourões nas pontas, arame e parreira contínua ao longo da linha
+      // Latada de parreira: mourões nas pontas e cobertura contínua
       const poste1 = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
-      poste1.scale.set(0.12, 2.2, 0.12);
-      poste1.position.set(-p.w / 2 + 0.2, 1.1, 0);
+      poste1.scale.set(0.1, 2.0, 0.1);
+      poste1.position.set(-p.w / 2 + 0.25, 1.0, 0);
       add(poste1);
+
       const poste2 = poste1.clone();
-      poste2.position.x = p.w / 2 - 0.2;
+      poste2.position.x = p.w / 2 - 0.25;
       add(poste2);
+
       const folhagem = new THREE.Mesh(UNIT_BOX, mats.copa);
-      folhagem.scale.set(p.w * 0.97, 0.8, p.d * 0.9);
-      folhagem.position.y = 1.7;
+      folhagem.scale.set(p.w * 0.98, 0.6, p.d * 0.85);
+      folhagem.position.y = 1.6;
       add(folhagem);
       break;
     }
     case 'banana': {
+      // Bananeira estilizada com tronco cônico e copa volumosa
       const tronco = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
-      tronco.scale.set(lado * 0.07, 2.2, lado * 0.07);
-      tronco.position.y = 1.1;
+      tronco.scale.set(0.18, 2.0, 0.18);
+      tronco.position.y = 1.0;
       add(tronco);
+
       const folhas = new THREE.Mesh(UNIT_SPHERE, mats.copa);
-      folhas.scale.set(p.w * 0.48, 0.55, p.d * 0.48);
-      folhas.position.y = 2.4;
+      folhas.scale.set(lado * 0.38, 0.55, lado * 0.38);
+      folhas.position.y = 2.1;
       add(folhas);
       break;
     }
     case 'coco': {
+      // Coqueiro 
       const tronco = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
-      tronco.scale.set(lado * 0.045, 4, lado * 0.045);
-      tronco.position.y = 2;
+      tronco.scale.set(0.14, 3.4, 0.14);
+      tronco.position.y = 1.7;
       add(tronco);
+
       const folhas = new THREE.Mesh(UNIT_SPHERE, mats.copa);
-      folhas.scale.set(p.w * 0.5, 0.5, p.d * 0.5);
-      folhas.position.y = 4.1;
+      folhas.scale.set(lado * 0.42, 0.45, lado * 0.42);
+      folhas.position.y = 3.5;
       add(folhas);
       break;
     }
     case 'pitaya': {
-      // Mourão de concreto com a copa de pitaya em guarda-chuva
+      // Tutor/mourão de concreto com copa suspensa e pequeno fruto
       const poste = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
-      poste.scale.set(lado * 0.04, 1.6, lado * 0.04);
-      poste.position.y = 0.8;
+      poste.scale.set(0.12, 1.4, 0.12);
+      poste.position.y = 0.7;
       add(poste);
+
       const copa = new THREE.Mesh(UNIT_SPHERE, mats.copa);
-      copa.scale.set(p.w * 0.4, 0.5, p.d * 0.4);
-      copa.position.y = 1.65;
+      copa.scale.set(lado * 0.32, 0.45, lado * 0.32);
+      copa.position.y = 1.45;
       add(copa);
+
       const fruto = new THREE.Mesh(UNIT_SPHERE, mats.extra);
-      fruto.scale.set(0.18, 0.18, 0.18);
-      fruto.position.set(p.w * 0.22, 1.4, 0);
+      fruto.scale.set(0.14, 0.14, 0.14);
+      fruto.position.set(lado * 0.18, 1.25, 0);
       add(fruto, false);
       break;
     }
     default: {
-      // Árvore padrão (goiaba, manga, citros, graviola/pinha)
-      const alturaTronco = quadra.tipoFruteira === 'manga' ? 1.6 : 1.1;
+      // Fruteiras padrão em formato copa arbórea (manga mais encorpada, goiaba/citros/graviola equilibradas)
+      const isManga = quadra.tipoFruteira === 'manga';
+      const alturaTronco = isManga ? 1.4 : 1.0;
       const tronco = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
-      tronco.scale.set(lado * 0.045, alturaTronco, lado * 0.045);
+      tronco.scale.set(0.14, alturaTronco, 0.14);
       tronco.position.y = alturaTronco / 2;
       add(tronco);
+
       const copa = new THREE.Mesh(UNIT_SPHERE, mats.copa);
-      const ry = quadra.tipoFruteira === 'manga' ? 1.5 : 1.15;
-      copa.scale.set(p.w * 0.46, ry, p.d * 0.46);
-      copa.position.y = alturaTronco + ry * 0.7;
+      const raioCopa = isManga ? lado * 0.42 : lado * 0.36;
+      const alturaCopa = isManga ? 1.3 : 1.05;
+      copa.scale.set(raioCopa, alturaCopa, raioCopa);
+      copa.position.y = alturaTronco + alturaCopa * 0.75;
       add(copa);
     }
   }
 
   return planta;
 }
-

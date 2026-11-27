@@ -35,6 +35,16 @@ const ColheitaPage = React.lazy(() =>
 const PomarPage = React.lazy(() =>
   import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
 );
+const SalaEquipamentosPage = React.lazy(() =>
+  import('../modules/fruticultura/pages/professor/SalaEquipamentosPage').then((m) => ({
+    default: m.SalaEquipamentosPage,
+  }))
+);
+const ConfiguracoesPomarLayoutPage = React.lazy(() =>
+  import('../modules/fruticultura/pages/professor/ConfiguracoesPomarLayoutPage').then((m) => ({
+    default: m.ConfiguracoesPomarLayoutPage,
+  }))
+);
 const ConfiguracoesLayoutPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/ConfiguracoesLayoutPage').then((m) => ({ default: m.ConfiguracoesLayoutPage }))
 );
@@ -86,6 +96,14 @@ export default function AppRoutes() {
                 <Route path="/configuracoes" element={<ConfiguracoesLayoutPage />} />
                 <Route path="/olericultura/configuracoes" element={<ConfiguracoesLayoutPage />} />
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
+                <Route
+                  path="/fruticultura/professor/equipamentos"
+                  element={<SalaEquipamentosPage />}
+                />
+                <Route
+                  path="/fruticultura/professor/configuracoes"
+                  element={<ConfiguracoesPomarLayoutPage />}
+                />
               </Route>
 
               {/* Rotas Protegidas - Perfil Aluno */}
@@ -96,6 +114,10 @@ export default function AppRoutes() {
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
+                <Route
+                  path="/fruticultura/aluno/equipamentos"
+                  element={<SalaEquipamentosPage />}
+                />
               </Route>
 
               <Route path="*" element={<Navigate to="/login" replace />} />

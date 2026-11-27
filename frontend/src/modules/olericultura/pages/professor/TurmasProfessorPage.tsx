@@ -27,8 +27,8 @@ export const TurmasProfessorPage: React.FC = () => {
   const { user } = useAuth();
   const { selectedUep } = useUep();
 
-  const professorEmail = user?.email || 'george@belojardim.ifpe.edu.br';
-  const professorNome = user?.nome || 'Prof. George Henrique';
+  const professorEmail = user?.email || '';
+  const professorNome = user?.nome || 'Professor';
 
   const [turmas, setTurmas] = useState<Turma[]>(() =>
     turmaService.listarTurmasPorProfessor(professorEmail)

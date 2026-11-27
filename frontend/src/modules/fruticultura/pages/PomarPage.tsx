@@ -1,15 +1,69 @@
-import React, { useState, useRef } from 'react';
-import { Menu, X, Compass, Layers, Eye, RotateCcw, Apple, TreeDeciduous } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Menu,
+  X,
+  Compass,
+  Layers,
+  Eye,
+  RotateCcw,
+  Apple,
+  TreeDeciduous,
+  ExternalLink,
+  Wrench,
+  Boxes,
+  Edit3,
+} from 'lucide-react';
 import { PomarMap, PomarMapRef } from '../components/PomarMap';
 import { PomarMenu } from '../components/PomarMenu';
-import { QUADRAS_POMAR, QuadraPomar, CORES_FRUTEIRAS, totalPlantas } from '../data/pomarData';
+import {
+  QuadraPomar,
+  CORES_FRUTEIRAS,
+  totalPlantas,
+  isQuadraEquipamento,
+} from '../data/pomarData';
+import { pomarLayoutService } from '../../../services/pomarLayoutService';
 import { APP_CONFIG } from '../../../config/constants';
+import { useAuth } from '../../../contexts/AuthContext';
+import { identifyRoleByEmail } from '../../auth/utils/roleIdentifier';
 
 export const PomarPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const mapRef = useRef<PomarMapRef>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [quadras, setQuadras] = useState<QuadraPomar[]>(() =>
+    pomarLayoutService.listarQuadras()
+  );
   const [selectedQuadra, setSelectedQuadra] = useState<QuadraPomar | null>(null);
   const [activePreset, setActivePreset] = useState<'isometric' | 'topdown' | 'ground'>('isometric');
+
+  const role = user ? identifyRoleByEmail(user.email, user.role) : 'PROFESSOR';
+  const isAluno = role === 'ALUNO';
+  const equipamentosRota = isAluno
+    ? '/fruticultura/aluno/equipamentos'
+    : '/fruticultura/professor/equipamentos';
+
+  useEffect(() => {
+    const recarregar = () => {
+      const atualizadas = pomarLayoutService.listarQuadras();
+      setQuadras(atualizadas);
+      if (selectedQuadra) {
+        const encontrada = atualizadas.find((q) => q.id === selectedQuadra.id);
+        setSelectedQuadra(encontrada || null);
+      }
+    };
+
+    window.addEventListener('terrarium:pomar-layout-alterado', recarregar);
+    window.addEventListener('focus', recarregar);
+    window.addEventListener('storage', recarregar);
+
+    return () => {
+      window.removeEventListener('terrarium:pomar-layout-alterado', recarregar);
+      window.removeEventListener('focus', recarregar);
+      window.removeEventListener('storage', recarregar);
+    };
+  }, [selectedQuadra]);
 
   const handleCameraPreset = (preset: 'isometric' | 'topdown' | 'ground' | 'reset') => {
     if (preset !== 'reset') setActivePreset(preset);
@@ -21,13 +75,13 @@ export const PomarPage: React.FC = () => {
       activePreset === preset ? 'bg-[#27633b] text-white shadow-sm' : 'text-slate-700 hover:bg-emerald-50'
     }`;
 
-  const totalGeral = QUADRAS_POMAR.reduce((acc, q) => acc + totalPlantas(q), 0);
+  const totalGeral = quadras.reduce((acc: number, q: QuadraPomar) => acc + totalPlantas(q), 0);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#f4f1e7] font-sans">
       {/* 1. CABEÇALHO */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
-        <div className="pointer-events-auto flex items-center gap-3">
+        <div className="pointer-events-auto flex items-center gap-2.5">
           <button
             onClick={() => setIsMenuOpen(true)}
             aria-label="Abrir menu de navegação do sistema"
@@ -96,7 +150,7 @@ export const PomarPage: React.FC = () => {
         ref={mapRef}
         selectedQuadraId={selectedQuadra?.id || null}
         onSelectQuadra={setSelectedQuadra}
-        quadras={QUADRAS_POMAR}
+        quadras={quadras}
       />
 
       {/* 4. RESUMO DO POMAR */}
@@ -104,7 +158,7 @@ export const PomarPage: React.FC = () => {
         <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-emerald-900/10 bg-white/90 px-3.5 py-2 shadow-xl backdrop-blur-md text-xs text-slate-600 font-medium">
           <TreeDeciduous className="h-3.5 w-3.5 text-[#27633b]" />
           <span>
-            {QUADRAS_POMAR.filter((q) => q.tipo !== 'equipamento').length} quadras • {totalGeral} plantas
+            {quadras.filter((q) => q.tipo !== 'equipamento').length} quadras • {totalGeral} plantas
           </span>
         </div>
       </div>
@@ -136,33 +190,75 @@ export const PomarPage: React.FC = () => {
           </div>
 
           <div className="mt-4 space-y-3.5 text-xs">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Cultura Plantada
-              </span>
-              <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: CORES_FRUTEIRAS[selectedQuadra.tipoFruteira].copa }}
-                />
-                {selectedQuadra.culturas.join(', ')}
-              </p>
-            </div>
+            {isQuadraEquipamento(selectedQuadra) ? (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <Boxes className="h-4 w-4 text-[#27633b]" />
+                    <span>Depósito Central de Materiais</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                    Setor de armazenamento de ferramentas de poda, colheita, insumos agrícolas,
+                    adubos e equipamentos de proteção da UEP Fruticultura.
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-emerald-50/50 p-2.5 border border-emerald-100">
-              <div className="text-center">
-                <span className="text-[10px] text-slate-500 font-medium">Plantas</span>
-                <p className="font-bold text-slate-800">{totalPlantas(selectedQuadra)}</p>
+                <button
+                  onClick={() => navigate(equipamentosRota)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#27633b] py-3 px-4 text-xs font-bold text-white shadow-lg shadow-[#27633b]/20 hover:bg-[#1a4428] transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                >
+                  <Wrench className="h-3.5 w-3.5" />
+                  <span>Ver materiais disponíveis</span>
+                  <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                </button>
               </div>
-              <div className="text-center border-x border-emerald-100">
-                <span className="text-[10px] text-slate-500 font-medium">Fileiras</span>
-                <p className="font-bold text-emerald-700">{selectedQuadra.linhas}</p>
-              </div>
-              <div className="text-center">
-                <span className="text-[10px] text-slate-500 font-medium">Por fileira</span>
-                <p className="font-bold text-slate-800">{selectedQuadra.colunas}</p>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    Cultura Plantada
+                  </span>
+                  <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: CORES_FRUTEIRAS[selectedQuadra.tipoFruteira].copa }}
+                    />
+                    {selectedQuadra.culturas.join(', ')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 rounded-2xl bg-emerald-50/50 p-2.5 border border-emerald-100">
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-500 font-medium">Plantas</span>
+                    <p className="font-bold text-slate-800">{totalPlantas(selectedQuadra)}</p>
+                  </div>
+                  <div className="text-center border-x border-emerald-100">
+                    <span className="text-[10px] text-slate-500 font-medium">Fileiras</span>
+                    <p className="font-bold text-emerald-700">{selectedQuadra.linhas}</p>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-500 font-medium">Por fileira</span>
+                    <p className="font-bold text-slate-800">{selectedQuadra.colunas}</p>
+                  </div>
+                </div>
+
+                {!isAluno && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `/fruticultura/professor/configuracoes?quadra=${selectedQuadra.id}&editar=true`
+                        )
+                      }
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 px-3 text-xs font-bold text-[#27633b] hover:bg-emerald-100 transition cursor-pointer"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                      <span>Editar esta quadra & plantio</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </aside>
       )}
@@ -171,7 +267,7 @@ export const PomarPage: React.FC = () => {
       <PomarMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        quadras={QUADRAS_POMAR}
+        quadras={quadras}
         onFocusQuadra={(id) => mapRef.current?.focusQuadra(id)}
       />
     </div>

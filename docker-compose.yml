@@ -88,7 +88,7 @@ services:
     container_name: gestao-uep-database
     restart: unless-stopped
     ports:
-      - "${DB_EXTERNAL_PORT:-5432}:5432"
+      - "${DB_EXTERNAL_PORT:-5434}:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-gestao_uep}
       POSTGRES_USER: ${DB_USER:-postgres}

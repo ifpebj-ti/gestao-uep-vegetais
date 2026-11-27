@@ -24,14 +24,13 @@ describe('AdminDashboardPage', () => {
     );
   };
 
-  it('deve renderizar o cabeçalho do painel do Admin e a lista inicial de professores', () => {
+  it('deve renderizar o cabeçalho do painel do Admin sem professores pré-cadastrados', () => {
     renderPage();
 
     expect(
       screen.getByRole('heading', { name: /gestão de professores e ueps/i })
     ).toBeInTheDocument();
-    expect(screen.getByText('Prof. George Henrique')).toBeInTheDocument();
-    expect(screen.getByText('Profa. Carla Mendes')).toBeInTheDocument();
+    expect(screen.getByText('Nenhum professor encontrado')).toBeInTheDocument();
   });
 
   it('deve permitir cadastrar um novo professor apenas com nome, e-mail institucional e UEP (sem campo de senha)', () => {
@@ -90,17 +89,29 @@ describe('AdminDashboardPage', () => {
   });
 
   it('deve permitir alterar a UEP de um professor e remover um professor', () => {
+    localStorage.setItem(
+      'terrarium_admin_professores',
+      JSON.stringify([
+        {
+          id: 'prof-teste-1',
+          nome: 'Prof. Teste UEP',
+          email: 'professor.teste@belojardim.ifpe.edu.br',
+          uep: 'olericultura',
+          criadoEm: '2026-01-01T00:00:00.000Z',
+        },
+      ])
+    );
     renderPage();
 
-    const selectGeorge = screen.getByLabelText('UEP de Prof. George Henrique') as HTMLSelectElement;
-    expect(selectGeorge.value).toBe('olericultura');
+    const selectProfessor = screen.getByLabelText('UEP de Prof. Teste UEP') as HTMLSelectElement;
+    expect(selectProfessor.value).toBe('olericultura');
 
-    fireEvent.change(selectGeorge, { target: { value: 'fruticultura' } });
-    expect(selectGeorge.value).toBe('fruticultura');
+    fireEvent.change(selectProfessor, { target: { value: 'fruticultura' } });
+    expect(selectProfessor.value).toBe('fruticultura');
 
-    const btnRemover = screen.getByLabelText('Remover Prof. George Henrique');
+    const btnRemover = screen.getByLabelText('Remover Prof. Teste UEP');
     fireEvent.click(btnRemover);
 
-    expect(screen.queryByText('Prof. George Henrique')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prof. Teste UEP')).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,4 @@
 import { UepType } from '../types/uep';
-import { UserSession } from './authService';
 
 export interface ProfessorCadastrado {
   id: string;
@@ -23,11 +22,6 @@ export interface AtualizarProfessorInput {
 
 const STORAGE_KEY = 'terrarium_admin_professores';
 
-export const DEFAULT_ADMIN_PROFILE = {
-  nome: 'Administrador Terrarium',
-  email: 'admin@belojardim.ifpe.edu.br',
-} as const;
-
 export const DOMINIOS_DOCENTE_PERMITIDOS = [
   'belojardim.ifpe.edu.br',
   'ifpe.edu.br',
@@ -35,9 +29,6 @@ export const DOMINIOS_DOCENTE_PERMITIDOS = [
 
 export function isEmailInstitucionalDocente(email: string): boolean {
   const normalizado = email.trim().toLowerCase();
-  if (normalizado === 'ifl1@discente.ifpe.edu.br') {
-    return true;
-  }
   const partes = normalizado.split('@');
   if (partes.length !== 2 || !partes[0]) return false;
   return DOMINIOS_DOCENTE_PERMITIDOS.includes(
@@ -45,72 +36,25 @@ export function isEmailInstitucionalDocente(email: string): boolean {
   );
 }
 
-const SEED_PROFESSORES: ProfessorCadastrado[] = [
-  {
-    id: 'prof-seed-1',
-    nome: 'Prof. George Henrique',
-    email: 'george@belojardim.ifpe.edu.br',
-    uep: 'olericultura',
-    criadoEm: '2026-02-10T10:00:00.000Z',
-  },
-  {
-    id: 'prof-seed-2',
-    nome: 'Profa. Carla Mendes',
-    email: 'carla.mendes@belojardim.ifpe.edu.br',
-    uep: 'fruticultura',
-    criadoEm: '2026-02-15T14:30:00.000Z',
-  },
-  {
-    id: 'prof-seed-3',
-    nome: 'Isabela França Lima',
-    email: 'isabela.franca.lima@belojardim.ifpe.edu.br',
-    uep: 'fruticultura',
-    criadoEm: '2026-11-10T20:00:00.000Z',
-  },
-];
-
-// Professores semeados após a criação inicial do storage: adicionados uma única vez
-// aos navegadores que já possuem a lista salva (sem ressuscitar cadastros removidos depois).
-const SEED_MIGRATIONS_KEY = 'terrarium_admin_professores_seed_migrations';
-const SEED_MIGRATIONS: Array<{ chave: string; professor: ProfessorCadastrado }> = [
-  { chave: 'prof-seed-3', professor: SEED_PROFESSORES[2] },
-];
-
-function aplicarMigracoesSeed(lista: ProfessorCadastrado[]): ProfessorCadastrado[] {
-  try {
-    const aplicadas: string[] = JSON.parse(localStorage.getItem(SEED_MIGRATIONS_KEY) || '[]');
-    let resultado = lista;
-    let alterado = false;
-    for (const { chave, professor } of SEED_MIGRATIONS) {
-      if (aplicadas.includes(chave)) continue;
-      aplicadas.push(chave);
-      alterado = true;
-      if (!resultado.some((p) => p.email.toLowerCase() === professor.email.toLowerCase())) {
-        resultado = [...resultado, professor];
-      }
-    }
-    if (alterado) {
-      localStorage.setItem(SEED_MIGRATIONS_KEY, JSON.stringify(aplicadas));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
-    }
-    return resultado;
-  } catch {
-    return lista;
-  }
-}
+// Remove registros gravados por versões anteriores com contas de demonstração.
+// Os IDs evitam manter e-mails ou senhas dessas contas no frontend.
+const REMOVED_DEMO_PROFESSOR_IDS = new Set(['prof-seed-1', 'prof-seed-2', 'prof-seed-3']);
 
 function lerStorage(): ProfessorCadastrado[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PROFESSORES));
-      localStorage.setItem(SEED_MIGRATIONS_KEY, JSON.stringify(SEED_MIGRATIONS.map((m) => m.chave)));
-      return [...SEED_PROFESSORES];
-    }
+    if (!raw) return [];
+
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? aplicarMigracoesSeed(parsed) : [...SEED_PROFESSORES];
+    if (!Array.isArray(parsed)) return [];
+
+    const ativos = parsed.filter((professor) => !REMOVED_DEMO_PROFESSOR_IDS.has(professor?.id));
+    if (ativos.length !== parsed.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ativos));
+    }
+    return ativos;
   } catch {
-    return [...SEED_PROFESSORES];
+    return [];
   }
 }
 
@@ -223,50 +167,5 @@ export const adminService = {
     const lista = lerStorage();
     const filtrada = lista.filter((p) => p.id !== id);
     salvarStorage(filtrada);
-  },
-
-  autenticarLocal(email: string, senha: string): UserSession | null {
-    const emailNormalizado = email.trim().toLowerCase();
-
-    // 1. Conta do Administrador
-    if (
-      (emailNormalizado === DEFAULT_ADMIN_PROFILE.email ||
-        emailNormalizado === 'admin@ifpe.edu.br') &&
-      senha.trim().length > 0
-    ) {
-      return {
-        token: `local-admin-jwt-${Date.now()}`,
-        nome: DEFAULT_ADMIN_PROFILE.nome,
-        email: emailNormalizado,
-        role: 'ADMIN',
-      };
-    }
-
-    // 2. Conta de Aluno (@discente.ifpe.edu.br) para homologação/testes locais
-    if (emailNormalizado.endsWith('@discente.ifpe.edu.br') && senha.trim().length > 0) {
-      const parteNome = emailNormalizado.split('@')[0].replace('.', ' ');
-      const nomeFormatado = parteNome.charAt(0).toUpperCase() + parteNome.slice(1);
-      return {
-        token: `local-aluno-jwt-${Date.now()}`,
-        nome: nomeFormatado || 'Estudante IFPE',
-        email: emailNormalizado,
-        role: 'ALUNO',
-        uep: 'olericultura',
-      };
-    }
-
-    // 3. Professores cadastrados no painel administrativo
-    const prof = this.buscarProfessorPorEmail(emailNormalizado);
-    if (prof && senha.trim().length > 0) {
-      return {
-        token: `local-prof-jwt-${Date.now()}`,
-        nome: prof.nome,
-        email: prof.email,
-        role: 'PROFESSOR',
-        uep: prof.uep,
-      };
-    }
-
-    return null;
   },
 };
