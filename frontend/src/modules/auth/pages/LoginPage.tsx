@@ -9,7 +9,6 @@ import { useUep } from '../../../contexts/UepContext';
 import { AuthLayout } from '../components/AuthLayout';
 import { identifyRoleByEmail } from '../utils/roleIdentifier';
 import { UserSession } from '../../../services/authService';
-import { adminService } from '../../../services/adminService';
 
 interface LoginPageProps {
     onLoginSuccess?: (userName: string) => void;
@@ -48,7 +47,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             return;
         }
 
-        const userUep = adminService.obterUepDoProfessor(user.email, user.uep);
+        const userUep = user.uep === 'fruticultura' ? 'fruticultura' : 'olericultura';
         setSelectedUep(userUep);
 
         // Define a rota padrão com base no perfil e na UEP

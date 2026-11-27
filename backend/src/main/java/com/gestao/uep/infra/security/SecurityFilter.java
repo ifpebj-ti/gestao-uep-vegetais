@@ -1,5 +1,6 @@
 package com.gestao.uep.infra.security;
 
+import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
 import com.gestao.uep.services.TokenService;
 import jakarta.servlet.FilterChain;
@@ -8,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -40,20 +40,12 @@ public class SecurityFilter extends OncePerRequestFilter {
         String token = recuperarToken(request);
 
         if (token != null) {
-            String subject = tokenService.validarToken(token);
-
-            if (!subject.isEmpty()) {
-                UserDetails usuario = usuarioRepository.findByEmail(subject);
-
-                if (usuario != null) {
-                    var autenticacao = new UsernamePasswordAuthenticationToken(
-                            usuario,
-                            null,
-                            usuario.getAuthorities()
-                    );
-                    SecurityContextHolder.getContext().setAuthentication(autenticacao);
-                }
-            }
+            tokenService.validarSessao(token)
+                    .flatMap(sessao -> usuarioRepository.findById(sessao.usuarioId())
+                            .filter(usuario -> usuario.getVersaoSessao() == sessao.versao()))
+                    .filter(Usuario::isEnabled)
+                    .ifPresent(usuario -> SecurityContextHolder.getContext().setAuthentication(
+                            new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities())));
         }
 
         filterChain.doFilter(request, response);

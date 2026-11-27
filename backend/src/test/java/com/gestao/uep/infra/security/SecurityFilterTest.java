@@ -17,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -65,15 +67,20 @@ class SecurityFilterTest {
 
     @Test
     void deveAutenticarUsuarioQuandoTokenEhValido() throws ServletException, IOException {
+        UUID usuarioId = UUID.randomUUID();
         Usuario usuario = new Usuario(
+                usuarioId,
                 "Maria",
                 "maria@ifpe.edu.br",
                 "hash",
-                UsuarioRole.USUARIO
+                null,
+                UsuarioRole.USUARIO,
+                true
         );
         when(request.getHeader("Authorization")).thenReturn("Bearer token-valido");
-        when(tokenService.validarToken("token-valido")).thenReturn(usuario.getEmail());
-        when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(usuario);
+        when(tokenService.validarSessao("token-valido"))
+                .thenReturn(Optional.of(new TokenService.Sessao(usuarioId, usuario.getVersaoSessao())));
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
 
         securityFilter.doFilter(request, response, filterChain);
 
@@ -90,7 +97,7 @@ class SecurityFilterTest {
     @Test
     void deveContinuarSemAutenticarQuandoTokenEhInvalido() throws ServletException, IOException {
         when(request.getHeader("Authorization")).thenReturn("Bearer token-invalido");
-        when(tokenService.validarToken("token-invalido")).thenReturn("");
+        when(tokenService.validarSessao("token-invalido")).thenReturn(Optional.empty());
 
         securityFilter.doFilter(request, response, filterChain);
 

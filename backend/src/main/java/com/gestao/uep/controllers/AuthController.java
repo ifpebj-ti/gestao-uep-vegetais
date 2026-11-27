@@ -2,6 +2,7 @@ package com.gestao.uep.controllers;
 
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
+import com.gestao.uep.domain.usuario.UsuarioRole;
 import com.gestao.uep.domain.usuario.dto.LoginDTO;
 import com.gestao.uep.domain.usuario.dto.LoginResponseDTO;
 import com.gestao.uep.domain.usuario.dto.GoogleLoginDTO;
@@ -15,12 +16,15 @@ import com.gestao.uep.services.GoogleIdentity;
 import com.gestao.uep.services.GoogleIdentityService;
 import com.gestao.uep.services.TokenService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,6 +74,13 @@ public class AuthController {
         this.googleIdentityService = googleIdentityService;
     }
 
+    @GetMapping("/csrf")
+    public ResponseEntity<Map<String, String>> csrf(CsrfToken token) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(Map.of("headerName", token.getHeaderName(), "token", token.getToken()));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginDTO dados) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(
@@ -85,6 +96,7 @@ public class AuthController {
     }
 
     @PostMapping("/login/google")
+    @Transactional
     public ResponseEntity<?> loginComGoogle(@RequestBody @Valid GoogleLoginDTO dados) {
         final GoogleIdentity identidade;
         try {
@@ -110,7 +122,7 @@ public class AuthController {
 
         Usuario usuario = usuarioRepository.findByGoogleSubject(identidade.subject());
         if (usuario == null) {
-            usuario = usuarioRepository.findByEmail(email);
+            usuario = usuarioRepository.findByEmailForUpdate(email);
         }
 
         if (usuario == null) {
@@ -124,6 +136,10 @@ public class AuthController {
             usuario.vincularContaGoogle(identidade.subject());
             usuarioRepository.save(usuario);
         } else {
+            if (!usuario.isAtivo() || usuario.isConfirmacaoNovoEmailPendente()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("erro", "Confirme o e-mail institucional ou aceite o convite antes de entrar"));
+            }
             if (usuario.getGoogleSubject() != null
                     && !usuario.getGoogleSubject().equals(identidade.subject())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -168,7 +184,7 @@ public class AuthController {
         try {
             String token = verificationTokenService.emitir(novoUsuario, false);
             emailService.enviarConfirmacao(email, token);
-        } catch (MailException exception) {
+        } catch (IllegalStateException | MailException exception) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
@@ -192,12 +208,16 @@ public class AuthController {
             @RequestBody @Valid ReenvioConfirmacaoDTO dados
     ) {
         String email = emailInstitucionalService.normalizar(dados.email());
-        if (emailInstitucionalService.identificarPapel(email).isEmpty()) {
+        boolean dominioDeCadastroPublico = emailInstitucionalService.identificarPapel(email).isPresent();
+        if (!dominioDeCadastroPublico && !emailInstitucionalService.aceitaEmailDocenteAdministrativo(email)) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
         Usuario usuario = usuarioRepository.findByEmail(email);
-
-        if (usuario == null || usuario.isEnabled()) {
+        if (usuario == null || usuario.isEmailVerificado()) {
+            return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
+        }
+        if (!dominioDeCadastroPublico
+                && (usuario.getRole() != UsuarioRole.PROFESSOR || !usuario.isConfirmacaoNovoEmailPendente())) {
             return ResponseEntity.accepted().body(Map.of("message", RESPOSTA_REENVIO));
         }
 
@@ -216,7 +236,7 @@ public class AuthController {
 
     private ResponseEntity<LoginResponseDTO> respostaLogin(Usuario usuario, String token) {
         return ResponseEntity.ok(
-                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole())
+                new LoginResponseDTO(token, usuario.getNome(), usuario.getEmail(), usuario.getRole(), usuario.getUep())
         );
     }
 }

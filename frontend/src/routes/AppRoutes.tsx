@@ -20,6 +20,9 @@ const RegisterPage = React.lazy(() =>
 const ConfirmEmailPage = React.lazy(() =>
   import('../modules/auth/pages/ConfirmEmailPage').then((m) => ({ default: m.ConfirmEmailPage }))
 );
+const AcceptInvitationPage = React.lazy(() =>
+  import('../modules/auth/pages/AcceptInvitationPage').then((m) => ({ default: m.AcceptInvitationPage }))
+);
 const MapaPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/MapaPage').then((m) => ({ default: m.MapaPage }))
 );
@@ -71,6 +74,7 @@ export default function AppRoutes() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+              <Route path="/aceitar-convite" element={<AcceptInvitationPage />} />
 
               {/* Rotas Protegidas - Perfil Administrador */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>

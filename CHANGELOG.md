@@ -4,6 +4,41 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.4](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.3...gestao-uep-vegetais-v0.1.4) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ci:** ignorar validação de Issue em PRs de release ([6c5d60f](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6c5d60f3327ee722ef01797474295409d0772f68))
+* **ci:** preserve VM changes during Oracle deploy ([5354eb3](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/5354eb3db4363c3c129caa14a25a8b6c15f064fe))
+* **ci:** skip linked issue check for release PRs ([0d75ac9](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/0d75ac9435a522380bf3fb9e849b9a65d65c2a25))
+* **ci:** tornar deploy Oracle resiliente a alterações locais na VM ([6114984](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6114984c44d5d0857e2a251ff224932c1dd456c2))
+
+## [0.1.3](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.2...gestao-uep-vegetais-v0.1.3) (2026-11-18)
+
+
+### Features
+
+* aceitar convite e definir senha de professor ([4ac52ad](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/4ac52ad706b6cc1b66206e3b74454a6129bdb81c))
+* admin professor accounts ([f3f617b](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/f3f617b0f707f9137f3939b72010e54bd2e90ebd))
+* autenticar com JWT revogável e provisionar o primeiro admin ([1d28361](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/1d283613fe337be5c12c9d30205dab07cf6dd611))
+* conectar painel de professores à API ([d02368f](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/d02368ffb7848f4d5c6f821d7ccf711e2629a11b))
+* expor API administrativa de professores ([ad1a413](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/ad1a413efcd20cc1cf3b76aec3bd74c7e815ac7a))
+* implementar convites de professores ([bb87b03](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/bb87b03a19ecbdd3327e359abb0b26599b0d1428))
+* persistir estado e UEP dos professores ([131351b](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/131351bfc92b9b30cab88a00d9771f4ffbbcb2b1))
+
+
+### Bug Fixes
+
+* alinhar link do email com aceite de convite ([651f790](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/651f7905c4c67e616eb276dfbd20d5f7ea904c29))
+* **ci:** ignore only unpatched picomatch advisory ([2ee0094](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/2ee0094a4b0b5f3bb4aadb28e97ac1bdb0d349ad))
+* completa lockfile do frontend para Linux ([dd00e7a](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/dd00e7ab8f3fcb149089947434dd597c235cf705))
+* incluir wget no healthcheck do backend ([7a28105](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/7a28105cc092ad0f2e48cce89c07880ce4ca0928))
+* integrar tokens CSRF nos fluxos públicos ([3110a2d](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/3110a2dbb029e6d080679f1f2dba30bd18712c4d))
+* limitar a troca rápida de UEP ao campo UEP ([b88ee82](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/b88ee82ba2bdee9e0391b110d4faa0550a44f250))
+* ordenar migrations de professores após main atual ([1b96890](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/1b9689033870b0a7d10c0525126a3d6a65d8663e))
+* persistir a data de criação das contas ([36dcad1](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/36dcad184aa6867ebbfbc0747f6adaa429391aab))
+
 ## [0.1.2](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.1...gestao-uep-vegetais-v0.1.2) (2026-11-13)
 
 

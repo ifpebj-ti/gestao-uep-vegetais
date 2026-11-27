@@ -14,6 +14,24 @@
 # =============================================================================
 
 services:
+  #----------------------------------------------------------------------------
+  #Caddy
+  #---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: terrarium-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - app-network
   # ---------------------------------------------------------------------------
   # Backend — API
   # ---------------------------------------------------------------------------
@@ -24,9 +42,8 @@ services:
       target: production
     container_name: gestao-uep-backend
     restart: unless-stopped
-    ports:
-      - "${API_PORT:-8080}:8080"
     env_file:
+      # O backend lê ADMIN_BOOTSTRAP_EMAIL e ADMIN_BOOTSTRAP_PASSWORD deste arquivo na inicialização.
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
@@ -67,8 +84,6 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     container_name: gestao-uep-frontend
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-80}:80"
     depends_on:
       - backend
     networks:
@@ -87,8 +102,6 @@ services:
     image: postgres:16-alpine
     container_name: gestao-uep-database
     restart: unless-stopped
-    ports:
-      - "${DB_EXTERNAL_PORT:-5434}:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-gestao_uep}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -111,8 +124,6 @@ services:
     image: axllent/mailpit:v1.27.8
     container_name: gestao-uep-mailpit
     restart: unless-stopped
-    ports:
-      - "${MAILPIT_WEB_PORT:-8025}:8025"
     networks:
       - app-network
 
@@ -120,6 +131,8 @@ services:
 # Volumes nomeados — Persistência de dados
 # =============================================================================
 volumes:
+  caddy_data:
+  caddy_config:
   pgdata:
     driver: local
     name: gestao-uep-pgdata

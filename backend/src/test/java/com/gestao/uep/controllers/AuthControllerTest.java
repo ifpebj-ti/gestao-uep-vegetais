@@ -188,7 +188,6 @@ class AuthControllerTest {
                 "discente.ifpe.edu.br"
         )).thenReturn(true);
         when(usuarioRepository.findByGoogleSubject("google-sub-ana")).thenReturn(null);
-        when(usuarioRepository.findByEmail(email)).thenReturn(null);
         when(passwordEncoder.encode(any())).thenReturn("senha-aleatoria-hash");
         when(tokenService.gerarToken(any(Usuario.class))).thenReturn("jwt-google");
 

@@ -95,6 +95,7 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 - **Persistência de Dados:** Spring Data JPA, Hibernate ORM e migrações versionadas com Flyway
 - **Banco de Dados:** PostgreSQL 16
 - **Segurança & Autenticação:** Spring Security 6 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)), OAuth 2.0 Google Institucional e criptografia BCrypt
+- **Scans de Segurança no CI:** Semgrep (SAST) e OWASP ZAP (DAST), com gates e relatórios documentados em [docs/security-scanning.md](docs/security-scanning.md)
 - **Métricas e Diagnóstico:** Spring Boot Actuator
 - **Testes Automatizados:** JUnit 5 e Spring MockMvc (**47 testes automatizados em 11 suítes**)
 - **Produtividade:** Project Lombok
@@ -228,6 +229,22 @@ Copie o arquivo de exemplo para criar o seu `.env`:
 cp .env.example .env
 ```
 
+No PowerShell do Windows, use `Copy-Item .env.example .env`. Antes de iniciar:
+
+- Defina `JWT_SECRET` com um valor aleatório, longo e exclusivo. Não compartilhe
+  nem versione o arquivo `.env`.
+- Para criar o primeiro administrador, preencha `ADMIN_BOOTSTRAP_EMAIL` e
+  `ADMIN_BOOTSTRAP_PASSWORD` com as credenciais que serão usadas na tela de
+  login. O bootstrap só cria essa conta quando ainda não existe nenhum usuário
+  com papel ADMIN; ele não substitui a senha de uma conta existente. Depois de
+  confirmar que o ADMIN consegue entrar, remova essas duas variáveis do `.env`.
+- No Compose padrão, o frontend abre em `http://localhost`, portanto mantenha
+  `FRONTEND_URL=http://localhost`. Os links de convite e confirmação usam essa
+  origem. Se alterar `FRONTEND_PORT`, ajuste `FRONTEND_URL` para incluir a nova
+  porta e inclua essa origem em `CORS_ALLOWED_ORIGINS`. Para executar o frontend
+  pelo Vite em `http://localhost:5173`, use essa origem no `FRONTEND_URL` e
+  permita-a em `CORS_ALLOWED_ORIGINS`.
+
 Para habilitar o botão **Entrar com Google**, crie um cliente OAuth do tipo
 aplicativo Web no Google Cloud e configure as origens JavaScript autorizadas
 (`http://localhost:5173` durante o desenvolvimento e a URL do frontend em
@@ -245,6 +262,27 @@ docker compose up -d --build
 - **Frontend (Terrarium):** [http://localhost](http://localhost)
 - **Backend API:** [http://localhost:8080/api](http://localhost:8080/api)
 - **Status do Backend (Actuator Health):** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **Caixa de e-mail local (Mailpit):** [http://localhost:8025](http://localhost:8025)
+
+### 5. Gerenciar contas de professores
+
+1. Entre no site com o e-mail e a senha definidos em `ADMIN_BOOTSTRAP_EMAIL` e
+   `ADMIN_BOOTSTRAP_PASSWORD`, e abra **Administração**.
+2. Cadastre o professor com nome, e-mail institucional e UEP. O sistema envia
+   um convite; no ambiente local, abra a mensagem no Mailpit e use o link para
+   definir e confirmar a senha. Após o aceite, o professor já pode entrar.
+3. Para trocar o e-mail de uma conta ativada, o endereço novo precisa ser
+   confirmado pelo link enviado a esse endereço. A alteração rápida de UEP muda
+   somente a UEP.
+4. Para um convite ainda pendente, use **Reenviar convite**. Se o convite falhar
+   por e-mail, a conta fica pendente e pode ser reenviada pelo painel.
+5. **Desativar** remove o acesso e preserva os dados e o histórico. Uma conta
+   desativada pode ser reativada pelo painel; após reativar, o professor deve
+   entrar novamente.
+
+Para inspecionar o estado dos serviços: `docker compose ps`. Para acompanhar a
+API: `docker compose logs -f backend`. Para parar os serviços sem remover o
+banco persistido: `docker compose down`.
 
 ---
 

@@ -37,10 +37,6 @@ export function identifyRoleByEmail(
 
   const normalized = email.toLowerCase().trim();
 
-  // Exceção autorizada para demonstração: usuário discente com papel docente atribuído
-  if (normalized === 'ifl1@discente.ifpe.edu.br') {
-    return 'PROFESSOR';
-  }
 
   const parts = normalized.split('@');
   const domain = parts[1];

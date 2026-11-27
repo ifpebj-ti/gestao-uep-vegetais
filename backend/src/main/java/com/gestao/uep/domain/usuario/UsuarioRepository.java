@@ -22,7 +22,18 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     Usuario findByEmail(String email);
 
+    boolean existsByRole(UsuarioRole role);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Usuario findByGoogleSubject(String googleSubject);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.email = :email")
+    Usuario findByEmailForUpdate(@Param("email") String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.id = :id and u.email = :email")
+    Usuario findByIdAndEmailForUpdate(@Param("id") UUID id, @Param("email") String email);
 
     List<Usuario> findAllByRoleOrderByNome(UsuarioRole role);
 

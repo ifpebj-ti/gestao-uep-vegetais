@@ -1,0 +1,211 @@
+name: SAST & DAST Security Scans
+
+on:
+  push:
+    branches: ["main", "master", "develop"]
+  pull_request:
+    branches: ["main", "master", "develop"]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run Semgrep
+        id: scan
+        continue-on-error: true
+        run: |
+          set +e
+          output_dir="${GITHUB_WORKSPACE}/ci-security"
+          mkdir -p "$output_dir"
+          printf '{"results":[],"errors":[{"message":"Semgrep nao gerou uma resposta valida; consulte semgrep.log"}]}' \
+            > "$output_dir/semgrep-results.json"
+          docker run --rm \
+            --user 0:0 \
+            -v "${GITHUB_WORKSPACE}:/src:ro" \
+            semgrep/semgrep:1.163.0 \
+            semgrep \
+            scan \
+            --config p/default \
+            --json \
+            --metrics=off \
+            --exclude .git \
+            --exclude backend/target \
+            --exclude backend/src/test/resources \
+            --exclude frontend/node_modules \
+            --exclude frontend/dist \
+            --exclude frontend/coverage \
+            --exclude .github \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            /src > "$output_dir/semgrep-results.tmp" \
+            2> >(tee "$output_dir/semgrep.log" >&2)
+          status=$?
+          if [ -s "$output_dir/semgrep-results.tmp" ]; then
+            mv "$output_dir/semgrep-results.tmp" "$output_dir/semgrep-results.json"
+          fi
+          rm -f "$output_dir/semgrep-results.tmp"
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Publish Semgrep summary and enforce gate
+        run: |
+          report="${GITHUB_WORKSPACE}/ci-security/semgrep-results.json"
+          test -s "$report"
+          findings="$(jq '.results | length' "$report")"
+          blocking="$(jq '[.results[] | select((.extra.severity // "INFO") == "ERROR" and ((.extra.metadata.confidence // "LOW") | ascii_upcase) == "HIGH")] | length' "$report")"
+          warnings="$(jq '[.errors[]? | select((.level // "warn") == "warn")] | length' "$report")"
+          errors="$(jq '[.errors[]? | select((.level // "error") == "error")] | length' "$report")"
+          {
+            echo "## Semgrep SAST"
+            echo "- Findings: ${findings}"
+            echo "- Blocking findings (ERROR + HIGH confidence): ${blocking}"
+            echo "- Parser warnings: ${warnings}"
+            echo "- Fatal scanner errors: ${errors}"
+            echo "- Gate: only confirmed high-confidence ERROR findings block the pipeline."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$blocking" -gt 0 ]; then
+            echo "### Blocking findings" >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.results[] | select((.extra.severity // "INFO") == "ERROR" and ((.extra.metadata.confidence // "LOW") | ascii_upcase) == "HIGH") | "- `\(.check_id)` at `\(.path):\(.start.line)` — \(.extra.message // "sem mensagem")"' "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$blocking" -gt 0 ]; then
+            echo "Semgrep encontrou finding(s) ERROR com confianca HIGH." >&2
+            exit 1
+          fi
+          if [ "$errors" -gt 0 ]; then
+            echo "### Semgrep diagnostic log" >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 80 "${GITHUB_WORKSPACE}/ci-security/semgrep.log" >> "$GITHUB_STEP_SUMMARY" || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "O Semgrep registrou erro(s) fatal(is) durante a analise." >&2
+            exit 1
+          fi
+          echo "- Semgrep scanner exit code: ${{ steps.scan.outputs.exit_code }} (findings/errors determinam o gate)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Semgrep report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: semgrep-report
+          path: ${{ github.workspace }}/ci-security/
+          if-no-files-found: error
+          retention-days: 14
+
+  zap:
+    name: OWASP ZAP DAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Start isolated application
+        run: |
+          mkdir -p ci-security
+          cat > .env <<'EOF'
+          DB_HOST=database
+          DB_PORT=5432
+          DB_NAME=gestao_uep_ci
+          DB_USER=postgres
+          DB_PASS=ci-dast-${GITHUB_RUN_ID}
+          JWT_SECRET=ci-dast-${GITHUB_RUN_ID}
+          GOOGLE_CLIENT_ID=
+          FRONTEND_URL=http://localhost
+          CORS_ALLOWED_ORIGINS=http://localhost
+          MAIL_HOST=mailpit
+          MAIL_PORT=1025
+          MAIL_SMTP_AUTH=false
+          MAIL_SMTP_STARTTLS=false
+          MAIL_FROM=no-reply@example.test
+          EOF
+          docker compose up -d --build --remove-orphans
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1/ >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "A aplicacao de teste nao ficou disponivel." >&2
+          exit 1
+
+      - name: Run OWASP ZAP baseline scan
+        id: scan
+        continue-on-error: true
+        run: |
+          set +e
+          output_dir="${GITHUB_WORKSPACE}/ci-security"
+          mkdir -p "$output_dir"
+          printf '{"site":[],"alerts":[],"error":"ZAP nao gerou uma resposta valida; consulte zap.log"}' \
+            > "$output_dir/zap-report.json"
+          container="zap-scan-${GITHUB_RUN_ID}"
+          docker create --name "$container" --network host \
+            --user 0:0 \
+            zaproxy/zap-stable:2.16.1 \
+            zap-baseline.py \
+            -t http://127.0.0.1 \
+            -r /tmp/zap-report.html \
+            -J /tmp/zap-report.json \
+            -I \
+            -m 3 \
+            -T 60 > "$output_dir/zap-create.log" 2>&1
+          docker start -a "$container" > "$output_dir/zap.log" 2>&1
+          status=$?
+          docker cp "$container:/tmp/zap-report.json" "$output_dir/zap-report.json" > "$output_dir/zap-copy.log" 2>&1 || true
+          docker cp "$container:/tmp/zap-report.html" "$output_dir/zap-report.html" > /dev/null 2>&1 || true
+          docker rm -f "$container" > /dev/null 2>&1 || true
+          if [ ! -s "$output_dir/zap-report.json" ]; then
+            printf '{"site":[],"alerts":[],"error":"ZAP nao gerou o relatorio; consulte zap.log"}' \
+              > "$output_dir/zap-report.json"
+          fi
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Publish ZAP summary and enforce gate
+        run: |
+          report="${GITHUB_WORKSPACE}/ci-security/zap-report.json"
+          test -s "$report"
+          blocking="$(jq '[.site[]?.alerts[]? | select(((.riskcode // "0") | tonumber) >= 2 and ((.confidence // "0") | tonumber) >= 2)] | unique_by(.pluginid) | length' "$report")"
+          {
+            echo "## OWASP ZAP DAST"
+            echo "- Blocking alerts (risk MEDIUM/HIGH + confidence MEDIUM/HIGH): ${blocking}"
+            echo "- Gate: unconfirmed or low-risk alerts remain available in the report for triage."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$blocking" -gt 0 ]; then
+            echo "### Blocking alerts" >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.site[]?.alerts[]? | select(((.riskcode // "0") | tonumber) >= 2 and ((.confidence // "0") | tonumber) >= 2) | "- `\(.pluginid)` \(.name) — risk=\(.riskcode), confidence=\(.confidence)"' "$report" | sort -u >> "$GITHUB_STEP_SUMMARY"
+            echo "O ZAP encontrou alertas acima do limiar definido." >&2
+            exit 1
+          fi
+          if ! jq -e 'has("site") and (.site | type == "array")' "$report" >/dev/null; then
+            echo "### ZAP diagnostic log" >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 80 "${GITHUB_WORKSPACE}/ci-security/zap.log" >> "$GITHUB_STEP_SUMMARY" || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "O ZAP nao gerou um relatorio JSON valido." >&2
+            exit 1
+          fi
+          echo "- ZAP scanner exit code: ${{ steps.scan.outputs.exit_code }} (o gate usa o relatorio JSON)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-report
+          path: ${{ github.workspace }}/ci-security/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop isolated application
+        if: always()
+        run: |
+          docker compose down -v --remove-orphans || true
+          rm -f .env

@@ -17,3 +17,15 @@
 ## Exceções
 
 Não há exceções de segurança aprovadas nesta alteração. Falhas de análise, testes backend/frontend, build frontend e varredura de imagem interrompem a pipeline.
+## Scans SAST e DAST
+
+Semgrep e OWASP ZAP sao executados no workflow `security-scans.yml`. Os gates
+bloqueiam somente findings acima dos limiares documentados em
+[`docs/security-scanning.md`](security-scanning.md), e os relatorios ficam
+disponiveis como artefatos por 14 dias.
+
+## Adendo de acompanhamento
+
+O CI possui uma excecao temporaria e especifica para o advisory `GHSA-fc5q-39xc-vjpf` do `picomatch`. O advisory e HIGH, mas ainda nao possui versao upstream corrigida; o downgrade sugerido pelo npm mantem a dependencia vulneravel transitivamente pelo Vitest.
+
+A excecao nao libera outros alertas: qualquer vulnerabilidade HIGH/CRITICAL diferente continua interrompendo a pipeline. A issue de acompanhamento deve ser atualizada quando houver patch para que a excecao seja removida imediatamente.

@@ -79,6 +79,7 @@ temp/
 # Cobertura de testes
 # ---------------------------------------------------------------------------
 coverage/
+ci-security/
 .coverage
 htmlcov/
 .nyc_output/

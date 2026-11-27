@@ -167,11 +167,16 @@ describe('apiClient', () => {
 
   it('deve tratar requisições POST com serialização JSON de dados', async () => {
     const payload = { nome: 'Novo Canteiro', setor: 'Hortaliças' };
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ id: 'c-10', ...payload }),
-    });
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ headerName: 'X-XSRF-TOKEN', token: 'csrf-test-token' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: 'c-10', ...payload }),
+      });
     vi.stubGlobal('fetch', mockFetch);
 
     const result = await apiClient.post('/canteiros', payload);

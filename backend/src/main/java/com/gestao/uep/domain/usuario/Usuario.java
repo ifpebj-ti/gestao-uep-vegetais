@@ -1,7 +1,6 @@
 package com.gestao.uep.domain.usuario;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +22,6 @@ import java.util.UUID;
 @Table(name = "usuarios")
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class Usuario implements UserDetails {
 
@@ -50,6 +49,39 @@ public class Usuario implements UserDetails {
     @ColumnDefault("true")
     private boolean emailVerificado;
 
+    @Column(name = "confirmacao_novo_email_pendente", nullable = false)
+    @ColumnDefault("false")
+    private boolean confirmacaoNovoEmailPendente;
+
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    private boolean ativo = true;
+
+    @Column(name = "versao_sessao", nullable = false)
+    @ColumnDefault("0")
+    private long versaoSessao;
+
+    @Column(length = 12)
+    private String uep;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    private Instant criadoEm;
+
+    public Usuario(
+            UUID id,
+            String nome,
+            String email,
+            String senhaCriptografada,
+            String googleSubject,
+            UsuarioRole role,
+            boolean emailVerificado
+    ) {
+        this(nome, email, senhaCriptografada, role, emailVerificado);
+        this.id = id;
+        this.googleSubject = googleSubject;
+    }
+
     public Usuario(String nome, String email, String senhaCriptografada, UsuarioRole role) {
         this(nome, email, senhaCriptografada, role, true);
     }
@@ -66,10 +98,48 @@ public class Usuario implements UserDetails {
         this.senha = senhaCriptografada;
         this.role = role;
         this.emailVerificado = emailVerificado;
+        if (role == UsuarioRole.PROFESSOR) {
+            this.uep = "olericultura";
+        }
     }
 
     public void vincularContaGoogle(String subject) {
         this.googleSubject = subject;
+    }
+
+    public void alterarNome(String nome) {
+        this.nome = nome;
+    }
+
+    public void alterarUep(String uep) {
+        if (!"olericultura".equals(uep) && !"fruticultura".equals(uep)) {
+            throw new IllegalArgumentException("UEP inválida");
+        }
+        this.uep = uep;
+    }
+
+    public void alterarEmail(String email) {
+        if (!this.email.equals(email)) {
+            this.versaoSessao++;
+            this.email = email;
+            this.emailVerificado = false;
+            this.googleSubject = null;
+        }
+    }
+
+    public void alterarSenha(String senhaCriptografada) {
+        this.senha = senhaCriptografada;
+    }
+
+    public void ativar() {
+        this.ativo = true;
+    }
+
+    public void desativar() {
+        if (this.ativo) {
+            this.versaoSessao++;
+        }
+        this.ativo = false;
     }
 
     /**
@@ -118,10 +188,21 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return emailVerificado;
+        return ativo && emailVerificado;
     }
 
     public void confirmarEmail() {
         this.emailVerificado = true;
+        this.confirmacaoNovoEmailPendente = false;
+    }
+
+    public void exigirConfirmacaoDoNovoEmail() {
+        this.emailVerificado = false;
+        this.confirmacaoNovoEmailPendente = true;
+    }
+
+    @PrePersist
+    private void aoCriar() {
+        this.criadoEm = Instant.now();
     }
 }

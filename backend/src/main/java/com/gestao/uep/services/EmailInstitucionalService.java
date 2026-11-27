@@ -14,6 +14,8 @@ public class EmailInstitucionalService {
 
     public static final String DOMINIO_ALUNO = "discente.ifpe.edu.br";
     public static final String DOMINIO_PROFESSOR = "belojardim.ifpe.edu.br";
+    private static final String DOMINIO_IFPE = "ifpe.edu.br";
+    private static final String EMAIL_DOCENTE_DISCENTE = "ifl1@discente.ifpe.edu.br";
 
     public String normalizar(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
@@ -21,7 +23,7 @@ public class EmailInstitucionalService {
 
     public Optional<UsuarioRole> identificarPapel(String email) {
         String emailNormalizado = normalizar(email);
-        if ("ifl1@discente.ifpe.edu.br".equalsIgnoreCase(emailNormalizado)) {
+        if (EMAIL_DOCENTE_DISCENTE.equals(emailNormalizado)) {
             return Optional.of(UsuarioRole.PROFESSOR);
         }
 
@@ -38,6 +40,16 @@ public class EmailInstitucionalService {
             return Optional.of(UsuarioRole.PROFESSOR);
         }
         return Optional.empty();
+    }
+
+    public boolean aceitaEmailDocenteAdministrativo(String emailNormalizado) {
+        int arroba = emailNormalizado.indexOf('@');
+        if (arroba < 1 || arroba != emailNormalizado.lastIndexOf('@')) {
+            return false;
+        }
+        String dominio = emailNormalizado.substring(arroba + 1);
+        return DOMINIO_PROFESSOR.equals(dominio) || DOMINIO_IFPE.equals(dominio)
+                || EMAIL_DOCENTE_DISCENTE.equals(emailNormalizado);
     }
 
     /**
