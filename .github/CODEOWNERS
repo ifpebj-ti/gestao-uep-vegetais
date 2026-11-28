@@ -1,0 +1,21 @@
+# Proprietários padrão: governança, DevSecOps e revisão da esteira.
+* @Wiik12223
+
+# Mudanças de CI, templates e regras do GitHub.
+/.github/ @Wiik12223
+
+# Backend, banco de dados e regras de domínio do servidor.
+/backend/ @italoruan @Wiik12223
+
+# Frontend, UX e componentes da aplicação.
+/frontend/ @ibelalima @Wiik12223
+
+# Documentação e especificações do produto.
+/docs/ @ibelalima @Wiik12223
+/specs/ @ibelalima @Wiik12223
+/scripts/ @Wiik12223
+
+# Arquivos de arquitetura, execução e release.
+/docker-compose.yml @Wiik12223 @italoruan
+/release-please-config.json @Wiik12223
+/VERSION @Wiik12223

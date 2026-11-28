@@ -11,6 +11,17 @@ O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0
 
 * **release:** sync frontend display version ([6d06dca](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6d06dca7bd9c16866b920d7c7f07095273274c6c))
 
+## [0.1.0](https://github.com/ifpebj-ti/gestao-uep-vegetais/releases/tag/v0.1.0) (2026-09-30)
+
+### Features
+
+* primeira versão oficial do Terrarium, com frontend React/Vite, mapa interativo 3D e visualização de canteiros;
+* ficha de campo de Olericultura com histórico de manejos, parâmetros de solo e visto docente;
+* fluxos responsivos de login, registro, recuperação de senha e confirmação de e-mail para professores e estudantes;
+* API REST com persistência JPA/Hibernate, autenticação JWT, RBAC e validação de domínio institucional do IFPE;
+* ambiente local com Docker Compose e pipelines de CI/CD no GitHub Actions;
+* suíte inicial de testes de frontend e backend, além de Dependabot e atualizações de segurança das imagens.
+
 ## [0.1.5](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.4...gestao-uep-vegetais-v0.1.5) (2026-11-25)
 
 

@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,19 +21,29 @@ public class GoogleIdentityService {
     private final String clientId;
     private final GoogleIdTokenVerifier verifier;
 
+    @Autowired
     public GoogleIdentityService(
             @Value("${google.client-id:}") String clientId
     ) {
+        this(clientId, criarVerifier(clientId));
+    }
+
+    GoogleIdentityService(String clientId, GoogleIdTokenVerifier verifier) {
         this.clientId = clientId == null ? "" : clientId.trim();
+        this.verifier = verifier;
+    }
+
+    private static GoogleIdTokenVerifier criarVerifier(String clientId) {
         try {
             GoogleIdTokenVerifier.Builder builder = new GoogleIdTokenVerifier.Builder(
                     GoogleNetHttpTransport.newTrustedTransport(),
                     GsonFactory.getDefaultInstance()
             );
-            if (!this.clientId.isBlank()) {
-                builder.setAudience(Collections.singletonList(this.clientId));
+            String clientIdNormalizado = clientId == null ? "" : clientId.trim();
+            if (!clientIdNormalizado.isBlank()) {
+                builder.setAudience(Collections.singletonList(clientIdNormalizado));
             }
-            this.verifier = builder.build();
+            return builder.build();
         } catch (GeneralSecurityException | IOException exception) {
             throw new IllegalStateException("Nao foi possivel preparar a validacao do Google", exception);
         }

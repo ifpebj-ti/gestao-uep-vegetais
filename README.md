@@ -7,7 +7,7 @@
 [![IFPE](https://img.shields.io/badge/IFPE-Campus_Belo_Jardim-058837?style=for-the-badge)](https://www.ifpe.edu.br/)
 [![CI/CD Pipeline](https://img.shields.io/github/actions/workflow/status/ifpebj-ti/gestao-uep-vegetais/ci.yml?branch=main&style=for-the-badge&label=CI%2FCD)](https://github.com/ifpebj-ti/gestao-uep-vegetais/actions)
 [![React](https://img.shields.io/badge/React_19-Vite_7-61DAFB?style=for-the-badge&logo=react&logoColor=black)](#)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](#)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.2-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#)
 [![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-orange?style=for-the-badge)](#)
 
@@ -73,9 +73,14 @@ Desenvolver o sistema **Terrarium**, uma aplicação Web/PWA de gestão agrícol
 Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e visualizar os relatórios e entregas, acesse os links abaixo:
 
 - 📖 **Wiki do Projeto:** [Acessar GitHub Wiki](https://github.com/ifpebj-ti/gestao-uep-vegetais/wiki)
+- 🎯 **Documento de Visão:** [Consultar visão consolidada](docs/product-vision.md)
+- 📌 **Backlog do Projeto:** [Consultar Issues abertas e fechadas](https://github.com/ifpebj-ti/gestao-uep-vegetais/issues)
 - 🧪 **Estratégia de Testes:** [Consultar estratégia de testes](docs/testing-strategy.md)
+- 🛡️ **Política de Segurança:** [Consultar SECURITY.md](SECURITY.md)
+- 🤝 **Como Contribuir:** [Consultar CONTRIBUTING.md](CONTRIBUTING.md)
+- 👥 **Responsáveis por Revisão:** [Consultar CODEOWNERS](.github/CODEOWNERS)
 - 🧠 **Apresentação / Sprint Report:** [Visualizar no Canva](https://canva.link/jgi9ied9fzkyfas)
-- 🎨 **Protótipo das Telas:** [Visualizar Protótipo no Canva Overview](https://canva.link/73re71vjj12jskb) e [Visualizar Protótipo no Figma](https://www.figma.com/design/zlMQSyhaPWFB7oUfQeCiCE/Desktop-sign-up-and-login-pages-by-EditorM--Community-?node-id=0-1&m=dev&t=L2Z2sFGH00jeQenz-1)
+- 🎨 **Protótipo das Telas:** [Visualizar protótipo no Canva Overview](https://canva.link/73re71vjj12jskb). O antigo link Figma foi removido porque apontava para um arquivo Community genérico, não para um protótipo próprio do projeto.
 ---
 
 # 🏗️ Tecnologias e Arquitetura
@@ -87,17 +92,17 @@ Para acompanhar o andamento do desenvolvimento, consultar a estrutura técnica e
 - **Estilização & Design System:** [TailwindCSS v4](https://tailwindcss.com/) com paleta agronômica personalizada e ícones do [Lucide React](https://lucide.dev/)
 - **Roteamento & Proteção:** [React Router DOM v7](https://reactrouter.com/) com guarda de rotas privadas (`ProtectedRoute`)
 - **Cliente HTTP Centralizado:** `apiClient` com injeção automática de `Bearer Token`, timeout com `AbortController` e interceptor de sessão expirada (`401`)
-- **Testes & Qualidade:** [Vitest](https://vitest.dev/), [@testing-library/react](https://testing-library.com/) e JSDOM (**98 testes unitários automatizados em 19 suítes**)
+- **Testes & Qualidade:** [Vitest](https://vitest.dev/), [@testing-library/react](https://testing-library.com/) e JSDOM, com suíte automatizada executada pelo CI
 
 ### ⚙️ Backend
 - **Linguagem & Plataforma:** Java 21 (LTS)
-- **Framework:** [Spring Boot](https://spring.io/projects/spring-boot)
+- **Framework:** [Spring Boot 4.1.2](https://spring.io/projects/spring-boot)
 - **Persistência de Dados:** Spring Data JPA, Hibernate ORM e migrações versionadas com Flyway
 - **Banco de Dados:** PostgreSQL 16
-- **Segurança & Autenticação:** Spring Security 6 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)), OAuth 2.0 Google Institucional e criptografia BCrypt
+- **Segurança & Autenticação:** Spring Security 6.5.9 com autenticação stateless, tokens JWT ([Auth0 java-jwt](https://github.com/auth0/java-jwt)), OAuth 2.0 Google Institucional e criptografia BCrypt
 - **Scans de Segurança no CI:** Semgrep (SAST) e OWASP ZAP (DAST), com gates e relatórios documentados em [docs/security-scanning.md](docs/security-scanning.md)
 - **Métricas e Diagnóstico:** Spring Boot Actuator
-- **Testes Automatizados:** JUnit 5 e Spring MockMvc (**47 testes automatizados em 11 suítes**)
+- **Testes Automatizados:** JUnit 5 e Spring MockMvc, com testes unitários e de integração executados pelo CI
 - **Produtividade:** Project Lombok
 
 ### 🛡️ Infraestrutura, Contêineres & DevSecOps
@@ -169,6 +174,12 @@ gestao-uep-vegetais/
 │   ├── package.json                   # Dependências, scripts (lint, test, build) e tipo ESM
 │   ├── tsconfig.json                  # Configurações do compilador TypeScript
 │   └── vite.config.ts                 # Configuração do Vite, Vitest e divisão de chunks
+├── docs/
+│   ├── product-vision.md              # Documento de visão, escopo, riscos e sucesso
+│   ├── dependency-hardening.md        # Endurecimento de dependências
+│   ├── security-hardening.md          # Controles de segurança da aplicação
+│   ├── security-scanning.md           # Scans e gates de segurança
+│   └── testing-strategy.md            # Estratégia e execução de testes
 ├── .env.example                       # Modelo das variáveis de ambiente necessárias
 ├── CHANGELOG.md                       # Histórico estruturado de entregas e versões do projeto
 ├── VERSION                            # Versão atual do projeto
@@ -309,7 +320,7 @@ npm ci
 # Verificação estática de tipos (Lint)
 npm run lint
 
-# Execução da suíte de testes unitários com Vitest (19 suítes / 98 testes)
+# Execução da suíte de testes unitários com Vitest
 npm run test:run
 
 # Execução dos testes com relatório e gate de cobertura
