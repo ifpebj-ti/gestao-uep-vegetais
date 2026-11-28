@@ -4,6 +4,13 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.6](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.5...gestao-uep-vegetais-v0.1.6) (2026-11-28)
+
+
+### Bug Fixes
+
+* **release:** sync frontend display version ([6d06dca](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/6d06dca7bd9c16866b920d7c7f07095273274c6c))
+
 ## [0.1.5](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.4...gestao-uep-vegetais-v0.1.5) (2026-11-25)
 
 
