@@ -74,6 +74,35 @@ Para executar somente os testes sem o gate de cobertura:
 mvn test
 ```
 
+Para executar o gate completo com PostgreSQL de integração sem depender de um
+serviço instalado no host:
+
+```bash
+docker compose -f ../docker-compose.integration.yml run --rm backend-integration
+docker compose -f ../docker-compose.integration.yml down -v
+```
+
+O arquivo `docker-compose.integration.yml` inicia um PostgreSQL descartável e
+executa o Maven na mesma rede Docker. O perfil `integration` recebe
+`DB_HOST=database`, `DB_PORT=5432`, `DB_NAME=gestao_uep_test`, `DB_USER=postgres`
+e `DB_PASS=postgres` explicitamente. O banco não é publicado na máquina host e
+não compartilha o volume do ambiente de desenvolvimento.
+
+Se o PostgreSQL já estiver disponível no host, o mesmo perfil aceita a
+configuração por ambiente, por exemplo:
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "5432"
+$env:DB_NAME = "gestao_uep_test"
+$env:DB_USER = "postgres"
+$env:DB_PASS = "postgres"
+mvn --batch-mode verify -Pintegration
+```
+
+Use `docker compose ... down -v` após a execução para remover o banco
+descartável e seus dados de teste.
+
 ### Frontend
 
 ```bash
