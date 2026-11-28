@@ -222,6 +222,29 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
     expect(session?.email).toBe('george@belojardim.ifpe.edu.br');
   });
 
+  it('9.1. Backend JWT com subject em formato UUID preserva o e-mail da sessão', () => {
+    const backendUuidJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'PROFESSOR',
+      nome: 'Prof George',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    authService.saveSession({
+      token: backendUuidJwt,
+      nome: 'Prof George',
+      email: 'george@belojardim.ifpe.edu.br',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+    });
+
+    const session = authService.getSession();
+    expect(session).not.toBeNull();
+    expect(session?.email).toBe('george@belojardim.ifpe.edu.br');
+    expect(session?.role).toBe('PROFESSOR');
+    expect(session?.uep).toBe('olericultura');
+  });
+
   it('10. Logout seguido de novo acesso deve retornar nulo', () => {
     authService.saveSession({
       token: buildJwt({ sub: 'aluno@discente.ifpe.edu.br', role: 'ALUNO', exp: Math.floor(Date.now() / 1000) + 3600 }),
@@ -250,6 +273,8 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
     localStorage.setItem('terrarium_tarefas_alunos', '[{"id":"t1"}]');
     localStorage.setItem('terrarium_tarefas_turma', '[{"id":"t2"}]');
     localStorage.setItem('terrarium_historico_alunos', '[{"id":"h1"}]');
+    localStorage.setItem('terrarium_uep_registros_colheita_v2', '[{"id":"col-1"}]');
+    localStorage.setItem('terrarium_selected_uep', 'fruticultura');
 
     // Configurações físicas visuais que DEVEM ser estritamente preservadas:
     localStorage.setItem('terrarium_canteiro_layout', '{"canteiros":[]}');
@@ -270,6 +295,8 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
     expect(localStorage.getItem('terrarium_tarefas_alunos')).toBeNull();
     expect(localStorage.getItem('terrarium_tarefas_turma')).toBeNull();
     expect(localStorage.getItem('terrarium_historico_alunos')).toBeNull();
+    expect(localStorage.getItem('terrarium_uep_registros_colheita_v2')).toBeNull();
+    expect(localStorage.getItem('terrarium_selected_uep')).toBeNull();
 
     // Verificação de preservação do layout 3D físico das UEPs
     expect(localStorage.getItem('terrarium_canteiro_layout')).toBe('{"canteiros":[]}');

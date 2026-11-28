@@ -4,17 +4,19 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import * as AuthContextModule from '../contexts/AuthContext';
 import { UserRole } from '../types/auth';
+import { UepType } from '../types/uep';
 
 describe('ProtectedRoute', () => {
   const renderWithRouter = (
     initialEntry = '/protegida',
-    allowedRoles?: UserRole[]
+    allowedRoles?: UserRole[],
+    allowedUep?: UepType[]
   ) => {
     return render(
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/login" element={<div>Tela de Login</div>} />
-          <Route element={<ProtectedRoute allowedRoles={allowedRoles} />}>
+          <Route element={<ProtectedRoute allowedRoles={allowedRoles} allowedUep={allowedUep} />}>
             <Route path="/protegida" element={<div>Conteúdo Protegido</div>} />
           </Route>
         </Routes>
@@ -178,5 +180,73 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
     expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
     expect(screen.getByText('ALUNO')).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve bloquear Professor de Olericultura ao tentar acessar rota exclusiva de Fruticultura', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-valido',
+        nome: 'Prof Olericultura',
+        email: 'prof.oleri@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'olericultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithRouter('/protegida', ['PROFESSOR'], ['fruticultura']);
+
+    expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/PROFESSOR \(Olericultura\)/)).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve bloquear Professor de Fruticultura ao tentar acessar rota exclusiva de Olericultura', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-valido',
+        nome: 'Prof Fruticultura',
+        email: 'prof.fruti@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'fruticultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithRouter('/protegida', ['PROFESSOR'], ['olericultura']);
+
+    expect(screen.queryByText('Conteúdo Protegido')).not.toBeInTheDocument();
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/PROFESSOR \(Fruticultura\)/)).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve permitir que Professor de Fruticultura acesse rota de Fruticultura', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-valido',
+        nome: 'Prof Fruticultura',
+        email: 'prof.fruti@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'fruticultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderWithRouter('/protegida', ['PROFESSOR'], ['fruticultura']);
+
+    expect(screen.getByText('Conteúdo Protegido')).toBeInTheDocument();
+    expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
   });
 });

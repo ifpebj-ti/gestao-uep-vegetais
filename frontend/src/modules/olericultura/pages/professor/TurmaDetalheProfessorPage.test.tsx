@@ -95,5 +95,26 @@ describe('TurmaDetalheProfessorPage - Gestão de Alunos da Turma', () => {
     expect(screen.getByRole('heading', { name: /turma não encontrada/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /voltar para minhas turmas/i })).toBeInTheDocument();
   });
+
+  it('SEGURANÇA: deve bloquear outro professor ao tentar acessar os detalhes da turma (BOLA/IDOR)', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-outro-prof',
+        nome: 'Prof. Invasor',
+        email: 'outro.professor@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderComponent('turma-agro-2026-1');
+
+    expect(screen.getByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.queryByText(/alunos da turma/i)).not.toBeInTheDocument();
+  });
 });
 

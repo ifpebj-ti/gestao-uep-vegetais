@@ -302,6 +302,13 @@ describe('AuthContext - Suíte de Testes Reais do AuthProvider', () => {
       if (url.includes('/auth/me')) {
         return slowPromise;
       }
+      if (url.includes('/auth/csrf')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ headerName: 'X-XSRF-TOKEN', token: 'csrf-test-token' }),
+        });
+      }
       return Promise.resolve({
         ok: true,
         status: 200,

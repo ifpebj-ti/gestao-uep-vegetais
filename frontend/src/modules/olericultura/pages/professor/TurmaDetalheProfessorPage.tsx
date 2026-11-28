@@ -14,11 +14,14 @@ import {
 } from 'lucide-react';
 import { BackButton } from '../../../../components/BackButton';
 import { Button } from '../../../../components/Button';
+import { UnauthorizedAccess } from '../../../../components/UnauthorizedAccess';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { turmaService, Turma, AlunoTurmaResumo } from '../../../../services/turmaService';
 
 export const TurmaDetalheProfessorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [turma, setTurma] = useState<Turma | null>(() => (id ? turmaService.buscarTurmaPorId(id) : null));
   const [alunos, setAlunos] = useState<AlunoTurmaResumo[]>(() =>
@@ -29,6 +32,13 @@ export const TurmaDetalheProfessorPage: React.FC = () => {
   const [copiado, setCopiado] = useState(false);
   const [modalExcluirTurma, setModalExcluirTurma] = useState(false);
   const [alunoParaDesvincular, setAlunoParaDesvincular] = useState<AlunoTurmaResumo | null>(null);
+
+  // Verificação de Autorização e Propriedade (AppSec Hardening contra BOLA / IDOR)
+  const isOwner = Boolean(
+    user &&
+    (user.role === 'ADMIN' ||
+      (turma && turma.professorEmail && user.email && turma.professorEmail.toLowerCase() === user.email.toLowerCase()))
+  );
 
   const recarregar = () => {
     if (!id) return;
@@ -44,13 +54,13 @@ export const TurmaDetalheProfessorPage: React.FC = () => {
   };
 
   const handleExcluirTurma = () => {
-    if (!turma) return;
-    turmaService.excluirTurma(turma.id);
+    if (!turma || !isOwner) return;
+    turmaService.excluirTurma(turma.id, user?.email);
     navigate('/olericultura/professor/turmas', { replace: true });
   };
 
   const handleDesvincularAluno = () => {
-    if (!alunoParaDesvincular) return;
+    if (!alunoParaDesvincular || !isOwner) return;
     turmaService.desvincularAlunoDaTurma(alunoParaDesvincular.email);
     setAlunoParaDesvincular(null);
     recarregar();
@@ -86,6 +96,10 @@ export const TurmaDetalheProfessorPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (!isOwner) {
+    return <UnauthorizedAccess userRole={user?.role} />;
   }
 
   return (

@@ -201,7 +201,17 @@ export const turmaService = {
     return turmas.find((t) => t.id === id) || null;
   },
 
-  excluirTurma(turmaId: string): void {
+  excluirTurma(turmaId: string, solicitanteEmail?: string): void {
+    const turma = this.buscarTurmaPorId(turmaId);
+    if (!turma) return;
+
+    if (
+      solicitanteEmail &&
+      turma.professorEmail.toLowerCase() !== solicitanteEmail.trim().toLowerCase()
+    ) {
+      throw new Error('Acesso negado: você não tem permissão para excluir esta turma.');
+    }
+
     const turmas = this.listarTurmas().filter((t) => t.id !== turmaId);
     salvarJSON(STORAGE_KEY_TURMAS, turmas);
 

@@ -173,4 +173,28 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
     expect(screen.queryByTestId('terrarium-map-mock')).not.toBeInTheDocument();
   });
+
+  it('SEGURANÇA: deve bloquear Professor de Olericultura ao tentar acessar rota de Fruticultura', async () => {
+    window.history.pushState({}, '', '/fruticultura/professor/configuracoes');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-prof-oleri',
+        nome: 'Prof Olericultura',
+        email: 'prof.oleri@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'olericultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/PROFESSOR \(Olericultura\)/)).toBeInTheDocument();
+  });
 });

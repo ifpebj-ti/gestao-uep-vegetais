@@ -81,8 +81,8 @@ export default function AppRoutes() {
                 <Route path="/admin" element={<AdminDashboardPage />} />
               </Route>
 
-              {/* Rotas Protegidas - Perfil Professor */}
-              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
+              {/* Rotas Protegidas - Perfil Professor (Olericultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} allowedUep={['olericultura']} />}>
                 <Route path="/mapa" element={<MapaPage />} />
                 <Route path="/olericultura/professor/mapa" element={<MapaPage />} />
                 <Route path="/canteiro/:id" element={<CanteiroDetailPage />} />
@@ -99,6 +99,10 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/turmas/:id" element={<TurmaDetalheProfessorPage />} />
                 <Route path="/configuracoes" element={<ConfiguracoesLayoutPage />} />
                 <Route path="/olericultura/configuracoes" element={<ConfiguracoesLayoutPage />} />
+              </Route>
+
+              {/* Rotas Protegidas - Perfil Professor (Fruticultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} allowedUep={['fruticultura']} />}>
                 <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
                 <Route
                   path="/fruticultura/professor/equipamentos"

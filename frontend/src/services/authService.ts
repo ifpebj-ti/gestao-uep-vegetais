@@ -1,8 +1,5 @@
 import { APP_CONFIG } from '../config/constants';
-<<<<<<< HEAD
-=======
 import { fetchApi } from './fetchApi';
->>>>>>> main
 
 export interface LoginCredentials {
   email: string;
@@ -105,9 +102,12 @@ export function validateAndSanitizeSession(session: UserSession | null): UserSes
     }
 
     const authoritativeRole = rawRole as UserSession['role'];
-    const authoritativeEmail = payload.sub;
+    const authoritativeEmail =
+      payload.sub && payload.sub.includes('@')
+        ? payload.sub
+        : session.email || payload.sub;
     if (!authoritativeEmail) {
-      return null; // E-mail ausente no token
+      return null; // E-mail ausente no token e na sessão
     }
 
     return {
@@ -466,6 +466,8 @@ export const authService = {
     localStorage.removeItem('terrarium_tarefas_alunos');
     localStorage.removeItem('terrarium_tarefas_turma');
     localStorage.removeItem('terrarium_historico_alunos');
+    localStorage.removeItem('terrarium_uep_registros_colheita_v2');
+    localStorage.removeItem('terrarium_selected_uep');
 
     // Nota de Preservação:
     // As configurações físicas estruturais dos laboratórios 3D ('terrarium_canteiro_layout',

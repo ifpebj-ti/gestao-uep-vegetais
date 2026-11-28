@@ -237,11 +237,10 @@ describe('authService', () => {
         role: 'ADMIN',
       };
 
-      const fetchSpy = vi.fn().mockResolvedValue({
+      const fetchSpy = stubPostFetch({
         ok: true,
         json: async () => mockBackendResponse,
       });
-      vi.stubGlobal('fetch', fetchSpy);
 
       const session = await authService.login({
         email: 'admin.backend@ifpe.edu.br',
