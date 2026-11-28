@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -37,6 +39,9 @@ class SecurityConfigurationsWebTest {
 
     @Autowired
     private WebApplicationContext webApplicationContext;
+
+    @Autowired
+    private TokenService tokenService;
 
     private MockMvc mockMvc;
 
@@ -61,6 +66,16 @@ class SecurityConfigurationsWebTest {
     }
 
     @Test
+    void rejeitaBearerInvalidoPeloSecurityFilter() throws Exception {
+        mockMvc.perform(get("/api/admin/probe")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer token-invalido"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
+
+        verify(tokenService).validarSessao("token-invalido");
+    }
+
+    @Test
     @WithMockUser(roles = "USUARIO")
     void permiteRotaAutenticadaMasBloqueiaRotaAdministrativaParaUsuarioComum() throws Exception {
         mockMvc.perform(get("/api/private"))
@@ -79,7 +94,7 @@ class SecurityConfigurationsWebTest {
 
     @Test
     @WithMockUser(roles = "USUARIO")
-    void exigeCsrfParaOperacaoDeEscritaMesmoEmRotaPublica() throws Exception {
+    void exigeCsrfParaOperacaoDeEscritaEmRotaProtegida() throws Exception {
         mockMvc.perform(post("/api/private"))
                 .andExpect(status().isForbidden());
 
@@ -100,7 +115,8 @@ class SecurityConfigurationsWebTest {
                         "strict-origin-when-cross-origin"))
                 .andExpect(header().string("Strict-Transport-Security",
                         "max-age=31536000 ; includeSubDomains"))
-                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(result -> assertNull(result.getRequest().getSession(false)));
     }
 
     @Test
