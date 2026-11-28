@@ -1,14 +1,14 @@
 ---
 name: Bug
-about: Reportar um problema ou comportamento inesperado
+about: Reportar um comportamento inesperado com evidências reproduzíveis
 title: "[BUG] "
 labels: bug
 assignees: ''
 ---
 
-## Descrição
+## Problema
 
-Descreva claramente o problema encontrado.
+Descreva o comportamento observado e o impacto para o usuário ou para o sistema.
 
 ## Como reproduzir
 
@@ -18,12 +18,25 @@ Descreva claramente o problema encontrado.
 
 ## Comportamento esperado
 
-Descreva o que deveria acontecer.
+Descreva o resultado correto.
 
 ## Comportamento atual
 
-Descreva o que está acontecendo.
+Descreva o resultado incorreto.
 
-## Informações adicionais
+## Ambiente e evidências
 
-Adicione prints, logs ou outras informações relevantes, se necessário.
+- Branch ou versão:
+- Navegador/OS:
+- Logs, prints ou links:
+
+## Critérios de aceite
+
+- [ ] A causa raiz foi identificada ou documentada como hipótese.
+- [ ] O comportamento esperado foi implementado.
+- [ ] Foi criado ou atualizado um teste de regressão.
+- [ ] A esteira CI/CD passou.
+
+## Dependências e observações
+
+Liste Issues relacionadas, riscos, migrações ou decisões pendentes.

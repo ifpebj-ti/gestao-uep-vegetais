@@ -89,3 +89,17 @@ htmlcov/
 
 # Artefatos Superpowers (planos, specs, relatórios e diretórios relacionados)
 **/*superpowers*
+
+# Ferramentas e artefatos locais (scripts, especificações, planos, evidências e mapas gerados)
+# Esta pasta é intencionalmente local e não deve ser publicada no GitHub.
+scripts/
+# Scripts executados pela CI fazem parte do contrato versionado do repositório.
+!.github/scripts/
+!.github/scripts/**
+
+# Artefatos de funcionalidades gerados pelo GitHub Spec Kit
+specs/
+
+# Instalação local do Spec Kit para o agente deste workspace
+.agents/
+.specify/

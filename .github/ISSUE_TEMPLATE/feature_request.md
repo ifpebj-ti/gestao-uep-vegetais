@@ -1,21 +1,35 @@
 ---
 name: Tarefa ou Funcionalidade
-about: Crie uma issue padronizada para o desenvolvimento do projeto
-title: "[US-XX] Título descritivo"
-labels: ''
+about: Registrar uma necessidade com resultado e critérios verificáveis
+title: "[US-XX] "
+labels: enhancement
 assignees: ''
 ---
 
-## Descrição
-Descreva de forma clara o problema, a necessidade ou a User Story (Como um... eu quero... para...).
+## Necessidade
+
+Como [tipo de usuário], quero [objetivo], para [benefício].
+
+## Contexto
+
+Explique por que esta mudança é necessária e quais partes do sistema são afetadas.
 
 ## Objetivo
-O que se espera alcançar com a resolução desta issue?
 
-## Critérios de Aceite (DoR/DoD)
+Descreva o resultado que deve existir após a entrega.
+
+## Critérios de aceite
+
 - [ ] Dado que [condição], quando [ação], então [resultado].
-- [ ] O código foi testado.
-- [ ] A funcionalidade atende ao requisito.
+- [ ] Casos de erro e estados vazios estão definidos.
+- [ ] A funcionalidade possui testes adequados.
+- [ ] A documentação afetada foi atualizada.
+- [ ] A esteira CI/CD passou.
 
-## Dependências / Observações
-Liste aqui se esta issue depende de outra para ser iniciada ou qualquer outra informação relevante.
+## Fora do escopo
+
+-
+
+## Dependências e observações
+
+Liste Issues, decisões, protótipos, migrações ou restrições relacionadas.

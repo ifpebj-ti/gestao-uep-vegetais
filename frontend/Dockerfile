@@ -37,13 +37,7 @@ COPY . .
 RUN npm run build
 
 # ---- Estágio 3: Servir com Nginx ----
-FROM nginx:stable-bookworm AS production
-
-# Atualiza os pacotes da base Debian e remove os índices da imagem final.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
+FROM nginx:stable-alpine-slim AS production
 
 # Remova a configuração padrão do Nginx
 RUN rm /etc/nginx/conf.d/default.conf
