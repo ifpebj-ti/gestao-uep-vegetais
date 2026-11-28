@@ -2,6 +2,7 @@ package com.gestao.uep.services;
 
 import com.gestao.uep.domain.canteiro.Canteiro;
 import com.gestao.uep.domain.canteiro.CanteiroRepository;
+import com.gestao.uep.domain.canteiro.CanteiroResponsavel;
 import com.gestao.uep.domain.canteiro.CanteiroResponsavelRepository;
 import com.gestao.uep.domain.canteiro.AlteracaoFichaCampo;
 import com.gestao.uep.domain.canteiro.FichaCampo;
@@ -9,7 +10,9 @@ import com.gestao.uep.domain.canteiro.FichaCampoRepository;
 import com.gestao.uep.domain.canteiro.HistoricoFichaCampo;
 import com.gestao.uep.domain.canteiro.HistoricoFichaCampoRepository;
 import com.gestao.uep.domain.canteiro.dto.AtualizarFichaCampoDTO;
+import com.gestao.uep.domain.canteiro.dto.AlunoResumoDTO;
 import com.gestao.uep.domain.canteiro.dto.HistoricoFichaCampoDTO;
+import com.gestao.uep.domain.canteiro.dto.ResponsaveisDTO;
 import com.gestao.uep.domain.usuario.Usuario;
 import com.gestao.uep.domain.usuario.UsuarioRepository;
 import com.gestao.uep.domain.usuario.UsuarioRole;
@@ -38,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,7 +67,7 @@ class CanteiroServiceTest {
         service = new CanteiroService(canteiroRepository, responsavelRepository, fichaRepository,
                 usuarioRepository, authorizationService, previsaoColheitaService,
                 historicoService, historicoRepository);
-        when(canteiroRepository.findById("canteiro-01")).thenReturn(Optional.of(canteiro));
+        lenient().when(canteiroRepository.findById("canteiro-01")).thenReturn(Optional.of(canteiro));
     }
 
     @Test
@@ -169,6 +173,137 @@ class CanteiroServiceTest {
         assertThatThrownBy(() -> service.buscarHistorico("canteiro-01", aluno))
                 .isInstanceOf(AccessDeniedException.class);
         verify(historicoRepository, never()).findAllByCanteiroIdOrderByDataHoraDesc(any());
+    }
+
+    @Test
+    void professorListaCanteirosComFichaEEquipeAusentes() {
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        when(authorizationService.eProfessor(professor)).thenReturn(true);
+        when(canteiroRepository.findAllByOrderByCodigoAsc()).thenReturn(List.of(canteiro));
+        when(fichaRepository.findAllByCanteiroIdIn(List.of("canteiro-01"))).thenReturn(List.of());
+        when(responsavelRepository.findAllByCanteiroIdsWithUsuarios(List.of("canteiro-01")))
+                .thenReturn(List.of());
+
+        var resultado = service.listar(professor);
+
+        assertThat(resultado).singleElement()
+                .satisfies(resumo -> {
+                    assertThat(resumo.codigo()).isEqualTo("C01");
+                    assertThat(resumo.statusCiclo()).isEqualTo("Vazio");
+                    assertThat(resumo.responsaveis()).isEmpty();
+                });
+        verify(canteiroRepository).findAllByOrderByCodigoAsc();
+    }
+
+    @Test
+    void alunoListaSomenteSeusCanteirosEmOrdemDeCodigo() {
+        Canteiro segundo = new Canteiro("canteiro-02", "C02", "Canteiro 02");
+        UUID alunoId = UUID.randomUUID();
+        Usuario aluno = new Usuario(alunoId, "Beto", "beto@uep.br", "hash", null,
+                UsuarioRole.ALUNO, true);
+        when(responsavelRepository.findCanteiroIdsByUsuarioId(alunoId))
+                .thenReturn(List.of("canteiro-02", "canteiro-01"));
+        when(canteiroRepository.findAllById(List.of("canteiro-02", "canteiro-01")))
+                .thenReturn(new java.util.ArrayList<>(List.of(segundo, canteiro)));
+        when(fichaRepository.findAllByCanteiroIdIn(List.of("canteiro-01", "canteiro-02")))
+                .thenReturn(List.of());
+        when(responsavelRepository.findAllByCanteiroIdsWithUsuarios(List.of("canteiro-01", "canteiro-02")))
+                .thenReturn(List.of());
+
+        var resultado = service.listar(aluno);
+
+        assertThat(resultado).extracting(resumo -> resumo.codigo())
+                .containsExactly("C01", "C02");
+        verify(responsavelRepository).findCanteiroIdsByUsuarioId(alunoId);
+    }
+
+    @Test
+    void usuarioSemPerfilAdministrativoNaoRecebeCanteiros() {
+        assertThat(service.listar(null)).isEmpty();
+
+        verify(canteiroRepository, never()).findAllByOrderByCodigoAsc();
+        verify(responsavelRepository, never()).findCanteiroIdsByUsuarioId(any());
+    }
+
+    @Test
+    void fichaAusenteRetornaContratoComValoresPadraoDoCanteiro() {
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        when(fichaRepository.findByCanteiroId("canteiro-01")).thenReturn(Optional.empty());
+
+        var ficha = service.buscarFicha("canteiro-01", professor);
+
+        assertThat(ficha.canteiroCodigo()).isEqualTo("C01");
+        assertThat(ficha.statusEntrega()).isEqualTo("pendente");
+        assertThat(ficha.vistoAssinado()).isFalse();
+        verify(authorizationService).exigirLeitura("canteiro-01", professor);
+    }
+
+    @Test
+    void professorSubstituiResponsaveisValidandoPapelEOrdem() {
+        UUID primeiroId = UUID.randomUUID();
+        UUID segundoId = UUID.randomUUID();
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        Usuario primeiro = new Usuario(primeiroId, "Beto", "beto@uep.br", "hash", null,
+                UsuarioRole.ALUNO, true);
+        Usuario segundo = new Usuario(segundoId, "Caio", "caio@uep.br", "hash", null,
+                UsuarioRole.ALUNO, true);
+        when(usuarioRepository.findById(primeiroId)).thenReturn(Optional.of(primeiro));
+        when(usuarioRepository.findById(segundoId)).thenReturn(Optional.of(segundo));
+
+        service.substituirResponsaveis("canteiro-01",
+                new ResponsaveisDTO(List.of(primeiroId, segundoId)), professor);
+
+        ArgumentCaptor<CanteiroResponsavel> captor = ArgumentCaptor.forClass(CanteiroResponsavel.class);
+        verify(responsavelRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).extracting(CanteiroResponsavel::getUsuario)
+                .containsExactly(primeiro, segundo);
+        assertThat(captor.getAllValues()).extracting(CanteiroResponsavel::getOrdem)
+                .containsExactly((short) 1, (short) 2);
+        verify(responsavelRepository).deleteByCanteiroId("canteiro-01");
+        verify(responsavelRepository).flush();
+    }
+
+    @Test
+    void rejeitaMaisDeTresResponsaveisSemAlterarVinculos() {
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        List<UUID> ids = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> service.substituirResponsaveis("canteiro-01",
+                new ResponsaveisDTO(ids), professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Um canteiro deve possuir de zero a tres alunos sem duplicidade");
+
+        verify(responsavelRepository, never()).deleteByCanteiroId(any());
+    }
+
+    @Test
+    void rejeitaUsuarioQueNaoEAlunoComoResponsavel() {
+        UUID professorId = UUID.randomUUID();
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        Usuario outroProfessor = new Usuario(professorId, "Bruno", "bruno@uep.br", "hash", null,
+                UsuarioRole.PROFESSOR, true);
+        when(usuarioRepository.findById(professorId)).thenReturn(Optional.of(outroProfessor));
+
+        assertThatThrownBy(() -> service.substituirResponsaveis("canteiro-01",
+                new ResponsaveisDTO(List.of(professorId)), professor))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Somente usuarios com papel ALUNO podem ser responsaveis");
+
+        verify(responsavelRepository, never()).deleteByCanteiroId(any());
+    }
+
+    @Test
+    void listaAlunosExigeProfessorEMapeiaDadosPublicos() {
+        UUID alunoId = UUID.randomUUID();
+        Usuario professor = new Usuario("Ana", "ana@uep.br", "hash", UsuarioRole.PROFESSOR);
+        Usuario aluno = new Usuario(alunoId, "Beto", "beto@uep.br", "hash", null,
+                UsuarioRole.ALUNO, true);
+        when(usuarioRepository.findAllByRoleOrderByNome(UsuarioRole.ALUNO)).thenReturn(List.of(aluno));
+
+        List<AlunoResumoDTO> resultado = service.listarAlunos(professor);
+
+        assertThat(resultado).containsExactly(new AlunoResumoDTO(alunoId, "Beto", "beto@uep.br"));
+        verify(authorizationService).exigirProfessor(professor);
     }
 
     private HistoricoFichaCampo evento(Instant instante, String valorNovo) {
