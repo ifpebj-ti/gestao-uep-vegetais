@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -40,6 +40,13 @@ export const TurmasProfessorPage: React.FC = () => {
   const [nomeTurma, setNomeTurma] = useState('');
   const [canteirosSelecionados, setCanteirosSelecionados] = useState<string[]>(['c-01', 'c-02', 'c-18']);
   const [copiadoId, setCopiadoId] = useState<string | null>(null);
+  const copiadoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiadoTimerRef.current) clearTimeout(copiadoTimerRef.current);
+    };
+  }, []);
   const [erro, setErro] = useState<string | null>(null);
 
   const handleExcluirTurma = (id: string) => {
@@ -51,7 +58,8 @@ export const TurmasProfessorPage: React.FC = () => {
   const handleCopiarCodigo = (codigo: string, id: string) => {
     navigator.clipboard.writeText(codigo);
     setCopiadoId(id);
-    setTimeout(() => setCopiadoId(null), 2500);
+    if (copiadoTimerRef.current) clearTimeout(copiadoTimerRef.current);
+    copiadoTimerRef.current = setTimeout(() => setCopiadoId(null), 2500);
   };
 
   const handleToggleCanteiro = (canteiroId: string) => {

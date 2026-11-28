@@ -81,7 +81,7 @@ export const apiClient = {
         throw new ApiError('Sessão expirada. Por favor, autentique-se novamente.', 401);
       }
 
-      // 403 Forbidden: 
+      // 403 Forbidden:
       // Exceção: no endpoint /auth/me, 403 significa rejeição da autenticação/assinatura pelo Spring Security
       if (response.status === 403 && !skipAuth) {
         if (isAuthMeEndpoint(fullUrl)) {

@@ -24,13 +24,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
-    const currentRequestId = ++authRequestIdRef.current;
+    const currentRequestId = authService.nextRequestId();
+    authRequestIdRef.current = currentRequestId;
 
     const initializeAuth = async () => {
       try {
         const activeSession = authService.getSession();
         if (activeSession && activeSession.token) {
-          const validated = await authService.validarSessaoAtiva(activeSession, controller.signal);
+          const validated = await authService.validarSessaoAtiva(activeSession, {
+            signal: controller.signal,
+            requestId: currentRequestId,
+            isCurrent: () => isMounted && currentRequestId === authRequestIdRef.current,
+            persist: true,
+          });
           if (isMounted && currentRequestId === authRequestIdRef.current) {
             setUser(validated);
           }
@@ -66,14 +72,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (credentials: LoginCredentials): Promise<UserSession> => {
-    const currentRequestId = ++authRequestIdRef.current;
+    const currentRequestId = authService.nextRequestId();
+    authRequestIdRef.current = currentRequestId;
     setIsLoading(true);
     try {
+      // 1. Autenticação de credenciais via POST /api/auth/login
       const session = await authService.login(credentials);
-      if (currentRequestId === authRequestIdRef.current) {
-        setUser(session);
+
+      // Verificação do identificador de requisição após a chamada assíncrona inicial
+      if (currentRequestId !== authRequestIdRef.current) {
+        throw new Error('Operação de autenticação cancelada ou substituída.');
       }
-      return session;
+
+      // 2. Validação ativa obrigatória do token contra o endpoint autoritativo GET /api/auth/me
+      const validated = await authService.validarSessaoAtiva(session, {
+        requestId: currentRequestId,
+        isCurrent: () => currentRequestId === authRequestIdRef.current,
+        persist: true,
+      });
+
+      // Verificação do identificador de requisição após a validação autoritativa
+      if (currentRequestId !== authRequestIdRef.current) {
+        throw new Error('Operação de autenticação cancelada ou substituída.');
+      }
+
+      if (!validated) {
+        authService.logout();
+        throw new Error('Não foi possível validar o perfil autoritativo do usuário junto ao servidor.');
+      }
+
+      // 3. Somente preenche o estado user após confirmação do perfil pelo backend
+      setUser(validated);
+      return validated;
     } finally {
       if (currentRequestId === authRequestIdRef.current) {
         setIsLoading(false);
@@ -82,14 +112,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const loginWithGoogle = async (credential: string): Promise<UserSession> => {
-    const currentRequestId = ++authRequestIdRef.current;
+    const currentRequestId = authService.nextRequestId();
+    authRequestIdRef.current = currentRequestId;
     setIsLoading(true);
     try {
+      // 1. Autenticação de credencial via POST /api/auth/login/google
       const session = await authService.loginWithGoogle(credential);
-      if (currentRequestId === authRequestIdRef.current) {
-        setUser(session);
+
+      // Verificação do identificador de requisição após a chamada assíncrona inicial
+      if (currentRequestId !== authRequestIdRef.current) {
+        throw new Error('Operação de autenticação cancelada ou substituída.');
       }
-      return session;
+
+      // 2. Validação ativa obrigatória do token contra o endpoint autoritativo GET /api/auth/me
+      const validated = await authService.validarSessaoAtiva(session, {
+        requestId: currentRequestId,
+        isCurrent: () => currentRequestId === authRequestIdRef.current,
+        persist: true,
+      });
+
+      // Verificação do identificador de requisição após a validação autoritativa
+      if (currentRequestId !== authRequestIdRef.current) {
+        throw new Error('Operação de autenticação cancelada ou substituída.');
+      }
+
+      if (!validated) {
+        authService.logout();
+        throw new Error('Não foi possível validar o perfil autoritativo da conta Google junto ao servidor.');
+      }
+
+      // 3. Somente preenche o estado user após confirmação do perfil pelo backend
+      setUser(validated);
+      return validated;
     } finally {
       if (currentRequestId === authRequestIdRef.current) {
         setIsLoading(false);
@@ -108,7 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: Boolean(user?.token),
+        isAuthenticated: Boolean(user && user.token && user.role),
         isLoading,
         login,
         loginWithGoogle,

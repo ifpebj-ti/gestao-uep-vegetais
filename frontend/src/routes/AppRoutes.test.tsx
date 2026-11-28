@@ -8,6 +8,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 vi.mock('../modules/olericultura/components/TerrariumMap', () => ({
   TerrariumMap: () => <div data-testid="terrarium-map-mock">Mapa 3D Mock</div>,
 }));
+vi.mock('../modules/fruticultura/components/PomarMap', () => ({
+  PomarMap: () => <div data-testid="pomar-map-mock">Pomar 3D Mock</div>,
+}));
 
 describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () => {
   beforeEach(() => {
@@ -89,6 +92,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
         nome: 'Estudante IFPE',
         email: 'aluno@discente.ifpe.edu.br',
         role: 'ALUNO',
+        uep: 'olericultura',
       },
       isAuthenticated: true,
       isLoading: false,
@@ -112,6 +116,7 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
         nome: 'Prof George',
         email: 'george@belojardim.ifpe.edu.br',
         role: 'PROFESSOR',
+        uep: 'olericultura',
       },
       isAuthenticated: true,
       isLoading: false,
@@ -196,5 +201,101 @@ describe('AppRoutes - Verificação da Arquitetura de Rotas e Permissões', () =
 
     expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
     expect(screen.getByText(/PROFESSOR \(Olericultura\)/)).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve bloquear Aluno de Olericultura ao tentar acessar rota de Fruticultura (/fruticultura/aluno/pomar)', async () => {
+    window.history.pushState({}, '', '/fruticultura/aluno/pomar');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-aluno-oleri',
+        nome: 'Aluno Olericultura',
+        email: 'aluno.oleri@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: 'olericultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/ALUNO \(Olericultura\)/)).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve bloquear Aluno de Fruticultura ao tentar acessar rota de Olericultura (/olericultura/aluno/mapa)', async () => {
+    window.history.pushState({}, '', '/olericultura/aluno/mapa');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-aluno-fruti',
+        nome: 'Aluno Fruticultura',
+        email: 'aluno.fruti@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: 'fruticultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/ALUNO \(Fruticultura\)/)).toBeInTheDocument();
+  });
+
+  it('SEGURANÇA: deve permitir acesso de Aluno de Fruticultura à rota de Fruticultura (/fruticultura/aluno/pomar)', async () => {
+    window.history.pushState({}, '', '/fruticultura/aluno/pomar');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-aluno-fruti',
+        nome: 'Aluno Fruticultura',
+        email: 'aluno.fruti@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: 'fruticultura',
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByTestId('pomar-map-mock', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByText('Permissão Insuficiente')).not.toBeInTheDocument();
+  });
+
+  it('SEGURANÇA (Fail-Closed): deve bloquear Aluno sem UEP atribuída ao tentar acessar rota de Olericultura', async () => {
+    window.history.pushState({}, '', '/olericultura/aluno/mapa');
+
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: {
+        token: 'token-aluno-sem-uep',
+        nome: 'Aluno Sem UEP',
+        email: 'aluno@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: undefined,
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      login: vi.fn(),
+      loginWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    renderAppRoutes();
+
+    expect(await screen.findByText('Permissão Insuficiente')).toBeInTheDocument();
+    expect(screen.getByText(/ALUNO \(Não confirmada\)/)).toBeInTheDocument();
   });
 });

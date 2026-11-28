@@ -33,7 +33,10 @@ export const TurmaDetalheProfessorPage: React.FC = () => {
   const [modalExcluirTurma, setModalExcluirTurma] = useState(false);
   const [alunoParaDesvincular, setAlunoParaDesvincular] = useState<AlunoTurmaResumo | null>(null);
 
-  // Verificação de Autorização e Propriedade (AppSec Hardening contra BOLA / IDOR)
+  // Verificação defensiva de propriedade no frontend (UX e mitigação contra exposição acidental).
+  // NOTA DE SEGURANÇA APPSEC: O localStorage NÃO é fronteira de segurança e esta verificação
+  // client-side NÃO substitui a autorização definitiva no backend (BOLA/IDOR).
+  // A proteção mandatória de criação, leitura, alteração e exclusão compete aos endpoints REST do backend.
   const isOwner = Boolean(
     user &&
     (user.role === 'ADMIN' ||

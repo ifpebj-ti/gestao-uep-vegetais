@@ -180,4 +180,3 @@ export const PomarMenu: React.FC<PomarMenuProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
-

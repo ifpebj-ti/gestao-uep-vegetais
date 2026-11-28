@@ -201,6 +201,12 @@ export const turmaService = {
     return turmas.find((t) => t.id === id) || null;
   },
 
+  /**
+   * Exclusão de turma com verificação defensiva de solicitante.
+   * NOTA DE SEGURANÇA: Esta checagem client-side protege a interface contra exclusão indevida,
+   * mas o controle autoritativo de BOLA/IDOR deve ser implementado no backend quando a API
+   * de turmas for disponibilizada pelo servidor.
+   */
   excluirTurma(turmaId: string, solicitanteEmail?: string): void {
     const turma = this.buscarTurmaPorId(turmaId);
     if (!turma) return;

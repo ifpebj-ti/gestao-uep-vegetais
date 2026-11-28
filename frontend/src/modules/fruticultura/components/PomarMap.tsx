@@ -899,7 +899,7 @@ function criarPlanta(
       break;
     }
     case 'coco': {
-      // Coqueiro 
+      // Coqueiro
       const tronco = new THREE.Mesh(UNIT_CYLINDER, mats.tronco);
       tronco.scale.set(0.14, 3.4, 0.14);
       tronco.position.y = 1.7;

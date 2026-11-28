@@ -34,6 +34,7 @@ export interface JwtPayload {
   role?: string;
   nome?: string;
   exp?: number;
+  uep?: string;
 }
 
 /**
@@ -110,12 +111,21 @@ export function validateAndSanitizeSession(session: UserSession | null): UserSes
       return null; // E-mail ausente no token e na sessão
     }
 
+    // SEGURANÇA APPSEC:
+    // A UEP autoritativa provém exclusivamente de claim assinada no JWT (payload.uep).
+    // NUNCA utilizar session.uep proveniente do storage do navegador como fonte de autorização.
+    const rawUep = typeof payload.uep === 'string' ? payload.uep.toLowerCase().trim() : '';
+    const authoritativeUep =
+      rawUep === 'olericultura' || rawUep === 'fruticultura'
+        ? (rawUep as 'olericultura' | 'fruticultura')
+        : undefined;
+
     return {
-      ...session,
       token,
       role: authoritativeRole,
       email: authoritativeEmail,
       nome: payload.nome || session.nome || 'Usuário',
+      uep: authoritativeUep,
     };
   }
 
@@ -127,11 +137,37 @@ export function validateAndSanitizeSession(session: UserSession | null): UserSes
   return null;
 }
 
+export interface AuthOperationOptions {
+  requestId?: number;
+  isCurrent?: () => boolean;
+  persist?: boolean;
+}
+
+export interface ValidarSessaoOptions extends AuthOperationOptions {
+  signal?: AbortSignal;
+}
+
 const STORAGE_KEY = APP_CONFIG.storageKeys.session;
 
 export const authService = {
+  currentRequestId: 0,
+
+  nextRequestId(): number {
+    return ++this.currentRequestId;
+  },
+
+  isCurrentRequest(requestId?: number): boolean {
+    if (requestId === undefined) return true;
+    return this.currentRequestId === requestId;
+  },
+
+  invalidateRequests(): void {
+    this.currentRequestId++;
+  },
+
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     const { email, senha, rememberMe = false } = credentials;
+    const reqId = this.currentRequestId;
 
     let response: Response;
     try {
@@ -164,7 +200,10 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    this.saveSession(data, rememberMe);
+
+    if (this.isCurrentRequest(reqId)) {
+      this.saveSession(data, rememberMe, { requestId: reqId });
+    }
     return data;
   },
 
@@ -172,6 +211,8 @@ export const authService = {
     credential: string,
     rememberMe = false
   ): Promise<LoginResponse> {
+    const reqId = this.currentRequestId;
+
     let response: Response;
     try {
       response = await fetchApi(`${APP_CONFIG.apiBaseUrl}/auth/login/google`, {
@@ -205,7 +246,10 @@ export const authService = {
     }
 
     const data: LoginResponse = await response.json();
-    this.saveSession(data, rememberMe);
+
+    if (this.isCurrentRequest(reqId)) {
+      this.saveSession(data, rememberMe, { requestId: reqId });
+    }
     return data;
   },
 
@@ -317,17 +361,65 @@ export const authService = {
     };
   },
 
-  saveSession(session: UserSession, rememberMe = false): void {
-    const sanitized = validateAndSanitizeSession(session);
-    if (!sanitized) {
+  saveSession(
+    session: UserSession,
+    rememberMe = false,
+    options?: AuthOperationOptions
+  ): void {
+    if (options) {
+      if (options.isCurrent && !options.isCurrent()) {
+        return;
+      }
+      if (options.requestId !== undefined && !this.isCurrentRequest(options.requestId)) {
+        return;
+      }
+    }
+
+    if (!session || !session.token || typeof session.token !== 'string' || !session.token.trim()) {
       throw new Error('Sessão inválida para armazenamento.');
     }
+
+    const token = session.token.trim();
+    const validRoles = ['ADMIN', 'PROFESSOR', 'ALUNO', 'USUARIO'];
+
+    if (token.includes('.')) {
+      const payload = parseJwtPayload(token);
+      if (!payload || (payload.exp && Date.now() >= payload.exp * 1000)) {
+        throw new Error('Token expirado ou malformado.');
+      }
+      const rawRole =
+        typeof session.role === 'string'
+          ? session.role.toUpperCase().trim()
+          : (payload.role ? payload.role.toUpperCase().trim() : '');
+      if (!rawRole || !validRoles.includes(rawRole)) {
+        throw new Error('Sessão inválida para armazenamento.');
+      }
+    }
+
+    const role =
+      typeof session.role === 'string' && validRoles.includes(session.role.toUpperCase().trim())
+        ? (session.role.toUpperCase().trim() as UserSession['role'])
+        : undefined;
+
+    const validUeps = ['olericultura', 'fruticultura'];
+    const uep =
+      typeof session.uep === 'string' && validUeps.includes(session.uep.toLowerCase().trim())
+        ? (session.uep.toLowerCase().trim() as 'olericultura' | 'fruticultura')
+        : undefined;
+
+    const validated: UserSession = {
+      token,
+      nome: typeof session.nome === 'string' && session.nome.trim() ? session.nome.trim() : 'Usuário',
+      email: typeof session.email === 'string' ? session.email.trim() : '',
+      role,
+      uep,
+    };
 
     sessionStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_KEY);
 
     const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    storage.setItem(STORAGE_KEY, JSON.stringify(validated));
   },
 
   getSession(): UserSession | null {
@@ -345,11 +437,12 @@ export const authService = {
         return null;
       }
 
-      // Se houve tentativa de manipulação (ex: role/email alterados no storage),
+      // Se houve tentativa de manipulação (ex: role/email/uep alterados no storage),
       // sincroniza o storage com os dados íntegros e autorizados
       if (
         rawSession.role !== validated.role ||
         rawSession.email !== validated.email ||
+        rawSession.uep !== validated.uep ||
         rawSession.token !== validated.token
       ) {
         const storage = localStorage.getItem(STORAGE_KEY) ? localStorage : sessionStorage;
@@ -374,8 +467,21 @@ export const authService = {
    */
   async validarSessaoAtiva(
     session: UserSession | null,
-    signal?: AbortSignal
+    signalOrOptions?: AbortSignal | ValidarSessaoOptions
   ): Promise<UserSession | null> {
+    const opts: ValidarSessaoOptions =
+      signalOrOptions instanceof AbortSignal
+        ? { signal: signalOrOptions }
+        : signalOrOptions ?? {};
+
+    const signal = opts.signal;
+
+    const isStillActive = () => {
+      if (opts.isCurrent && !opts.isCurrent()) return false;
+      if (opts.requestId !== undefined && !this.isCurrentRequest(opts.requestId)) return false;
+      return true;
+    };
+
     if (!session || !session.token) {
       this.logout();
       return null;
@@ -403,38 +509,67 @@ export const authService = {
       // 200 OK: Endpoint /auth/me respondeu com o perfil do usuário
       if (response.ok) {
         const perfilBackend = await response.json().catch(() => null);
-        if (!perfilBackend || !perfilBackend.role) {
+        if (!perfilBackend || typeof perfilBackend !== 'object') {
           this.logout();
           return null;
         }
+
+        // Validação estrita do papel (role) retornado pelo backend
+        const validRoles = ['ADMIN', 'PROFESSOR', 'ALUNO', 'USUARIO'];
+        const rawRole = typeof perfilBackend.role === 'string' ? perfilBackend.role.toUpperCase().trim() : '';
+        if (!rawRole || !validRoles.includes(rawRole)) {
+          this.logout();
+          return null;
+        }
+
+        // Validação estrita do e-mail retornado pelo backend (sem fallback para storage local)
+        const rawEmail = typeof perfilBackend.email === 'string' ? perfilBackend.email.trim() : '';
+        if (!rawEmail || !rawEmail.includes('@')) {
+          this.logout();
+          return null;
+        }
+
+        // Validação estrita da UEP retornada pelo backend (sem fallback para storage local)
+        const rawUep = typeof perfilBackend.uep === 'string' ? perfilBackend.uep.toLowerCase().trim() : '';
+        const validUeps = ['olericultura', 'fruticultura'];
+        const authoritativeUep = validUeps.includes(rawUep)
+          ? (rawUep as 'olericultura' | 'fruticultura')
+          : undefined;
+
         const updated: UserSession = {
-          ...session,
-          nome: perfilBackend.nome || session.nome,
-          email: perfilBackend.email || session.email,
-          role: perfilBackend.role,
-          uep: perfilBackend.uep || session.uep,
+          token,
+          nome: typeof perfilBackend.nome === 'string' && perfilBackend.nome.trim()
+            ? perfilBackend.nome.trim()
+            : 'Usuário',
+          email: rawEmail,
+          role: rawRole as UserSession['role'],
+          uep: authoritativeUep,
         };
-        this.saveSession(updated);
+
+        if (!isStillActive()) {
+          return null;
+        }
+
+        if (opts.persist !== false) {
+          this.saveSession(updated, false, opts);
+        }
         return updated;
       }
 
-      // 404 Not Found: O backend Spring Boot ainda não implementou o endpoint GET /api/auth/me.
-      // ADVERTÊNCIA DE SEGURANÇA (AppSec Hardening):
-      // 1. Um status 404 NÃO constitui validação criptográfica de identidade.
-      // 2. Não conceder novos privilégios ou alterar permissões com base no 404.
-      // 3. Em modo de compatibilidade com o backend atual em desenvolvimento, aceita-se a
-      //    sessão exclusivamente se ela já tiver sido estritamente sanitizada por
-      //    validateAndSanitizeSession() (que valida claims, expiração e integridade estrutural).
-      // 4. Assim que o backend implementar GET /api/auth/me retornando 200 OK com os dados do usuário,
-      //    este fallback temporário deve ser descontinuado.
+      // 404 Not Found: O backend ainda não implementou o endpoint GET /api/auth/me.
+      // SEGURANÇA APPSEC (Fail-Closed):
+      // 1. Resposta 404 do endpoint de identidade NUNCA permite aceitar sessão local.
+      // 2. Não confiar em informações de UEP ou privilégios gravados no navegador.
+      // 3. Expurga a sessão e nega acesso às rotas protegidas.
       if (response.status === 404) {
         if (import.meta.env.DEV) {
           console.warn(
-            '[AppSec Compatibility] Endpoint GET /api/auth/me não implementado pelo backend (404 Not Found). ' +
-              'Operando em modo de transição. Sessão mantida conforme claims previamente sanitizadas.'
+            '[AppSec Fail-Closed] Endpoint GET /api/auth/me retornou 404 Not Found. ' +
+              'Sessão local rejeitada por ausência de validação autoritativa.'
           );
         }
-        return session;
+        this.logout();
+        return null;
       }
 
       this.logout();
@@ -443,12 +578,18 @@ export const authService = {
       if (err instanceof Error && err.name === 'AbortError') {
         throw err;
       }
-      // Falha de rede: não concede privilégios a sessões não verificadas (fail-closed)
+      // SEGURANÇA APPSEC — DECISÃO DE TRATAMENTO DE FALHA DE REDE:
+      // Falha de rede temporária/offline difere de token comprovadamente inválido (401/403/404).
+      // 1. Não confunde erro de rede com token inválido (não deleta sumariamente o storage).
+      // 2. Comportamento fail-closed estrito: retorna null, garantindo que o estado React
+      //    permaneça não-autenticado (user = null) e impedindo qualquer acesso a rotas protegidas.
+      // 3. Nenhuma informação de role, e-mail ou UEP local é utilizada para conceder privilégios.
       return null;
     }
   },
 
   logout(): void {
+    this.invalidateRequests();
     // 1. Remove chaves de autenticação do usuário
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(STORAGE_KEY);

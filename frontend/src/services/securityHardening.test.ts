@@ -226,6 +226,7 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
     const backendUuidJwt = buildJwt({
       sub: '550e8400-e29b-41d4-a716-446655440000',
       role: 'PROFESSOR',
+      uep: 'olericultura',
       nome: 'Prof George',
       exp: Math.floor(Date.now() / 1000) + 3600,
     });
@@ -243,6 +244,90 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
     expect(session?.email).toBe('george@belojardim.ifpe.edu.br');
     expect(session?.role).toBe('PROFESSOR');
     expect(session?.uep).toBe('olericultura');
+  });
+
+  it('9.2. UEP adulterada no localStorage é descartada quando divergente do JWT assinado', () => {
+    const backendUuidJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+      nome: 'Prof George',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    // Invasor adultera o localStorage injetando "uep": "fruticultura"
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: backendUuidJwt,
+        nome: 'Prof George',
+        email: 'george@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'fruticultura', // tentativa de manipulação
+      })
+    );
+
+    const session = authService.getSession();
+    expect(session).not.toBeNull();
+    // A UEP deve ser a do JWT ('olericultura'), e o storage deve ser higienizado
+    expect(session?.uep).toBe('olericultura');
+
+    const storageRaw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    expect(storageRaw.uep).toBe('olericultura');
+  });
+
+  it('9.3. Sessão com JWT sem claim de UEP resulta em uep undefined (fail-closed, sem fallback para storage)', () => {
+    const jwtSemUep = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'ALUNO',
+      nome: 'Aluno Teste',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: jwtSemUep,
+        nome: 'Aluno Teste',
+        email: 'aluno@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: 'olericultura', // valor injetado no storage sem respaldo no token
+      })
+    );
+
+    const session = authService.getSession();
+    expect(session).not.toBeNull();
+    // A UEP NÃO pode ser aceita do storage local
+    expect(session?.uep).toBeUndefined();
+  });
+
+  it('9.4. Tentativa de adulteração da UEP no sessionStorage é descartada e higienizada', () => {
+    const backendUuidJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'ALUNO',
+      nome: 'Aluno Teste',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    // Invasor adultera o sessionStorage injetando "uep": "fruticultura"
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: backendUuidJwt,
+        nome: 'Aluno Teste',
+        email: 'aluno@discente.ifpe.edu.br',
+        role: 'ALUNO',
+        uep: 'fruticultura', // tentativa de manipulação no sessionStorage
+      })
+    );
+
+    const session = authService.getSession();
+    expect(session).not.toBeNull();
+    // UEP não é aceita do sessionStorage
+    expect(session?.uep).toBeUndefined();
+
+    const sessionRaw = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
+    expect(sessionRaw.uep).toBeUndefined();
   });
 
   it('10. Logout seguido de novo acesso deve retornar nulo', () => {
@@ -350,5 +435,166 @@ describe('AppSec Hardening — Testes de Auditoria Independente', () => {
         ).toBe(false);
       }
     }
+  });
+
+  it('14. Resposta 404 de /api/auth/me expurga a sessão e mantém fail-closed (não aceita sessão local)', async () => {
+    const session: UserSession = {
+      token: buildJwt({ sub: 'prof@ifpe.edu.br', role: 'PROFESSOR', uep: 'olericultura', exp: Math.floor(Date.now() / 1000) + 3600 }),
+      nome: 'Professor',
+      email: 'prof@ifpe.edu.br',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+    };
+    authService.saveSession(session);
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+      })
+    );
+
+    const validada = await authService.validarSessaoAtiva(session);
+    expect(validada).toBeNull();
+    // Sessão deve ter sido expurgada para garantir fail-closed
+    expect(authService.getSession()).toBeNull();
+  });
+
+  it('15. Recarregar a aplicação não restaura uma UEP adulterada no storage', () => {
+    const validJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+      nome: 'Prof George',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    // Simula adulteração no localStorage antes do reload
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: validJwt,
+        nome: 'Prof George',
+        email: 'george@belojardim.ifpe.edu.br',
+        role: 'PROFESSOR',
+        uep: 'fruticultura', // Atacante adulterou para tentar acessar Fruticultura
+      })
+    );
+
+    // Na inicialização da aplicação (reload), getSession() sanitiza contra o token assinado
+    const restoredSession = authService.getSession();
+    expect(restoredSession).not.toBeNull();
+    // A UEP restaurada é estritamente a do JWT assinado ('olericultura')
+    expect(restoredSession?.uep).toBe('olericultura');
+
+    // O storage é reparado
+    const storageAtualizado = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    expect(storageAtualizado.uep).toBe('olericultura');
+  });
+
+  it('16. Alteração de e-mail no storage não altera a identidade validada pelo backend', async () => {
+    const validJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'ALUNO',
+      uep: 'olericultura',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    const tamperedSession: UserSession = {
+      token: validJwt,
+      nome: 'Aluno Manipulador',
+      email: 'admin.falso@belojardim.ifpe.edu.br', // e-mail adulterado no cliente
+      role: 'ALUNO',
+      uep: 'olericultura',
+    };
+
+    // Backend retorna o e-mail real autenticado
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          email: 'aluno.real@discente.ifpe.edu.br',
+          nome: 'Aluno Real',
+          role: 'ALUNO',
+          uep: 'olericultura',
+        }),
+      })
+    );
+
+    const validada = await authService.validarSessaoAtiva(tamperedSession);
+    expect(validada).not.toBeNull();
+    // Prevalece exclusivamente o e-mail do backend
+    expect(validada?.email).toBe('aluno.real@discente.ifpe.edu.br');
+  });
+
+  it('17. Resposta incompleta do /auth/me (sem role ou sem email) é rejeitada com fail-closed', async () => {
+    const validJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    const session: UserSession = {
+      token: validJwt,
+      nome: 'Professor',
+      email: 'prof@ifpe.edu.br',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+    };
+    authService.saveSession(session);
+
+    // Backend responde 200 mas sem campo de role
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          email: 'prof@ifpe.edu.br',
+          nome: 'Professor',
+          // sem role!
+        }),
+      })
+    );
+
+    const validada = await authService.validarSessaoAtiva(session);
+    expect(validada).toBeNull();
+    expect(authService.getSession()).toBeNull();
+  });
+
+  it('18. Token sem perfil válido no backend (retorno nulo ou vazio) não libera acesso', async () => {
+    const validJwt = buildJwt({
+      sub: '550e8400-e29b-41d4-a716-446655440000',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    const session: UserSession = {
+      token: validJwt,
+      nome: 'Professor',
+      email: 'prof@ifpe.edu.br',
+      role: 'PROFESSOR',
+      uep: 'olericultura',
+    };
+    authService.saveSession(session);
+
+    // Backend responde com JSON vazio
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => null,
+      })
+    );
+
+    const validada = await authService.validarSessaoAtiva(session);
+    expect(validada).toBeNull();
+    expect(authService.getSession()).toBeNull();
   });
 });

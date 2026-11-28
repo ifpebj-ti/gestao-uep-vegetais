@@ -114,13 +114,17 @@ export default function AppRoutes() {
                 />
               </Route>
 
-              {/* Rotas Protegidas - Perfil Aluno */}
-              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} />}>
+              {/* Rotas Protegidas - Perfil Aluno (Olericultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} allowedUep={['olericultura']} />}>
                 <Route path="/olericultura/aluno/mapa" element={<AlunoMapaPage />} />
                 <Route path="/olericultura/aluno/canteiro/:id" element={<AlunoCanteiroDetailPage />} />
                 <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />
+              </Route>
+
+              {/* Rotas Protegidas - Perfil Aluno (Fruticultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} allowedUep={['fruticultura']} />}>
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
                 <Route
                   path="/fruticultura/aluno/equipamentos"
