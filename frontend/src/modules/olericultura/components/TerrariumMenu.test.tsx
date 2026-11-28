@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import packageJson from '../../../../package.json';
 import { TerrariumMenu } from './TerrariumMenu';
 import { AuthProvider } from '../../../contexts/AuthContext';
 
@@ -44,6 +45,12 @@ describe('TerrariumMenu', () => {
     expect(screen.getByText(/Irrigação & Reservatório/i)).toBeInTheDocument();
     expect(screen.getByText(/Compostagem & Minhocário/i)).toBeInTheDocument();
     expect(screen.queryByText(/Turmas & Avaliações/i)).not.toBeInTheDocument();
+  });
+
+  it('deve exibir a versão sincronizada no rodapé', () => {
+    renderTerrariumMenu(true);
+
+    expect(screen.getByText(`Terrarium v${packageJson.version}`)).toBeInTheDocument();
   });
 
   it('deve chamar onClose ao clicar no botão de fechar', () => {

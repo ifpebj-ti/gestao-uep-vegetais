@@ -4,6 +4,19 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 
 O formato baseia-se em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.5](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.4...gestao-uep-vegetais-v0.1.5) (2026-11-25)
+
+
+### Features
+
+* provisiona contas de teste para os perfis ([0756a4c](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/0756a4ce0eb5f2a634ca0d7cc6003c0f2a2403bf))
+* provisiona contas de teste para os perfis ([a202577](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/a202577c8c3f0554da1c28eaf4eddf652eab34d3))
+
+
+### Bug Fixes
+
+* avoid nginx cache header override ([27c746e](https://github.com/ifpebj-ti/gestao-uep-vegetais/commit/27c746e9c0f09c904a71a967b9fe54c57b4c3386))
+
 ## [0.1.4](https://github.com/ifpebj-ti/gestao-uep-vegetais/compare/gestao-uep-vegetais-v0.1.3...gestao-uep-vegetais-v0.1.4) (2026-11-18)
 
 

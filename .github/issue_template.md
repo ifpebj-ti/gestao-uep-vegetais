@@ -1,21 +1,29 @@
 ---
 name: Tarefa ou Funcionalidade
-about: Crie uma issue padronizada para o desenvolvimento do projeto
-title: "[US-XX] Título descritivo"
-labels: ''
+about: Criar uma Issue com especificação mínima e critérios de aceite
+title: "[US-XX] "
+labels: enhancement
 assignees: ''
 ---
 
-## Descrição
-Descreva de forma clara o problema, a necessidade ou a User Story (Como um... eu quero... para...).
+## Necessidade
+
+Como [tipo de usuário], quero [objetivo], para [benefício].
 
 ## Objetivo
-O que se espera alcançar com a resolução desta issue?
 
-## Critérios de Aceite (DoR/DoD)
+Descreva o resultado esperado.
+
+## Critérios de aceite
+
 - [ ] Dado que [condição], quando [ação], então [resultado].
-- [ ] O código foi testado.
-- [ ] A funcionalidade atende ao requisito.
+- [ ] O comportamento foi testado.
+- [ ] A esteira CI/CD passou.
 
-## Dependências / Observações
-Liste aqui se esta issue depende de outra para ser iniciada ou qualquer outra informação relevante.
+## Fora do escopo
+
+-
+
+## Dependências e observações
+
+Liste Issues relacionadas e decisões pendentes.
