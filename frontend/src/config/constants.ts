@@ -1,9 +1,16 @@
-import packageJson from '../../package.json';
+import frontendPackage from '../../package.json';
+
+const RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const appVersion = frontendPackage.version.trim();
+
+if (!RELEASE_VERSION_PATTERN.test(appVersion)) {
+  throw new Error(`Invalid frontend release version: ${appVersion}`);
+}
 
 export const APP_CONFIG = {
   name: 'Terrarium',
   subtitle: 'Gestão de UEPs - Vegetais',
-  version: packageJson.version,
+  version: appVersion,
   institution: 'IFPE Campus Belo Jardim',
   apiBaseUrl: (() => {
     // Se estiver rodando no navegador na porta padrão (Nginx/Docker), usa proxy relativo /api
