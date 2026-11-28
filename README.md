@@ -200,6 +200,8 @@ As mensagens de commit devem seguir Conventional Commits:
 
 O workflow `.github/workflows/release-please.yml` mantém uma Pull Request de release revisável. Ao incorporar essa PR, o Release Please atualiza o `CHANGELOG.md`, sincroniza a versão e cria a tag `vX.Y.Z` com a GitHub Release correspondente. Não há mais acumulação de alterações em uma release fixa chamada `vNext`.
 
+`VERSION` é o arquivo oficial do release e o Release Please também sincroniza o valor em `backend/pom.xml` e `frontend/package.json`. O frontend usa a versão do próprio manifesto durante o build; portanto, componentes como o rodapé não devem manter um número literal independente. A CI executa `.github/scripts/validate-release-version.mjs` antes dos demais gates e bloqueia versões vazias, inválidas ou divergentes.
+
 O workflow usa o secret opcional `RELEASE_PLEASE_TOKEN` quando configurado. Um token próprio permite que os workflows de CI sejam disparados também para a Pull Request criada automaticamente; sem ele, o `GITHUB_TOKEN` padrão continua suficiente para criar a PR, a tag e a release conforme as permissões do repositório.
 
 Para uma alteração que deve entrar em uma versão, use um título de PR compatível com Conventional Commits, por exemplo:
@@ -210,6 +212,8 @@ fix: corrigir cálculo de previsão de colheita
 ```
 
 Para uma alteração sem release, use `docs:` ou `chore:`. A criação da versão continua sujeita à revisão e aprovação da Pull Request de release.
+
+Ao abrir uma PR de alteração relacionada ao versionamento, vincule a Issue com `Closes #<número>` e registre a saída do validador, dos testes, do lint e do build. A validação aceita versões pré-1.0 válidas, como `0.1.4`, e não modifica tags ou GitHub Releases já publicadas.
 
 # 🚀 Como Executar Localmente
 

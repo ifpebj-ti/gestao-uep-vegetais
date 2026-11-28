@@ -1,7 +1,9 @@
+import packageJson from '../../package.json';
+
 export const APP_CONFIG = {
   name: 'Terrarium',
   subtitle: 'Gestão de UEPs - Vegetais',
-  version: '1.0.0',
+  version: packageJson.version,
   institution: 'IFPE Campus Belo Jardim',
   apiBaseUrl: (() => {
     // Se estiver rodando no navegador na porta padrão (Nginx/Docker), usa proxy relativo /api

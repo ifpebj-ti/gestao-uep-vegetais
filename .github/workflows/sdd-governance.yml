@@ -1,0 +1,110 @@
+name: SDD Governance
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - master
+      - develop
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  validate:
+    name: SDD Governance
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      !startsWith(github.event.pull_request.head.ref, 'release-please--') &&
+      !startsWith(github.event.pull_request.title, 'chore(main): release') &&
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Issue, specification summary and evidence
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const normalized = body.toLocaleLowerCase('pt-BR');
+            const requiredSections = [
+              '## issue relacionada',
+              '## resumo da especificação sdd',
+              '## critérios de aceite atendidos',
+              '## validação',
+              '## atribuição e revisão',
+              '## checklist do autor'
+            ];
+
+            const missingSections = requiredSections.filter(
+              (section) => !normalized.includes(section)
+            );
+
+            if (missingSections.length > 0) {
+              core.setFailed(
+                'O PR precisa usar o template SDD. Seções ausentes: ' +
+                missingSections.join(', ')
+              );
+              return;
+            }
+
+            const issuePattern =
+              /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?|related\s+to|relates\s+to)\s*:?\s*#(\d+)/gi;
+            const issueNumbers = [
+              ...new Set(
+                [...body.matchAll(issuePattern)].map((match) => Number(match[1]))
+              )
+            ];
+
+            if (issueNumbers.length === 0) {
+              core.setFailed(
+                'O PR precisa conter um vínculo explícito com uma Issue, por exemplo: Closes #123.'
+              );
+              return;
+            }
+
+            for (const issueNumber of issueNumbers) {
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+
+              if (issue.pull_request) {
+                core.setFailed('#' + issueNumber + ' é um PR, não uma Issue.');
+                return;
+              }
+
+              core.info('Issue válida encontrada: #' + issueNumber);
+            }
+
+            const placeholders = [
+              '[insira',
+              '<issue>',
+              '<slug>',
+              'closes #123',
+              'descreva o resultado',
+              'critério 1:',
+              'critério 2:',
+              'critério 3:'
+            ];
+
+            const unresolved = placeholders.filter((placeholder) =>
+              normalized.includes(placeholder)
+            );
+
+            if (unresolved.length > 0) {
+              core.setFailed(
+                'O PR ainda contém placeholders do template: ' +
+                unresolved.join(', ')
+              );
+              return;
+            }
+
+            core.info('Governança SDD validada.');
