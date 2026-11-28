@@ -8,6 +8,17 @@
 - [ ] Testes (test)
 - [ ] Configuração, CI ou infraestrutura (chore / ci)
 
+## Tipo de Release
+
+Escolha o prefixo Conventional Commits no título da PR quando a alteração precisar gerar release:
+
+- `fix:` para correções (`PATCH`);
+- `feat:` para novas funcionalidades (`MINOR`);
+- `feat!:` ou `BREAKING CHANGE:` para mudanças incompatíveis (`MAJOR`);
+- `docs:` ou `chore:` para alterações que não geram release.
+
+Exemplo de título: `feat: permitir edição da ficha de campo`.
+
 ## Issue relacionada
 
 Closes #123
@@ -36,7 +47,7 @@ O diretório acima não é versionado. Cole aqui as decisões essenciais para qu
 
 ## O que foi feito
 
-Explique as alterações realizadas e os principais arquivos afetados.
+Explique de forma resumida, mas clara, as alterações realizadas e os principais arquivos afetados. Este texto também será utilizado nas Notas de Release quando a PR gerar uma release.
 
 ## Validação
 
