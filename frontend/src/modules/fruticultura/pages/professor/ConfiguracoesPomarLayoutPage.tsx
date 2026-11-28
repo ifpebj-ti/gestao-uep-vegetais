@@ -2,10 +2,8 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Menu,
-  Settings,
   Plus,
   Trash2,
-  Search,
   Compass,
   Layers,
   CheckCircle2,
@@ -13,12 +11,9 @@ import {
   X,
   Move,
   RotateCcw,
-  Sparkles,
   TreeDeciduous,
-  ArrowLeft,
   List,
   Edit2,
-  ExternalLink,
 } from 'lucide-react';
 import { Button } from '../../../../components/Button';
 import {
@@ -57,7 +52,6 @@ export const ConfiguracoesPomarLayoutPage: React.FC = () => {
   );
 
   const [modoVisualizacao, setModoVisualizacao] = useState<'mapa2d' | 'tabela'>('mapa2d');
-  const [busca, setBusca] = useState('');
   const [quadraSelecionadaId, setQuadraSelecionadaId] = useState<string | null>('banana');
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
@@ -92,16 +86,7 @@ export const ConfiguracoesPomarLayoutPage: React.FC = () => {
     return quadras.reduce((acc, q) => acc + totalPlantas(q), 0);
   }, [quadras]);
 
-  const quadrasFiltradas = useMemo(() => {
-    if (!busca.trim()) return quadras;
-    const b = busca.toLowerCase();
-    return quadras.filter(
-      (q) =>
-        q.nome.toLowerCase().includes(b) ||
-        q.codigo.toLowerCase().includes(b) ||
-        q.culturas.some((c) => c.toLowerCase().includes(b))
-    );
-  }, [quadras, busca]);
+  const quadrasFiltradas = quadras;
 
   const selecionarQuadra = (q: QuadraPomar) => {
     setQuadraSelecionadaId(q.id);

@@ -5,17 +5,12 @@ import {
   Wrench,
   Package,
   Layers,
-  ArrowLeft,
   Search,
   Filter,
   CheckCircle2,
   AlertTriangle,
-  Clock,
-  Sparkles,
-  Hammer,
   ShieldCheck,
 } from 'lucide-react';
-import { APP_CONFIG } from '../../../../config/constants';
 import { Button } from '../../../../components/Button';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { identifyRoleByEmail } from '../../../auth/utils/roleIdentifier';

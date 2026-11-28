@@ -5,7 +5,6 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { authService, UserSession } from '../services/authService';
 import { ProtectedRoute } from '../routes/ProtectedRoute';
-import { APP_CONFIG } from '../config/constants';
 
 // Componente auxiliar para inspecionar o estado do hook useAuth
 const AuthConsumerTestComponent: React.FC = () => {
@@ -29,8 +28,6 @@ const createTestJwt = (payloadObj: Record<string, unknown>, signature = 'valid-s
 };
 
 describe('AuthContext - Suíte de Testes Reais do AuthProvider', () => {
-  const STORAGE_KEY = APP_CONFIG.storageKeys.session;
-
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
