@@ -111,5 +111,22 @@ describe('turmaService - Gestão de Turmas e Tarefas de Alunos', () => {
     expect(turmaService.buscarTurmaPorId(nova.id)).toBeNull();
     expect(turmaService.obterTurmaDoAluno('teste.excluir@discente.ifpe.edu.br')).toBeNull();
   });
+
+  it('SEGURANÇA: deve impedir exclusão indevida de turma por outro professor (BOLA/IDOR)', () => {
+    const turmaProfA = turmaService.criarTurma({
+      nome: 'Turma do Prof A',
+      professorEmail: 'prof.a@belojardim.ifpe.edu.br',
+      professorNome: 'Prof. A',
+      uep: 'olericultura',
+    });
+
+    // Tentativa do Prof B de excluir turma do Prof A
+    expect(() => {
+      turmaService.excluirTurma(turmaProfA.id, 'prof.b@belojardim.ifpe.edu.br');
+    }).toThrow('Acesso negado');
+
+    // A turma não deve ter sido removida
+    expect(turmaService.buscarTurmaPorId(turmaProfA.id)).not.toBeNull();
+  });
 });
 

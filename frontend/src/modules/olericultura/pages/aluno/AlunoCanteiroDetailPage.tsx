@@ -49,8 +49,8 @@ export const AlunoCanteiroDetailPage: React.FC = () => {
 const AlunoCanteiroDetail: React.FC<{ canteiro: (typeof CANTEIROS_DATA)[number] }> = ({ canteiro }) => {
   const { user } = useAuth();
 
-  const alunoEmail = user?.email || 'aluno@discente.ifpe.edu.br';
-  const alunoNome = user?.nome || 'Estudante IFPE';
+  const alunoEmail = user?.email || '';
+  const alunoNome = user?.nome || 'Aluno';
 
   const turmaAtiva = turmaService.obterTurmaDoAluno(alunoEmail);
 

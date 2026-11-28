@@ -38,6 +38,16 @@ const ColheitaPage = React.lazy(() =>
 const PomarPage = React.lazy(() =>
   import('../modules/fruticultura/pages/PomarPage').then((m) => ({ default: m.PomarPage }))
 );
+const SalaEquipamentosPage = React.lazy(() =>
+  import('../modules/fruticultura/pages/professor/SalaEquipamentosPage').then((m) => ({
+    default: m.SalaEquipamentosPage,
+  }))
+);
+const ConfiguracoesPomarLayoutPage = React.lazy(() =>
+  import('../modules/fruticultura/pages/professor/ConfiguracoesPomarLayoutPage').then((m) => ({
+    default: m.ConfiguracoesPomarLayoutPage,
+  }))
+);
 const ConfiguracoesLayoutPage = React.lazy(() =>
   import('../modules/olericultura/pages/professor/ConfiguracoesLayoutPage').then((m) => ({ default: m.ConfiguracoesLayoutPage }))
 );
@@ -71,8 +81,8 @@ export default function AppRoutes() {
                 <Route path="/admin" element={<AdminDashboardPage />} />
               </Route>
 
-              {/* Rotas Protegidas - Perfil Professor */}
-              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
+              {/* Rotas Protegidas - Perfil Professor (Olericultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} allowedUep={['olericultura']} />}>
                 <Route path="/mapa" element={<MapaPage />} />
                 <Route path="/olericultura/professor/mapa" element={<MapaPage />} />
                 <Route path="/canteiro/:id" element={<CanteiroDetailPage />} />
@@ -89,17 +99,37 @@ export default function AppRoutes() {
                 <Route path="/olericultura/professor/turmas/:id" element={<TurmaDetalheProfessorPage />} />
                 <Route path="/configuracoes" element={<ConfiguracoesLayoutPage />} />
                 <Route path="/olericultura/configuracoes" element={<ConfiguracoesLayoutPage />} />
-                <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
               </Route>
 
-              {/* Rotas Protegidas - Perfil Aluno */}
-              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} />}>
+              {/* Rotas Protegidas - Perfil Professor (Fruticultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} allowedUep={['fruticultura']} />}>
+                <Route path="/fruticultura/professor/pomar" element={<PomarPage />} />
+                <Route
+                  path="/fruticultura/professor/equipamentos"
+                  element={<SalaEquipamentosPage />}
+                />
+                <Route
+                  path="/fruticultura/professor/configuracoes"
+                  element={<ConfiguracoesPomarLayoutPage />}
+                />
+              </Route>
+
+              {/* Rotas Protegidas - Perfil Aluno (Olericultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} allowedUep={['olericultura']} />}>
                 <Route path="/olericultura/aluno/mapa" element={<AlunoMapaPage />} />
                 <Route path="/olericultura/aluno/canteiro/:id" element={<AlunoCanteiroDetailPage />} />
                 <Route path="/olericultura/aluno/cronograma" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/gestao-canteiros" element={<GestaoCanteirosPage />} />
                 <Route path="/olericultura/aluno/colheita" element={<ColheitaPage />} />
+              </Route>
+
+              {/* Rotas Protegidas - Perfil Aluno (Fruticultura) */}
+              <Route element={<ProtectedRoute allowedRoles={['ALUNO']} allowedUep={['fruticultura']} />}>
                 <Route path="/fruticultura/aluno/pomar" element={<PomarPage />} />
+                <Route
+                  path="/fruticultura/aluno/equipamentos"
+                  element={<SalaEquipamentosPage />}
+                />
               </Route>
 
               <Route path="*" element={<Navigate to="/login" replace />} />

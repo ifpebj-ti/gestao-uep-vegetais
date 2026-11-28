@@ -201,7 +201,23 @@ export const turmaService = {
     return turmas.find((t) => t.id === id) || null;
   },
 
-  excluirTurma(turmaId: string): void {
+  /**
+   * Exclusão de turma com verificação defensiva de solicitante.
+   * NOTA DE SEGURANÇA: Esta checagem client-side protege a interface contra exclusão indevida,
+   * mas o controle autoritativo de BOLA/IDOR deve ser implementado no backend quando a API
+   * de turmas for disponibilizada pelo servidor.
+   */
+  excluirTurma(turmaId: string, solicitanteEmail?: string): void {
+    const turma = this.buscarTurmaPorId(turmaId);
+    if (!turma) return;
+
+    if (
+      solicitanteEmail &&
+      turma.professorEmail.toLowerCase() !== solicitanteEmail.trim().toLowerCase()
+    ) {
+      throw new Error('Acesso negado: você não tem permissão para excluir esta turma.');
+    }
+
     const turmas = this.listarTurmas().filter((t) => t.id !== turmaId);
     salvarJSON(STORAGE_KEY_TURMAS, turmas);
 

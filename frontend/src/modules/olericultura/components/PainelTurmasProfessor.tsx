@@ -25,8 +25,8 @@ export const PainelTurmasProfessor: React.FC<PainelTurmasProfessorProps> = ({
   const uepCtx = useContext(UepContext);
   const selectedUep = uepCtx?.selectedUep || 'olericultura';
 
-  const professorEmail = user?.email || 'george@belojardim.ifpe.edu.br';
-  const professorNome = user?.nome || 'Prof. George Henrique';
+  const professorEmail = user?.email || '';
+  const professorNome = user?.nome || 'Professor';
 
   const [turmas, setTurmas] = useState<Turma[]>(() =>
     turmaService.listarTurmasPorProfessor(professorEmail)

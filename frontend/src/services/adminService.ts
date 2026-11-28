@@ -33,9 +33,6 @@ export const DOMINIOS_DOCENTE_PERMITIDOS = [
 
 export function isEmailInstitucionalDocente(email: string): boolean {
   const normalizado = email.trim().toLowerCase();
-  if (normalizado === 'ifl1@discente.ifpe.edu.br') {
-    return true;
-  }
   const partes = normalizado.split('@');
   if (partes.length !== 2 || !partes[0]) return false;
   return DOMINIOS_DOCENTE_PERMITIDOS.includes(
